@@ -1,0 +1,23 @@
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+*.iml
+
+# Secrets — never commit
+.env
+*.pem
+*.key
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Java build output
+target/
+
+# Large model weights (track via Git LFS or HF Hub instead)
+backend/workers/classifier/cls_model_output/
+*.safetensors

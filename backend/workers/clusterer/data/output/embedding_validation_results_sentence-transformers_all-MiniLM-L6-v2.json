@@ -1,0 +1,1223 @@
+{
+  "model": "sentence-transformers/all-MiniLM-L6-v2",
+  "same_story": {
+    "summary": {
+      "count": 116,
+      "mean": 0.7848739719772438,
+      "median": 0.8159952184488775,
+      "std": 0.12625695152298244,
+      "min": 0.2332375318101362,
+      "max": 0.9695257763996296,
+      "p10": 0.6148979233039767,
+      "p25": 0.719818112495262,
+      "p75": 0.8785459796655681,
+      "p90": 0.9142658935021211
+    },
+    "pairs": [
+      {
+        "pair_id": "1483803584_1484221623",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8604205133336028
+      },
+      {
+        "pair_id": "1483806302_1483770632",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.669252808969121
+      },
+      {
+        "pair_id": "1484010775_1483828218",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6836643194895959
+      },
+      {
+        "pair_id": "1484011097_1484011106",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7656363400279202
+      },
+      {
+        "pair_id": "1484013404_1484147362",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7246762170535321
+      },
+      {
+        "pair_id": "1484037143_1484201620",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6515572400603334
+      },
+      {
+        "pair_id": "1484332324_1484796748",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7108171531854307
+      },
+      {
+        "pair_id": "1484804406_1484809369",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5662841429404502
+      },
+      {
+        "pair_id": "1485014635_1485090311",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8047924913954889
+      },
+      {
+        "pair_id": "1485029245_1486278689",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9131672757844624
+      },
+      {
+        "pair_id": "1485815599_1487944124",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8809116412612412
+      },
+      {
+        "pair_id": "1486492021_1486213074",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5523738182751143
+      },
+      {
+        "pair_id": "1490020331_1488499869",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6721167887865509
+      },
+      {
+        "pair_id": "1490048778_1490467546",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9321209646895934
+      },
+      {
+        "pair_id": "1495919706_1497871856",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6932333553949214
+      },
+      {
+        "pair_id": "1497804511_1496548941",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7976760903971606
+      },
+      {
+        "pair_id": "1498604172_1502101191",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6159396057054276
+      },
+      {
+        "pair_id": "1498735717_1502409341",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7272781677886028
+      },
+      {
+        "pair_id": "1499090284_1498367084",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9030306365645084
+      },
+      {
+        "pair_id": "1500115718_1498809435",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8067115734654043
+      },
+      {
+        "pair_id": "1503040793_1504994387",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6622427311566272
+      },
+      {
+        "pair_id": "1503132105_1503118462",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9395295566275663
+      },
+      {
+        "pair_id": "1503261488_1501087493",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8770736241749393
+      },
+      {
+        "pair_id": "1503537258_1503614887",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9133311665201159
+      },
+      {
+        "pair_id": "1507284716_1505863045",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8171991214645106
+      },
+      {
+        "pair_id": "1510582150_1510471003",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8502910004901729
+      },
+      {
+        "pair_id": "1511073859_1519506254",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6391574943196435
+      },
+      {
+        "pair_id": "1512107114_1510619314",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8308459870168832
+      },
+      {
+        "pair_id": "1512411298_1512618793",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.885409198797941
+      },
+      {
+        "pair_id": "1514668152_1514755280",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8235812526601234
+      },
+      {
+        "pair_id": "1514800667_1514188999",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8528098699940743
+      },
+      {
+        "pair_id": "1515552837_1515186062",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7488816119209557
+      },
+      {
+        "pair_id": "1518798266_1518780646",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9091492791127971
+      },
+      {
+        "pair_id": "1519538022_1519828920",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9133730793209849
+      },
+      {
+        "pair_id": "1519707224_1518511192",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9241546090837074
+      },
+      {
+        "pair_id": "1519905832_1519229318",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8584306954000784
+      },
+      {
+        "pair_id": "1520310757_1520453856",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5023185707142899
+      },
+      {
+        "pair_id": "1520488162_1520465976",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8685406856924976
+      },
+      {
+        "pair_id": "1521896538_1521600064",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8630156621487258
+      },
+      {
+        "pair_id": "1522673432_1522373983",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8528549044684325
+      },
+      {
+        "pair_id": "1523547250_1520342978",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8520362948339444
+      },
+      {
+        "pair_id": "1524449375_1522807720",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7690743498676085
+      },
+      {
+        "pair_id": "1525232103_1525634277",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8919871817387393
+      },
+      {
+        "pair_id": "1527033928_1527816367",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.93345312515115
+      },
+      {
+        "pair_id": "1530625133_1534604368",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.822457129188659
+      },
+      {
+        "pair_id": "1531413897_1524805227",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7036331470717909
+      },
+      {
+        "pair_id": "1531972652_1529880359",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.904399572344907
+      },
+      {
+        "pair_id": "1533545806_1534380050",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9151489032646181
+      },
+      {
+        "pair_id": "1533852973_1531459122",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7755237897418885
+      },
+      {
+        "pair_id": "1537354578_1538043902",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8001137132095542
+      },
+      {
+        "pair_id": "1540398650_1540491680",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8926466061815386
+      },
+      {
+        "pair_id": "1543687071_1544244292",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7682398743559186
+      },
+      {
+        "pair_id": "1544695356_1543856243",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7262574672329833
+      },
+      {
+        "pair_id": "1545460669_1545282718",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7184119414965964
+      },
+      {
+        "pair_id": "1546790297_1504564783",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.68900244506639
+      },
+      {
+        "pair_id": "1551346810_1551479978",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8265505840408364
+      },
+      {
+        "pair_id": "1553051359_1552828663",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8976919641029075
+      },
+      {
+        "pair_id": "1553161441_1626404130",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5175705543572131
+      },
+      {
+        "pair_id": "1554115025_1553651691",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.913382883739624
+      },
+      {
+        "pair_id": "1554606277_1554123226",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.767079260951267
+      },
+      {
+        "pair_id": "1555339745_1626941722",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8635655045302348
+      },
+      {
+        "pair_id": "1556043087_1551505657",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5325554303694227
+      },
+      {
+        "pair_id": "1556718125_1557029316",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6051796017677675
+      },
+      {
+        "pair_id": "1557010702_1579667345",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6726349245385661
+      },
+      {
+        "pair_id": "1559382012_1558064682",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7342214593141015
+      },
+      {
+        "pair_id": "1560002071_1563996946",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.2332375318101362
+      },
+      {
+        "pair_id": "1560700947_1530083534",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8423758525311509
+      },
+      {
+        "pair_id": "1561713465_1560801726",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8444680463989904
+      },
+      {
+        "pair_id": "1563006406_1563431063",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8504696801813729
+      },
+      {
+        "pair_id": "1563737178_1562187196",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8317836850905217
+      },
+      {
+        "pair_id": "1564673890_1564536521",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7857398440794293
+      },
+      {
+        "pair_id": "1565643099_1563474563",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7202868361614838
+      },
+      {
+        "pair_id": "1566612127_1567894641",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9695257763996296
+      },
+      {
+        "pair_id": "1567056671_1565533719",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7406234490879462
+      },
+      {
+        "pair_id": "1569776830_1569662245",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8359806704234417
+      },
+      {
+        "pair_id": "1571178629_1568383234",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.36963816431454616
+      },
+      {
+        "pair_id": "1571274943_1576594517",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6955514915693934
+      },
+      {
+        "pair_id": "1573563823_1573667415",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5269401834453935
+      },
+      {
+        "pair_id": "1574595542_1577729031",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8292303188830561
+      },
+      {
+        "pair_id": "1576323732_1576233684",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7651607625740219
+      },
+      {
+        "pair_id": "1576372150_1578038654",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8982131079484095
+      },
+      {
+        "pair_id": "1578766378_1600525440",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7942624934232211
+      },
+      {
+        "pair_id": "1579050365_1579165117",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8786295580165846
+      },
+      {
+        "pair_id": "1579575481_1559122432",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5955096221451444
+      },
+      {
+        "pair_id": "1580455801_1556085070",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7917857229336911
+      },
+      {
+        "pair_id": "1581599703_1581458860",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.845591606898916
+      },
+      {
+        "pair_id": "1582272726_1582388798",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9192880645269965
+      },
+      {
+        "pair_id": "1587362537_1585362092",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7317480003070755
+      },
+      {
+        "pair_id": "1588237632_1588287122",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9229953674380714
+      },
+      {
+        "pair_id": "1591576274_1594647674",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.954480640670459
+      },
+      {
+        "pair_id": "1591760263_1556661216",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7638012775768963
+      },
+      {
+        "pair_id": "1592091128_1591556033",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7929654977575764
+      },
+      {
+        "pair_id": "1592160843_1591967730",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9424217711861717
+      },
+      {
+        "pair_id": "1593961814_1596453243",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8785181202152292
+      },
+      {
+        "pair_id": "1594945180_1595251481",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9225229143471103
+      },
+      {
+        "pair_id": "1596418737_1595032489",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6441917588926003
+      },
+      {
+        "pair_id": "1596573403_1596354916",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7626522038590726
+      },
+      {
+        "pair_id": "1596765503_1597782071",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8344228201079469
+      },
+      {
+        "pair_id": "1597700828_1598688787",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6704329040710418
+      },
+      {
+        "pair_id": "1597701850_1597703658",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6934421280934294
+      },
+      {
+        "pair_id": "1598598364_1598206947",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.6138562409025259
+      },
+      {
+        "pair_id": "1605422147_1605693346",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8108053829597077
+      },
+      {
+        "pair_id": "1606591761_1607918334",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9035196253938125
+      },
+      {
+        "pair_id": "1610314419_1606971385",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8294286300742268
+      },
+      {
+        "pair_id": "1612050908_1611431519",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.5898786416338078
+      },
+      {
+        "pair_id": "1613647909_1613357814",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8147913154332445
+      },
+      {
+        "pair_id": "1613814846_1614798152",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7564892002319795
+      },
+      {
+        "pair_id": "1615549195_1615149887",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7929021442076846
+      },
+      {
+        "pair_id": "1617114169_1617282755",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8845071954442836
+      },
+      {
+        "pair_id": "1619642001_1617937141",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.7884890813389633
+      },
+      {
+        "pair_id": "1620564259_1620653066",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8521261201712059
+      },
+      {
+        "pair_id": "1620631185_1620846331",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8348461354350625
+      },
+      {
+        "pair_id": "1625832093_1607981162",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9199523425601577
+      },
+      {
+        "pair_id": "1627308116_1626791129",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8372196239007645
+      },
+      {
+        "pair_id": "1629203524_1625456558",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.8691743143801042
+      },
+      {
+        "pair_id": "1629314039_1629403142",
+        "source": "semeval",
+        "label": "same_story",
+        "similarity": 0.9118379278148427
+      }
+    ]
+  },
+  "different_story": {
+    "summary": {
+      "count": 81,
+      "mean": 0.292227071771117,
+      "median": 0.22406045816374154,
+      "std": 0.2515548045728947,
+      "min": -0.08578172504623169,
+      "max": 0.8395456466793639,
+      "p10": 0.010758661092954397,
+      "p25": 0.07702636134893567,
+      "p75": 0.5035679324000286,
+      "p90": 0.6691322975899407
+    },
+    "pairs": [
+      {
+        "pair_id": "1483801563_1484256518",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.07702636134893567
+      },
+      {
+        "pair_id": "1483804064_1484350449",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.050351965055788275
+      },
+      {
+        "pair_id": "1484007654_1483932672",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.43468835251289384
+      },
+      {
+        "pair_id": "1484008955_1483900456",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.13124713979201463
+      },
+      {
+        "pair_id": "1484009613_1483762075",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.08578172504623169
+      },
+      {
+        "pair_id": "1484010864_1483950504",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.5280706031861024
+      },
+      {
+        "pair_id": "1484010973_1492157938",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.06324538120345985
+      },
+      {
+        "pair_id": "1484011225_1484050855",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.3233251344715526
+      },
+      {
+        "pair_id": "1484011767_1484041344",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.2485408784043441
+      },
+      {
+        "pair_id": "1484012256_1484419682",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.11805187938975562
+      },
+      {
+        "pair_id": "1484013838_1484084603",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.2573755162417195
+      },
+      {
+        "pair_id": "1484033221_1483948522",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.010592549252471852
+      },
+      {
+        "pair_id": "1484033308_1484206926",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.016641156584575798
+      },
+      {
+        "pair_id": "1484034979_1483785560",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.21775101872147062
+      },
+      {
+        "pair_id": "1484039144_1484039153",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.2385602918798483
+      },
+      {
+        "pair_id": "1484039488_1484261803",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.0429312266064528
+      },
+      {
+        "pair_id": "1484187941_1484074975",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.14232804097126722
+      },
+      {
+        "pair_id": "1484188158_1483926746",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.35487659917619185
+      },
+      {
+        "pair_id": "1484188282_1484590384",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.10269673914620867
+      },
+      {
+        "pair_id": "1484188414_1484207583",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.506660309299547
+      },
+      {
+        "pair_id": "1484188569_1484201230",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.010510196516176872
+      },
+      {
+        "pair_id": "1484188832_1483936561",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.009306243609308856
+      },
+      {
+        "pair_id": "1484188851_1483820477",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.007760000180931888
+      },
+      {
+        "pair_id": "1484188930_1484152024",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.47857094226173796
+      },
+      {
+        "pair_id": "1484188945_1484188562",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.5294540544366597
+      },
+      {
+        "pair_id": "1484188965_1483876247",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.5035679324000286
+      },
+      {
+        "pair_id": "1484188974_1484299664",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.05521582132681899
+      },
+      {
+        "pair_id": "1484189001_1483933084",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.11780706560925328
+      },
+      {
+        "pair_id": "1484189203_1484121193",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.31508331658214345
+      },
+      {
+        "pair_id": "1484189278_1484233982",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.1858756097935957
+      },
+      {
+        "pair_id": "1484189424_1483950282",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.15300077483344593
+      },
+      {
+        "pair_id": "1484189651_1485410569",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.018305145736259902
+      },
+      {
+        "pair_id": "1484190302_1484113071",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.03291893071767789
+      },
+      {
+        "pair_id": "1484191228_1483996933",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6350011332703122
+      },
+      {
+        "pair_id": "1484191450_1484275802",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.22406045816374154
+      },
+      {
+        "pair_id": "1484401456_1484073158",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.1792148712228764
+      },
+      {
+        "pair_id": "1484401805_1483962389",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.1077367033214271
+      },
+      {
+        "pair_id": "1484452733_1484215051",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.3094515568933349
+      },
+      {
+        "pair_id": "1484702889_1484167784",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.3391662878467379
+      },
+      {
+        "pair_id": "1484703270_1484167784",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.2503658854132063
+      },
+      {
+        "pair_id": "1484763304_1484720560",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.028795038738268077
+      },
+      {
+        "pair_id": "1485366264_1483775099",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.07779303388020001
+      },
+      {
+        "pair_id": "1487625578_1488219672",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.7138804222024984
+      },
+      {
+        "pair_id": "1491260698_1522758176",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": -0.00717295722084162
+      },
+      {
+        "pair_id": "1492929930_1492536485",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.029858189054204287
+      },
+      {
+        "pair_id": "1498340993_1501828750",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.16431092227282584
+      },
+      {
+        "pair_id": "1498839345_1552623974",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.47917871085498603
+      },
+      {
+        "pair_id": "1500069470_1499936687",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.18755652454047755
+      },
+      {
+        "pair_id": "1501517029_1511202234",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.010758661092954397
+      },
+      {
+        "pair_id": "1502463250_1505469635",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.38675499047872763
+      },
+      {
+        "pair_id": "1505710139_1505806901",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.1917453940023742
+      },
+      {
+        "pair_id": "1506067284_1511184511",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.7209913845631615
+      },
+      {
+        "pair_id": "1509595453_1505820709",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.8395456466793639
+      },
+      {
+        "pair_id": "1511910887_1578498460",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6527505518976273
+      },
+      {
+        "pair_id": "1517090369_1539022268",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.14814026566821348
+      },
+      {
+        "pair_id": "1517342650_1517154364",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.7939240829638456
+      },
+      {
+        "pair_id": "1517717775_1528608110",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.25377921826205274
+      },
+      {
+        "pair_id": "1519214426_1514668228",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.7546465286567711
+      },
+      {
+        "pair_id": "1521155431_1517777802",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.5944047498961573
+      },
+      {
+        "pair_id": "1521247428_1522600636",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6635765266866771
+      },
+      {
+        "pair_id": "1537499410_1513052490",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.17236576624582248
+      },
+      {
+        "pair_id": "1542269334_1600371047",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.27509292862059886
+      },
+      {
+        "pair_id": "1543712188_1546397754",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6856263394658135
+      },
+      {
+        "pair_id": "1551432131_1543195875",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.30746798388283214
+      },
+      {
+        "pair_id": "1555775628_1553390793",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.5274069291490273
+      },
+      {
+        "pair_id": "1555949251_1553931407",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.7116450335711229
+      },
+      {
+        "pair_id": "1559959067_1529952152",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6636304346704369
+      },
+      {
+        "pair_id": "1560338530_1498189481",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.07148195711315337
+      },
+      {
+        "pair_id": "1561698873_1555780606",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6644955016679939
+      },
+      {
+        "pair_id": "1563701058_1557869574",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.2090758941841415
+      },
+      {
+        "pair_id": "1579836565_1579808830",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.40622188397625947
+      },
+      {
+        "pair_id": "1587580494_1590444265",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.7804858172871105
+      },
+      {
+        "pair_id": "1589612853_1589576516",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.08226060458798887
+      },
+      {
+        "pair_id": "1592975318_1592930212",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6691322975899407
+      },
+      {
+        "pair_id": "1595584655_1596103131",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.35977977234882497
+      },
+      {
+        "pair_id": "1596448385_1592893858",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.12590951665753417
+      },
+      {
+        "pair_id": "1598268751_1522260361",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.18134449977408287
+      },
+      {
+        "pair_id": "1599137604_1484130548",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.07684707620324491
+      },
+      {
+        "pair_id": "1614502233_1549797455",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.013260006219027044
+      },
+      {
+        "pair_id": "1623466121_1570564356",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.6166858616471427
+      },
+      {
+        "pair_id": "1625050173_1625536745",
+        "source": "semeval",
+        "label": "different_story",
+        "similarity": 0.3964208130826232
+      }
+    ]
+  },
+  "suggested_threshold": {
+    "threshold": 0.5325554303694227,
+    "balanced_accuracy": 0.8796828437633035,
+    "tpr": 0.9568965517241379,
+    "tnr": 0.8024691358024691
+  }
+}
