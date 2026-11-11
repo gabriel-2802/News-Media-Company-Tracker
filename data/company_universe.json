@@ -1,0 +1,5972 @@
+[
+ {
+  "name": "JPMorgan Chase",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "JPMorgan",
+   "JP Morgan",
+   "J.P. Morgan",
+   "Chase",
+   "JPMorgan Chase & Co"
+  ],
+  "tickers": [
+   {
+    "symbol": "JPM",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "8I5DZWZKVSZI1NUHU748"
+ },
+ {
+  "name": "Bank of America",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "BofA",
+   "Bank of America Corp",
+   "Merrill Lynch",
+   "Merrill"
+  ],
+  "tickers": [
+   {
+    "symbol": "BAC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "9DJT3UXIJIZJI4WXO774"
+ },
+ {
+  "name": "Wells Fargo",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Wells Fargo & Co",
+   "Wells Fargo & Company"
+  ],
+  "tickers": [
+   {
+    "symbol": "WFC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "PBLD0EJDB5FWOLXP3B76"
+ },
+ {
+  "name": "Citigroup",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Citi",
+   "Citibank",
+   "Citigroup Inc"
+  ],
+  "tickers": [
+   {
+    "symbol": "C",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "6SHGI4ZSSLCXXQSBB395"
+ },
+ {
+  "name": "Goldman Sachs",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Goldman",
+   "Goldman Sachs Group"
+  ],
+  "tickers": [
+   {
+    "symbol": "GS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "784F5XWPLTWKTBV3E584"
+ },
+ {
+  "name": "Morgan Stanley",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "MS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "IGJSJL3JD5P30I6NJZ34"
+ },
+ {
+  "name": "U.S. Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "US Bancorp",
+   "U.S. Bank",
+   "US Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "USB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "N1GZ7BBF3NP8GI976H15"
+ },
+ {
+  "name": "PNC Financial Services",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "PNC",
+   "PNC Financial",
+   "PNC Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "PNC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "CFGNEKW0P8842LEUIA51"
+ },
+ {
+  "name": "Truist Financial",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Truist"
+  ],
+  "tickers": [
+   {
+    "symbol": "TFC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300DRQQI75D2JP341"
+ },
+ {
+  "name": "Capital One",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Capital One Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "COF",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "ZUE8T73ROZOF6FLBAR73"
+ },
+ {
+  "name": "Charles Schwab",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Schwab"
+  ],
+  "tickers": [
+   {
+    "symbol": "SCHW",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300VSGCJ7E698NM85"
+ },
+ {
+  "name": "BNY",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "BNY Mellon",
+   "Bank of New York Mellon"
+  ],
+  "tickers": [
+   {
+    "symbol": "BNY",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "WFLLPEPC7FZXENRZV188"
+ },
+ {
+  "name": "State Street",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "State Street Corp"
+  ],
+  "tickers": [
+   {
+    "symbol": "STT",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300ZFEEJ2IP5VME73"
+ },
+ {
+  "name": "Northern Trust",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "NTRS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300GLF98S992BC502"
+ },
+ {
+  "name": "Fifth Third Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Fifth Third",
+   "Fifth Third Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "FITB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "THRNG6BD57P9QWTQLG42"
+ },
+ {
+  "name": "M&T Bank",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "M&T"
+  ],
+  "tickers": [
+   {
+    "symbol": "MTB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300WYXDDBYRASEG81"
+ },
+ {
+  "name": "Huntington Bancshares",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Huntington",
+   "Huntington National Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "HBAN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300XTVCVV9I7B5T19"
+ },
+ {
+  "name": "Regions Financial",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Regions Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "RF",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "CW05CS5KW59QTC0DG824"
+ },
+ {
+  "name": "KeyCorp",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "KeyBank"
+  ],
+  "tickers": [
+   {
+    "symbol": "KEY",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "RKPI3RZGV1V1FJTH5T61"
+ },
+ {
+  "name": "Citizens Financial Group",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Citizens Bank",
+   "Citizens Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CFG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "2138004JDDA4ZQUPFW65"
+ },
+ {
+  "name": "Zions Bancorporation",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Zions",
+   "Zions Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "ZION",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "Western Alliance Bancorporation",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Western Alliance"
+  ],
+  "tickers": [
+   {
+    "symbol": "WAL",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "5493003VJXZ5JXT9S762"
+ },
+ {
+  "name": "American Express",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Amex",
+   "AmEx"
+  ],
+  "tickers": [
+   {
+    "symbol": "AXP",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "R4PP93JZOLY261QX3811"
+ },
+ {
+  "name": "Ally Financial",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Ally",
+   "Ally Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "ALLY",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300JBN1OSM8YNAI90"
+ },
+ {
+  "name": "Synchrony Financial",
+  "kind": "BANK",
+  "country": "US",
+  "aliases": [
+   "Synchrony"
+  ],
+  "tickers": [
+   {
+    "symbol": "SYF",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300RS7EWPM9MA6C78"
+ },
+ {
+  "name": "PayPal",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "PayPal Holdings",
+   "Venmo"
+  ],
+  "tickers": [
+   {
+    "symbol": "PYPL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "5493005X2GO78EFZ3E94"
+ },
+ {
+  "name": "Block",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Block Inc",
+   "Square",
+   "Cash App"
+  ],
+  "tickers": [
+   {
+    "symbol": "XYZ",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300OHIIUWSTIZME52"
+ },
+ {
+  "name": "SoFi Technologies",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "SoFi"
+  ],
+  "tickers": [
+   {
+    "symbol": "SOFI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300SW81JCMVZDDY09"
+ },
+ {
+  "name": "Affirm",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Affirm Holdings"
+  ],
+  "tickers": [
+   {
+    "symbol": "AFRM",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "529900LZI7FSF8IS2V41"
+ },
+ {
+  "name": "Upstart",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Upstart Holdings"
+  ],
+  "tickers": [
+   {
+    "symbol": "UPST",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300WNB47JRNENIC75"
+ },
+ {
+  "name": "Robinhood",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Robinhood Markets"
+  ],
+  "tickers": [
+   {
+    "symbol": "HOOD",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "213800FS5AO3YWIE6F63"
+ },
+ {
+  "name": "Coinbase",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Coinbase Global"
+  ],
+  "tickers": [
+   {
+    "symbol": "COIN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "5493004G3J2SC154DU06"
+ },
+ {
+  "name": "Visa",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Visa Inc"
+  ],
+  "tickers": [
+   {
+    "symbol": "V",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "549300JZ4OKEHW3DPJ59"
+ },
+ {
+  "name": "Mastercard",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "MasterCard"
+  ],
+  "tickers": [
+   {
+    "symbol": "MA",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "AR5L2ODV9HN37376R084"
+ },
+ {
+  "name": "Chime",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Chime Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CHYM",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "Circle",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [
+   "Circle Internet Group",
+   "Circle Internet Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CRCL",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "254900HFVVR6NPMQVN93"
+ },
+ {
+  "name": "Klarna",
+  "kind": "FINTECH",
+  "country": "GB",
+  "aliases": [
+   "Klarna Group",
+   "Klarna Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "KLAR",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ],
+  "lei": "636700HER4JIK7GZUN17"
+ },
+ {
+  "name": "Stripe",
+  "kind": "FINTECH",
+  "country": "US",
+  "aliases": [],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "HSBC",
+  "kind": "BANK",
+  "country": "GB",
+  "aliases": [
+   "HSBC Holdings",
+   "HSBC Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "HSBA",
+    "exchange": "XLON",
+    "currency": "GBP",
+    "primary": true
+   },
+   {
+    "symbol": "HSBC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": false
+   }
+  ],
+  "lei": "MLU0ZO3ML4LN2LL2TL39"
+ },
+ {
+  "name": "Barclays",
+  "kind": "BANK",
+  "country": "GB",
+  "aliases": [
+   "Barclays Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "BARC",
+    "exchange": "XLON",
+    "currency": "GBP",
+    "primary": true
+   },
+   {
+    "symbol": "BCS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": false
+   }
+  ],
+  "lei": "213800LBQA1Y9L22JB70"
+ },
+ {
+  "name": "Lloyds Banking Group",
+  "kind": "BANK",
+  "country": "GB",
+  "aliases": [
+   "Lloyds",
+   "Lloyds Bank",
+   "Halifax"
+  ],
+  "tickers": [
+   {
+    "symbol": "LLOY",
+    "exchange": "XLON",
+    "currency": "GBP",
+    "primary": true
+   },
+   {
+    "symbol": "LYG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": false
+   }
+  ],
+  "lei": "549300PPXHEU2JF0AM85"
+ },
+ {
+  "name": "NatWest Group",
+  "kind": "BANK",
+  "country": "GB",
+  "aliases": [
+   "NatWest",
+   "Royal Bank of Scotland",
+   "RBS"
+  ],
+  "tickers": [
+   {
+    "symbol": "NWG",
+    "exchange": "XLON",
+    "currency": "GBP",
+    "primary": true
+   }
+  ],
+  "lei": "2138005O9XJIJN4JPN90"
+ },
+ {
+  "name": "Standard Chartered",
+  "kind": "BANK",
+  "country": "GB",
+  "aliases": [
+   "StanChart"
+  ],
+  "tickers": [
+   {
+    "symbol": "STAN",
+    "exchange": "XLON",
+    "currency": "GBP",
+    "primary": true
+   }
+  ],
+  "lei": "U4LOSYZ7YG4W3S5F2G91"
+ },
+ {
+  "name": "Wise",
+  "kind": "FINTECH",
+  "country": "GB",
+  "aliases": [
+   "TransferWise"
+  ],
+  "tickers": [
+   {
+    "symbol": "WISE",
+    "exchange": "XLON",
+    "currency": "GBP",
+    "primary": true
+   }
+  ],
+  "lei": "213800LD9XCHIC1C4V71"
+ },
+ {
+  "name": "Revolut",
+  "kind": "FINTECH",
+  "country": "GB",
+  "aliases": [],
+  "tickers": [],
+  "lei": "213800MQORWPL582SW82"
+ },
+ {
+  "name": "Monzo",
+  "kind": "FINTECH",
+  "country": "GB",
+  "aliases": [
+   "Monzo Bank"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "BNP Paribas",
+  "kind": "BANK",
+  "country": "FR",
+  "aliases": [
+   "BNP"
+  ],
+  "tickers": [
+   {
+    "symbol": "BNP",
+    "exchange": "XPAR",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "R0MUWSFPU8MPRO8K5P83"
+ },
+ {
+  "name": "Société Générale",
+  "kind": "BANK",
+  "country": "FR",
+  "aliases": [
+   "Societe Generale",
+   "SocGen"
+  ],
+  "tickers": [
+   {
+    "symbol": "GLE",
+    "exchange": "XPAR",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "O2RNE8IBXP4R0TD8PU41"
+ },
+ {
+  "name": "Crédit Agricole",
+  "kind": "BANK",
+  "country": "FR",
+  "aliases": [
+   "Credit Agricole"
+  ],
+  "tickers": [
+   {
+    "symbol": "ACA",
+    "exchange": "XPAR",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "969500TJ5KRTCJQWXH05"
+ },
+ {
+  "name": "Deutsche Bank",
+  "kind": "BANK",
+  "country": "DE",
+  "aliases": [
+   "Deutsche Bank AG"
+  ],
+  "tickers": [
+   {
+    "symbol": "DBK",
+    "exchange": "XETR",
+    "currency": "EUR",
+    "primary": true
+   },
+   {
+    "symbol": "DB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": false
+   }
+  ],
+  "lei": "7LTWFZYICNSX8D621K86"
+ },
+ {
+  "name": "Commerzbank",
+  "kind": "BANK",
+  "country": "DE",
+  "aliases": [
+   "Commerzbank AG"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBK",
+    "exchange": "XETR",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "851WYGNLUQLFZBSYGB56"
+ },
+ {
+  "name": "Banco Santander",
+  "kind": "BANK",
+  "country": "ES",
+  "aliases": [
+   "Santander"
+  ],
+  "tickers": [
+   {
+    "symbol": "SAN",
+    "exchange": "XMAD",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "5493006QMFDDMYWIAM13"
+ },
+ {
+  "name": "BBVA",
+  "kind": "BANK",
+  "country": "ES",
+  "aliases": [
+   "Banco Bilbao Vizcaya Argentaria"
+  ],
+  "tickers": [
+   {
+    "symbol": "BBVA",
+    "exchange": "XMAD",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "CaixaBank",
+  "kind": "BANK",
+  "country": "ES",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "CABK",
+    "exchange": "XMAD",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "Intesa Sanpaolo",
+  "kind": "BANK",
+  "country": "IT",
+  "aliases": [
+   "Intesa"
+  ],
+  "tickers": [
+   {
+    "symbol": "ISP",
+    "exchange": "XMIL",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "UniCredit",
+  "kind": "BANK",
+  "country": "IT",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "UCG",
+    "exchange": "XMIL",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "ING Group",
+  "kind": "BANK",
+  "country": "NL",
+  "aliases": [
+   "ING",
+   "ING Groep",
+   "ING Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "INGA",
+    "exchange": "XAMS",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "549300NYKK9MWM7GGW15"
+ },
+ {
+  "name": "ABN AMRO",
+  "kind": "BANK",
+  "country": "NL",
+  "aliases": [
+   "ABN AMRO Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "ABN",
+    "exchange": "XAMS",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "BFXS5XCH7N0Y05NIXW11"
+ },
+ {
+  "name": "KBC Group",
+  "kind": "BANK",
+  "country": "BE",
+  "aliases": [
+   "KBC"
+  ],
+  "tickers": [
+   {
+    "symbol": "KBC",
+    "exchange": "XBRU",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "213800X3Q9LSAKRUWY91"
+ },
+ {
+  "name": "Nordea",
+  "kind": "BANK",
+  "country": "FI",
+  "aliases": [
+   "Nordea Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "NDA FI",
+    "exchange": "XHEL",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "529900ODI3047E2LIV03"
+ },
+ {
+  "name": "Danske Bank",
+  "kind": "BANK",
+  "country": "DK",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "DANSKE",
+    "exchange": "XCSE",
+    "currency": "DKK",
+    "primary": true
+   }
+  ],
+  "lei": "MAES062Z21O4RZ2U7M96"
+ },
+ {
+  "name": "Erste Group",
+  "kind": "BANK",
+  "country": "AT",
+  "aliases": [
+   "Erste Bank",
+   "Erste Group Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "EBS",
+    "exchange": "XWBO",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "PQOH26KWDF7CG10L6792"
+ },
+ {
+  "name": "UBS",
+  "kind": "BANK",
+  "country": "CH",
+  "aliases": [
+   "UBS Group",
+   "Credit Suisse"
+  ],
+  "tickers": [
+   {
+    "symbol": "UBSG",
+    "exchange": "XSWX",
+    "currency": "CHF",
+    "primary": true
+   },
+   {
+    "symbol": "UBS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": false
+   }
+  ],
+  "lei": "549300SZJ9VS8SGXAN81"
+ },
+ {
+  "name": "Adyen",
+  "kind": "FINTECH",
+  "country": "NL",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "ADYEN",
+    "exchange": "XAMS",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "724500973ODKK3IFQ447"
+ },
+ {
+  "name": "Nexi",
+  "kind": "FINTECH",
+  "country": "IT",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "NEXI",
+    "exchange": "XMIL",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": null
+ },
+ {
+  "name": "Worldline",
+  "kind": "FINTECH",
+  "country": "FR",
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "WLN",
+    "exchange": "XPAR",
+    "currency": "EUR",
+    "primary": true
+   }
+  ],
+  "lei": "549300CJMQNCA0U4TS33"
+ },
+ {
+  "name": "Federal Reserve",
+  "kind": "CENTRAL_BANK",
+  "country": "US",
+  "aliases": [
+   "Federal Reserve Board",
+   "the Fed",
+   "FOMC",
+   "Federal Open Market Committee"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "FDIC",
+  "kind": "REGULATOR",
+  "country": "US",
+  "aliases": [
+   "Federal Deposit Insurance Corporation"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "OCC",
+  "kind": "REGULATOR",
+  "country": "US",
+  "aliases": [
+   "Office of the Comptroller of the Currency",
+   "Comptroller of the Currency"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "CFPB",
+  "kind": "REGULATOR",
+  "country": "US",
+  "aliases": [
+   "Consumer Financial Protection Bureau"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "SEC",
+  "kind": "REGULATOR",
+  "country": "US",
+  "aliases": [
+   "Securities and Exchange Commission"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "FinCEN",
+  "kind": "REGULATOR",
+  "country": "US",
+  "aliases": [
+   "Financial Crimes Enforcement Network"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "Bank of England",
+  "kind": "CENTRAL_BANK",
+  "country": "GB",
+  "aliases": [
+   "BoE"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "Prudential Regulation Authority",
+  "kind": "REGULATOR",
+  "country": "GB",
+  "aliases": [
+   "PRA"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "Financial Conduct Authority",
+  "kind": "REGULATOR",
+  "country": "GB",
+  "aliases": [
+   "FCA"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "European Central Bank",
+  "kind": "CENTRAL_BANK",
+  "country": "EU",
+  "aliases": [
+   "ECB",
+   "ECB Banking Supervision",
+   "SSM",
+   "Single Supervisory Mechanism"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "European Banking Authority",
+  "kind": "REGULATOR",
+  "country": "EU",
+  "aliases": [
+   "EBA"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "ESMA",
+  "kind": "REGULATOR",
+  "country": "EU",
+  "aliases": [
+   "European Securities and Markets Authority"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "Bank for International Settlements",
+  "kind": "CENTRAL_BANK",
+  "country": "INT",
+  "aliases": [
+   "BIS",
+   "Basel Committee",
+   "Basel Committee on Banking Supervision"
+  ],
+  "tickers": [],
+  "lei": null
+ },
+ {
+  "name": "Royal Bank of Canada",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "RY",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Mitsubishi Ufj Financial Group Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Mitsubishi Ufj Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "MUFG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Toronto Dominion Bank",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "TD",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Banco Santander, S.a.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "SAN",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Sumitomo Mitsui Financial Group, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Sumitomo Mitsui Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "SMFG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Banco Bilbao Vizcaya Argentaria, S.a.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BBVA",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hdfc Bank Ltd",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hdfc Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "HDB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Icici Bank Ltd",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Icici Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "IBN",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of Montreal",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BMO",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Mizuho Financial Group Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Mizuho Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "MFG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of Nova Scotia",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BNS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Canadian Imperial Bank of Commerce",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "CM",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Itau Unibanco Holding S.a.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "ITUB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Kb Financial Group Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Kb Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "KB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Shinhan Financial Group Co Ltd",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Shinhan Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "SHG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank Bradesco",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BBD",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Citizens Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Citizens Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "FCNCA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of Chile",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BCH",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "East West Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "East West Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "EWBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Banco Santander (brasil) S.a.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BSBR",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Woori Financial Group Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Woori Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "WF",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Banco Santander Chile",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BSAC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Pinnacle Financial Partners, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Pinnacle Financial Partners"
+  ],
+  "tickers": [
+   {
+    "symbol": "PNFP",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Horizon Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Horizon"
+  ],
+  "tickers": [
+   {
+    "symbol": "FHN",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Wintrust Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Wintrust Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "WTFC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "UMB Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "UMB Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "UMBF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Southstate Bank Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Southstate Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "SSB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Cullen/frost Bankers, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Cullen/frost Bankers"
+  ],
+  "tickers": [
+   {
+    "symbol": "CFR",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Old National Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "ONB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Central Bancompany, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Central Bancompany"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Columbia Banking System, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Columbia Banking System"
+  ],
+  "tickers": [
+   {
+    "symbol": "COLB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Prosperity Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Prosperity Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "PB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "BOK Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "BOK Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BOKF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Commerce Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Commerce Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBSH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Valley National Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "VLY",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "United Bankshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "United Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "UBSI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Glacier Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Glacier Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "GBCI",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Home Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Home Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "HOMB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Associated Banc-corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "ASB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Ameris Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "ABCB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Atlantic Union Bankshares Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Atlantic Union Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "AUB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Axos Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Axos Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "AX",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Eastern Bankshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Eastern Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "EBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Intercorp Financial Services Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Intercorp Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "IFS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "TFS Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "TFS Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "TFSL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Servisfirst Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Servisfirst Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "SFBS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Fulton Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Fulton Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "FULT",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "United Community Banks Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "United Community Banks"
+  ],
+  "tickers": [
+   {
+    "symbol": "UCB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Financial Bankshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Financial Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "FFIN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Flagstar Bank, National Association",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Flagstar Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "FLG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Cathay General Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "CATY",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "CVB Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "CVB Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CVBF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "WSFS Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "WSFS Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "WSFS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Independent Bank Corp (INDB)",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Independent Bank",
+   "Independent Bank Corp"
+  ],
+  "tickers": [
+   {
+    "symbol": "INDB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Bancorp (FBP)",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FBP",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bancfirst Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bancfirst"
+  ],
+  "tickers": [
+   {
+    "symbol": "BANF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Wesbanco Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Wesbanco"
+  ],
+  "tickers": [
+   {
+    "symbol": "WSBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Macro Bank Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Macro Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "BMA",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Nicolet Bankshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Nicolet Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "NIC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Interstate Bancsystem Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Interstate Bancsystem"
+  ],
+  "tickers": [
+   {
+    "symbol": "FIBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Financial Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FFBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Community Financial System, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Community Financial System"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBU",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Simmons First National Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Simmons First National"
+  ],
+  "tickers": [
+   {
+    "symbol": "SFNC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Mechanics Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "MCHB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Seacoast Banking Corp of Florida",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "SBCF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Park National Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Park National"
+  ],
+  "tickers": [
+   {
+    "symbol": "PRK",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bankunited, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bankunited"
+  ],
+  "tickers": [
+   {
+    "symbol": "BKU",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Hawaiian, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Hawaiian"
+  ],
+  "tickers": [
+   {
+    "symbol": "FHB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Provident Financial Services Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Provident Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "PFS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Columbia Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Columbia Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CLBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Customers Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Customers Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CUBI",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Banc of California, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Banc of California"
+  ],
+  "tickers": [
+   {
+    "symbol": "BANC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "NBT Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "NBT Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "NBTB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of Hawaii Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bank of Hawaii"
+  ],
+  "tickers": [
+   {
+    "symbol": "BOH",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Bancorp (FBNC)",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FBNC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "FB Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "FB Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "FBK",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Trustmark Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Trustmark"
+  ],
+  "tickers": [
+   {
+    "symbol": "TRMK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Beacon Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Beacon Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BBT",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Merchants Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Merchants"
+  ],
+  "tickers": [
+   {
+    "symbol": "FRME",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Stock Yards Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Stock Yards Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "SYBT",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Merchants Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "MBIN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Busey Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Busey"
+  ],
+  "tickers": [
+   {
+    "symbol": "BUSE",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Northwest Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Northwest Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "NWBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Enterprise Financial Services Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Enterprise Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "EFSC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of N.t. Butterfield & Son Ltd",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bank of N.t. Butterfield & Son"
+  ],
+  "tickers": [
+   {
+    "symbol": "NTB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Banco Bbva Argentina S.a.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BBAR",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "OFG Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "OFG",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Commonwealth Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Commonwealth Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "FCF",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "TBBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "German American Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "German American Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "GABC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Dime Commercial Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Dime Commercial Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "DCOM",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Oceanfirst Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Oceanfirst Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "OCFC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Republic Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Republic Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "RBCAA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "S&t Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "S&t Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "STBA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Firstsun Capital Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FSUN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Byline Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Byline Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "BY",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hope Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hope Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "HOPE",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Trico Bancshares /",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "TCBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank First Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bank First"
+  ],
+  "tickers": [
+   {
+    "symbol": "BFC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "National Bank Holdings Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "National Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "NBHC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Connectone Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Connectone Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CNOB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Pathward Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Pathward Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CASH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Live Oak Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Live Oak Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "LOB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Esquire Financial Holdings, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Esquire Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "ESQ",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Lakeland Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Lakeland Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "LKFN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Amalgamated Financial Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Amalgamated Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "AMAL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Triumph Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Triumph Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "TFIN",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Tompkins Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Tompkins Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "TMP",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Burke & Herbert Financial Services Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Burke & Herbert Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "BHRB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Peoples Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Peoples Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "PEBO",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Westamerica Bancorporation",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "WABC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hbt Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hbt Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "HBT",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Mid Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Mid Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "FMBH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Community Trust Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Community Trust Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CTBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Old Second Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Old Second Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "OSBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Metropolitan Bank Holding Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Metropolitan Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "MCB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Amerant Bancorp Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Amerant Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "AMTB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Heritage Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Heritage Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "HFWA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Univest Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Univest Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "UVSP",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Five Star Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FSBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Horizon Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Horizon Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "HBNC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "CNB Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "CNB Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CCNE",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Mercantile Bank Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Mercantile Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "MBWM",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Business First Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Business First Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "BFST",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Capitol Federal Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Capitol Federal Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CFFN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Metrocity Bankshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Metrocity Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "MCBS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Eagle Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Eagle Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "EGBN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Southside Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Southside Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "SBSI",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Equity Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Equity Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "EQBK",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Camden National Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Camden National"
+  ],
+  "tickers": [
+   {
+    "symbol": "CAC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Trustco Bank Corp N Y",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "TRST",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Central Pacific Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Central Pacific Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CPF",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Nb Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Nb Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "NBBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hanmi Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hanmi Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "HAFC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Farmers National Banc Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Farmers National Banc"
+  ],
+  "tickers": [
+   {
+    "symbol": "FMNB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "THFF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Great Southern Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Great Southern Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "GSBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Mid Penn Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Mid Penn Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "MPB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Orrstown Financial Services Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Orrstown Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "ORRF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Capital City Bank Group Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Capital City Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "CCBG",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Community Bankshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Community Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "FCBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Alerus Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Alerus Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "ALRS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Peapack Gladstone Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Peapack Gladstone Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "PGC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Smartfinancial Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Smartfinancial"
+  ],
+  "tickers": [
+   {
+    "symbol": "SMBK",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "South Plains Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "South Plains Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "SPFI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Independent Bank Corp (IBCP)",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Independent Bank",
+   "Independent Bank Corp"
+  ],
+  "tickers": [
+   {
+    "symbol": "IBCP",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Financial Institutions Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Financial Institutions"
+  ],
+  "tickers": [
+   {
+    "symbol": "FISI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Southern Missouri Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Southern Missouri Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "SMBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Shore Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Shore Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "SHBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Versabank",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "VBNK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hometrust Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hometrust Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "HTB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Washington Trust Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Washington Trust Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "WASH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Peoples Financial Services Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Peoples Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "PFIS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Arrow Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Arrow Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "AROW",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Community West Bancshares",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "CWBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "California Bancorp Ca",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BCAL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Capital Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Capital Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBNK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bar Harbor Bankshares",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BHB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Red River Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Red River Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "RRBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Midland States Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Midland States Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "MSBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Coastal Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Coastal Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CCB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "West Coast Community Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "WCCB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Third Coast Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Third Coast Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "TCBX",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Carter Bankshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Carter Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "CARE",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank7 Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bank7"
+  ],
+  "tickers": [
+   {
+    "symbol": "BSVN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Business Financial Services, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Business Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "FBIZ",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Greene County Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Greene County Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "GCBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Civista Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Civista Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "CIVB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Unity Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Unity Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "UNTY",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bridgewater Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bridgewater Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "BWB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Kearny Financial Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Kearny Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "KRNY",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Southern First Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Southern First Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "SFST",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bankwell Financial Group, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bankwell Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BWFG",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Colony Bankcorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Colony Bankcorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBAN",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Choiceone Financial Services Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Choiceone Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "COFS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Northpointe Bancshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Northpointe Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "NPB",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Sierra Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BSRR",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Orange County Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Orange County Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "OBT",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Ponce Financial Group, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Ponce Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "PDLB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Northrim Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Northrim Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "NRIM",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "West Bancorporation Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "West Bancorporation"
+  ],
+  "tickers": [
+   {
+    "symbol": "WTBA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Farmers & Merchants Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Farmers & Merchants Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FMAO",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Private Bancorp of America, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Private Bancorp of America"
+  ],
+  "tickers": [
+   {
+    "symbol": "PBAM",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Home Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Home Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "HBCP",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of Marin Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BMRC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Commercial Bancgroup, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Commercial Bancgroup"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Pioneer Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Pioneer Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "PBFS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Rbb Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "RBB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Pcb Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "PCB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Carolina Financial Services, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Carolina Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "FCBM",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Citizens Financial Services Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Citizens Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "CZFS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Bancorp, Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FNLC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Chemung Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Chemung Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CHMG",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Avidia Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Avidia Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "AVBC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Northeast Community Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Northeast Community Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "NECB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Fidelity D & D Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Fidelity D & D Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FDBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Norwood Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Norwood Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "NWFL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Parke Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Parke Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "PKBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Avidbank Holdings, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Avidbank"
+  ],
+  "tickers": [
+   {
+    "symbol": "AVBH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Timberland Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Timberland Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "TSBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Uscb Financial Holdings, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Uscb Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "USCB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Georgia Banking Co Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Georgia Banking"
+  ],
+  "tickers": [
+   {
+    "symbol": "GBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Primis Financial Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Primis Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "FRST",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Blue Ridge Bankshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Blue Ridge Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "BRBS",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Waterstone Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Waterstone Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "WSBF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "C & F Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "C & F Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "CFFI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Isabella Bank Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Isabella Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "ISBA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Fs Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Fs Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FSBW",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Coastalsouth Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Coastalsouth Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "COSO",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "MVB Financial Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "MVB Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "MVBF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Chain Bridge Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Chain Bridge Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBNA",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "John Marshall Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "John Marshall Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "JMSB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Franklin Financial Services Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Franklin Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "FRAF",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Community Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Community"
+  ],
+  "tickers": [
+   {
+    "symbol": "FCCO",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Princeton Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Princeton Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "BPRN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Ames National Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Ames National"
+  ],
+  "tickers": [
+   {
+    "symbol": "ATLO",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Western Financial Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Western Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "MYFW",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First United Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First United"
+  ],
+  "tickers": [
+   {
+    "symbol": "FUNC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Fvcbankcorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Fvcbankcorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FVCB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Oak Valley Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "OVLY",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Virginia National Bankshares Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Virginia National Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "VABK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hawthorn Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hawthorn Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "HWBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "BCB Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "BCB Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "BCBP",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Northern Community Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FNRN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First National Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First National"
+  ],
+  "tickers": [
+   {
+    "symbol": "FXNC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Western New England Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Western New England Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "WNEB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Community Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "CMTV",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "National Bankshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "National Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "NKSH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Richmond Mutual Bancorporation, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Richmond Mutual Bancorporation"
+  ],
+  "tickers": [
+   {
+    "symbol": "RMBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Eagle Financial Services Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Eagle Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "EFSI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "FB Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "FB Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FBLA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Cf Bankshares Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Cf Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "CFBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Ohio Valley Banc Corp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Ohio Valley Banc"
+  ],
+  "tickers": [
+   {
+    "symbol": "OVBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Gbank Financial Holdings Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Gbank Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "GBFH",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Internet Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "INBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Citizens Community Bancorp Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Citizens Community Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CZWI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Op Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "OPBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Peoples Bancorp of North Carolina Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Peoples Bancorp of North Carolina"
+  ],
+  "tickers": [
+   {
+    "symbol": "PEBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Capital Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Capital"
+  ],
+  "tickers": [
+   {
+    "symbol": "FCAP",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Cb Financial Services, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Cb Financial Services"
+  ],
+  "tickers": [
+   {
+    "symbol": "CBFV",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Rhinebeck Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Rhinebeck Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "RBKB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Landmark Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Landmark Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "LARK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Guaranty Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First Guaranty Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "FGBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Finwise Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FINW",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Finward Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FNWD",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bv Financial, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bv Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BVFL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Ecb Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Ecb Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "ECBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Sb Financial Group, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Sb Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "SBFG",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bayfirst Financial Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bayfirst Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BAFN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Eagle Bancorp Montana, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Eagle Bancorp Montana"
+  ],
+  "tickers": [
+   {
+    "symbol": "EBMT",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hanover Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hanover Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "HNVR",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Mainstreet Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Mainstreet Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "MNSB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Lake Shore Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Lake Shore Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "LSBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Magyar Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Magyar Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "MGYR",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Sr Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Sr Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "SRBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Hoyne Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Hoyne Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "HYNE",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Winchester Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Winchester Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "WSBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Riverview Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Riverview Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "RVSB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bogota Financial Corp.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bogota Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BSBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Union Bankshares Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Union Bankshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "UNB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Provident Financial Holdings Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Provident Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "PROV",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Optimumbank Holdings, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Optimumbank"
+  ],
+  "tickers": [
+   {
+    "symbol": "OPHC",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Bank of the James Financial Group Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Bank of the James Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "BOTJ",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Broadway Financial Corp De",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "BYFC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Sound Financial Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Sound Financial Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "SFBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Pathfinder Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Pathfinder Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "PBHC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Patriot National Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Patriot National Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "PNBK",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First Northwest Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "FNWB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Fifth District Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Fifth District Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "FDSB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Auburn National Bancorporation, Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Auburn National Bancorporation"
+  ],
+  "tickers": [
+   {
+    "symbol": "AUBN",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Narragansett Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Narragansett Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "NARA",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "First US Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "First US Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "FUSB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "United Bancorp Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "United Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "UBCP",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Central Plains Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Central Plains Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "CPBI",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Ameriserv Financial Inc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Ameriserv Financial"
+  ],
+  "tickers": [
+   {
+    "symbol": "ASRV",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Catalyst Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Catalyst Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "CLST",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Home Federal Bancorp, Inc. of Louisiana",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "HFBL",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Texas Community Bancshares, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Texas Community Bancshares"
+  ],
+  "tickers": [
+   {
+    "symbol": "TCBS",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Kentucky First Federal Bancorp",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [],
+  "tickers": [
+   {
+    "symbol": "KFFB",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Marathon Bancorp, Inc.",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Marathon Bancorp"
+  ],
+  "tickers": [
+   {
+    "symbol": "MBBC",
+    "exchange": "XNAS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ },
+ {
+  "name": "Barclays Bank Plc",
+  "kind": "BANK",
+  "country": "US",
+  "lei": null,
+  "aliases": [
+   "Barclays Bank"
+  ],
+  "tickers": [
+   {
+    "symbol": "DJP",
+    "exchange": "XNYS",
+    "currency": "USD",
+    "primary": true
+   }
+  ]
+ }
+]
