@@ -9,8 +9,9 @@ worker after each article is saved — see scraper_worker.py). For each
 message:
 
   - Fetches the article's body text from the Provider.
-  - Classifies it into a topic using the fine-tuned NewsClassifier model.
-  - Writes the topic back to the article via the Provider.
+  - Classifies it into one or more banking topics (multi-label, scored)
+    using the fine-tuned NewsClassifier model.
+  - Writes the scored topics back via PATCH /api/articles/topics.
 
 Message format (JSON), published by worker.py:
     {
@@ -41,7 +42,7 @@ import pika.channel
 import pika.exceptions
 import pika.spec
 
-from classifier.classifier import NewsClassifier
+from classifier.classifier import NewsClassifier, classifier_input
 from env_config import require_env
 from log_config import configure_logging
 from provider_client import ProviderClient, ProviderError
@@ -88,15 +89,13 @@ class ClassificationHandler:
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        # Title is a strong topic signal and cheap to include; truncation to
-        # the model's max_length happens inside classify() either way.
-        text = f"{article.title}\n\n{article.body_text}"
-        topic = self._classifier.classify(text)
+        # Same input view the model was trained on: title + opening of the story.
+        topics = self._classifier.classify(classifier_input(article.title, article.body_text))
 
-        if self._provider.set_article_topic(url, topic):
-            log.info("Classified: %s -> %s", url, topic)
+        if self._provider.set_article_topics(url, topics):
+            log.info("Classified: %s -> %s", url, ", ".join(f"{n} ({p:.2f})" for n, p in topics))
         else:
-            log.warning("Provider rejected topic update: %s -> %s", url, topic)
+            log.warning("Provider rejected topic update: %s -> %s", url, topics)
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
 

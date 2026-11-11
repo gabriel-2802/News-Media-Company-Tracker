@@ -1,6 +1,9 @@
 package data.provider;
 
+import data.provider.dto.requests.TopicsSetRequest;
 import data.provider.dto.responses.ArticleDto;
+import data.provider.exceptions.BusinessException;
+import data.provider.services.ArticleService;
 import data.provider.models.Article;
 import data.provider.models.Company;
 import data.provider.models.CompanyKind;
@@ -21,6 +24,7 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Exercises the Phase 3 graph model against the configured Neo4j:
@@ -37,6 +41,8 @@ class GraphModelIntegrationTests {
     private ArticleRepository articleRepository;
     @Autowired
     private CompanyRepository companyRepository;
+    @Autowired
+    private ArticleService articleService;
 
     private final String run = "it-" + UUID.randomUUID();
     private final String url = "https://example.test/" + run;
@@ -88,6 +94,32 @@ class GraphModelIntegrationTests {
         assertThat(article.getTopics()).hasSize(1);
         assertThat(article.getTopics().get(0).getTopic().getName()).isEqualTo(run + "-earnings");
         assertThat(article.getTopics().get(0).getScore()).isEqualTo(1.0);
+    }
+
+    @Test
+    void setTopicsReplacesWithScoredSetAndKeepsHighestDuplicate() {
+        neo4j.query("CREATE (:Topic {id: randomUUID(), name: $name})")
+                .bind(run + "-earnings").to("name").run();
+
+        ArticleDto dto = articleService.setTopics(new TopicsSetRequest(url, List.of(
+                new TopicsSetRequest.TopicScore(run + "-earnings", 0.55),
+                new TopicsSetRequest.TopicScore(run + "-enforcement", 0.40),
+                new TopicsSetRequest.TopicScore(run + "-earnings", 0.80))));
+
+        assertThat(dto.topics()).extracting("name").containsExactly(run + "-earnings", run + "-enforcement");
+        assertThat(dto.topics()).extracting("score").containsExactly(0.80, 0.40);
+        assertThat(dto.topic()).isEqualTo(run + "-earnings");
+    }
+
+    @Test
+    void setTopicsRejectsUnknownTopicAndLeavesArticleUnchanged() {
+        assertThatThrownBy(() -> articleService.setTopics(new TopicsSetRequest(url, List.of(
+                new TopicsSetRequest.TopicScore(run + "-enforcement", 0.9),
+                new TopicsSetRequest.TopicScore(run + "-does-not-exist", 0.9)))))
+                .isInstanceOf(BusinessException.class);
+
+        Article article = articleRepository.findByUrlWithSourceAndTopic(url).orElseThrow();
+        assertThat(article.getTopics()).hasSize(2);
     }
 
     @Test

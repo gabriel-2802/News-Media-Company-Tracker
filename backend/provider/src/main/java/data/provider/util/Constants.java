@@ -38,6 +38,7 @@ public final class Constants {
     public static final String ARTICLES_BY_TOPIC_PATH = "/topic/{topicName}";
     public static final String ARTICLES_BY_URL_PATH = "/by-url";
     public static final String ARTICLES_SET_TOPIC_PATH = "/topic";
+    public static final String ARTICLES_SET_TOPICS_PATH = "/topics";
     public static final String ARTICLES_BY_STORY_PATH = "/story/{storyId}";
     public static final String ARTICLES_TRIGGER_SCRAPE_PATH = "/trigger-scrape";
 

@@ -5,6 +5,7 @@ import data.provider.dto.messages.NotificationType;
 import data.provider.dto.messages.ScrapeJobMessage;
 import data.provider.dto.requests.ArticleRequest;
 import data.provider.dto.requests.TopicSetRequest;
+import data.provider.dto.requests.TopicsSetRequest;
 import data.provider.dto.responses.ArticleDto;
 import data.provider.dto.responses.PageDto;
 import data.provider.exceptions.BusinessException;
@@ -24,7 +25,9 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Slf4j
@@ -98,6 +101,31 @@ public class ArticleService {
         final Article article = articleRepository.setTopic(topicSetRequest.url(), topicSetRequest.topic());
 
         notifySubscribers(topicSetRequest.topic(), topicSetRequest.url());
+
+        return new ArticleDto(article);
+    }
+
+    public ArticleDto setTopics(final TopicsSetRequest request) {
+        if (!articleRepository.existsByUrl(request.url())) {
+            throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.url());
+        }
+
+        // De-duplicate by name, keeping the highest score.
+        final Map<String, Double> byName = new LinkedHashMap<>();
+        request.topics().forEach(t -> byName.merge(t.name(), t.score(), Math::max));
+
+        byName.keySet().forEach(name -> {
+            if (!topicRepository.existsByName(name)) {
+                throw new BusinessException(Constants.TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR, name);
+            }
+        });
+
+        final List<Map<String, Object>> topics = byName.entrySet().stream()
+                .map(e -> Map.<String, Object>of("name", e.getKey(), "score", e.getValue()))
+                .toList();
+        final Article article = articleRepository.setTopics(request.url(), topics);
+
+        byName.keySet().forEach(name -> notifySubscribers(name, request.url()));
 
         return new ArticleDto(article);
     }

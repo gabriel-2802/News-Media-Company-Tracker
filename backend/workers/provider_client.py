@@ -39,6 +39,7 @@ _ARTICLES_PATH = "/api/articles"
 _ARTICLE_EXISTS_PATH = "/api/articles/exists"
 _ARTICLE_BY_URL_PATH = "/api/articles/by-url"
 _ARTICLE_TOPIC_PATH = "/api/articles/topic"
+_ARTICLE_TOPICS_PATH = "/api/articles/topics"
 _ARTICLES_BY_STORY_PATH = "/api/articles/story/{storyId}"
 _STORIES_PATH = "/api/stories"
 _STORIES_RECENT_PATH = "/api/stories/recent"
@@ -207,6 +208,14 @@ class ProviderClient:
     def set_article_topic(self, url: str, topic: str) -> ArticleInfo:
         """Tag the article at the given URL with a topic, replacing any topic it already had."""
         resp = self._request("PATCH", _ARTICLE_TOPIC_PATH, json={"url": url, "topic": topic})
+        return ArticleInfo.from_dict(self._json_or_raise(resp))
+
+    def set_article_topics(self, url: str, topics: list[tuple[str, float]]) -> ArticleInfo:
+        """Replace the article's topics with a scored multi-label set [(name, score)]."""
+        resp = self._request(
+            "PATCH", _ARTICLE_TOPICS_PATH,
+            json={"url": url, "topics": [{"name": name, "score": score} for name, score in topics]},
+        )
         return ArticleInfo.from_dict(self._json_or_raise(resp))
 
     def get_articles_by_story(self, story_id: str, page: int = 0, count: int = 20) -> list[ArticleInfo]:

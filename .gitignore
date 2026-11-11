@@ -21,3 +21,8 @@ target/
 # Large model weights (track via Git LFS or HF Hub instead)
 backend/workers/classifier/cls_model_output/
 *.safetensors
+
+# Classifier training data, caches and checkpoints (reproducible via training/prepare_data.py)
+backend/workers/classifier/training/.cache/
+backend/workers/classifier/training/data/
+backend/workers/classifier/training/runs/

@@ -2,6 +2,7 @@ package data.provider.controllers;
 
 import data.provider.dto.requests.ArticleRequest;
 import data.provider.dto.requests.TopicSetRequest;
+import data.provider.dto.requests.TopicsSetRequest;
 import data.provider.dto.responses.ArticleDto;
 import data.provider.dto.responses.ErrorResponse;
 import data.provider.dto.responses.PageDto;
@@ -134,6 +135,18 @@ public class ArticleController {
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<ArticleDto> setTopic(@Valid @RequestBody final TopicSetRequest topicSetRequest) {
         return ResponseEntity.ok(articleService.setTopic(topicSetRequest));
+    }
+
+    @PatchMapping(Constants.ARTICLES_SET_TOPICS_PATH)
+    @Operation(summary = "Set an article's scored topics",
+            description = "Replaces all of the article's topics with the given multi-label set (name + confidence). "
+                    + "Used by the banking classifier. Subscribers of each topic are notified.")
+    @ApiResponse(responseCode = "200", description = "Topics set successfully",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ArticleDto.class)))
+    @ApiResponse(responseCode = "400", description = "Article or a topic does not exist, or validation failed",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<ArticleDto> setTopics(@Valid @RequestBody final TopicsSetRequest request) {
+        return ResponseEntity.ok(articleService.setTopics(request));
     }
 
     @PostMapping(Constants.ARTICLES_TRIGGER_SCRAPE_PATH)

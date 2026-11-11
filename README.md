@@ -203,10 +203,17 @@ Three independent processes, each consuming from one RabbitMQ queue, calling the
 **What it does:**
 
 1. Fetch article title + body from the Provider.
-2. Classify the article's topic using a fine-tuned `AutoModelForSequenceClassification` (86% accuracy).
-3. Write the topic back via `PATCH /api/articles/topic`.
+2. Classify title + the opening of the story into one or more of 13 banking topics (multi-label FinBERT; every topic above its tuned threshold, else the single most likely).
+3. Write the scored topics back via `PATCH /api/articles/topics`.
 
-**Model:** stored in `backend/workers/classifier/cls_model_output/` (fine-tuned on a custom news corpus, much better than a LogisticRegression baseline at 52%).
+**Model:** `backend/workers/classifier/cls_model_output/` (gitignored; built by `classifier/training/`). Fine-tuned from `ProsusAI/finbert` on public data only (Twitter Financial News Topic + Reuters-21578), with the taxonomy in `training/taxonomy.py` and per-label thresholds in `thresholds.json`. Test scores are in the model's `metrics.json`. Retrain with:
+
+```bash
+cd backend/workers/classifier
+venv/bin/pip install -r training/requirements.txt
+venv/bin/python -m training.prepare_data
+venv/bin/python -m training.train --out cls_model_output
+```
 
 #### Clusterer Worker
 

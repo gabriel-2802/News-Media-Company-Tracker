@@ -25,6 +25,7 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`GET /api/articles/exists`](#get-apiarticlesexists)
   - [`GET /api/articles/by-url`](#get-apiarticlesby-url)
   - [`PATCH /api/articles/topic`](#patch-apiarticlestopic)
+  - [`PATCH /api/articles/topics`](#patch-apiarticlestopics)
   - [`POST /api/articles/trigger-scrape`](#post-apiarticlestrigger-scrape)
   - [`GET /api/articles/search`](#get-apiarticlessearch)
 - [Stories](#stories)
@@ -50,6 +51,7 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`ArticleDto`](#articledto)
   - [`ArticleRequest`](#articlerequest)
   - [`TopicSetRequest`](#topicsetrequest)
+  - [`TopicsSetRequest`](#topicssetrequest)
   - [`StoryDto`](#storydto)
   - [`AttachArticleRequest`](#attacharticlerequest)
   - [`TopicDto`](#topicdto)
@@ -82,6 +84,7 @@ The Provider does not issue tokens itself — it only **validates** JWTs signed 
 | `PATCH /api/news-sources/{sourceName}/reset`   | ROLE_ADMIN, ROLE_SYSTEM |
 | `POST /api/articles`                           | ROLE_ADMIN, ROLE_SYSTEM |
 | `PATCH /api/articles/topic`                    | ROLE_ADMIN, ROLE_SYSTEM |
+| `PATCH /api/articles/topics`                   | ROLE_ADMIN, ROLE_SYSTEM |
 | `POST /api/articles/trigger-scrape`            | ROLE_ADMIN              |
 | `POST /api/stories`                            | ROLE_SYSTEM             |
 | `PATCH /api/stories/{storyId}/attach`          | ROLE_SYSTEM             |
@@ -404,7 +407,7 @@ Get a single article by its canonical URL.
 
 **Requires:** `ROLE_ADMIN` or `ROLE_SYSTEM`
 
-Tags an article with a topic, replacing any topic it already had. If a [subscription](#subscriptions) exists for the topic, publishes a notification message — see [RabbitMQ side effects](#rabbitmq-side-effects).
+Tags an article with a single topic (score 1.0), replacing any topics it already had. Kept for compatibility; the banking classifier uses [`PATCH /api/articles/topics`](#patch-apiarticlestopics). If a [subscription](#subscriptions) exists for the topic, publishes a notification message — see [RabbitMQ side effects](#rabbitmq-side-effects).
 
 **Request body:** [`TopicSetRequest`](#topicsetrequest)
 
@@ -419,11 +422,30 @@ Tags an article with a topic, replacing any topic it already had. If a [subscrip
 
 ---
 
+### `PATCH /api/articles/topics`
+
+**Requires:** `ROLE_ADMIN` or `ROLE_SYSTEM`
+
+Replaces all of an article's topics with a scored multi-label set, as produced by the banking topic classifier. Duplicate names keep the highest score. Every topic must already exist (seeded by the `V4__seed_banking_topics` migration); if any is unknown, nothing is written. A notification is published for each topic that has a [subscription](#subscriptions).
+
+**Request body:** [`TopicsSetRequest`](#topicssetrequest)
+
+**Responses**
+
+| Status | Body                               | Description                                                       |
+| ------ | ---------------------------------- | ----------------------------------------------------------------- |
+| 200    | [`ArticleDto`](#articledto)       | Topics set; `topics` lists them highest score first               |
+| 400    | [`ErrorResponse`](#errorresponse) | Article or a topic does not exist, or a score is outside [0, 1]   |
+| 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication)      |
+| 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_ADMIN`/`ROLE_SYSTEM`                         |
+
+---
+
 ### `POST /api/articles/trigger-scrape`
 
 **Requires:** `ROLE_ADMIN`
 
-Publishes a scrape job for every registered news source onto the `scrape.jobs` queue, to be picked up by the scraper worker. Also runs automatically every 6 hours (see [`ScrapeScheduler`](#rabbitmq-side-effects)).
+Publishes a scrape job for every registered news source onto the `scrape.jobs` queue, to be picked up by the scraper worker. Queues every source, regardless of its interval. Separately, the scheduler checks every 5 minutes and queues only enabled sources whose own `scrapeIntervalMinutes` has elapsed.
 
 **Responses**
 
@@ -887,6 +909,27 @@ Request body for tagging an article with a topic.
 {
   "url": "https://www.bbc.co.uk/news/articles/ckg8m2xkg84o",
   "topic": "religion"
+}
+```
+
+### `TopicsSetRequest`
+
+Request body for setting an article's scored topics.
+
+| Field          | Type                | Required | Constraints                                  |
+| -------------- | ------------------- | -------- | -------------------------------------------- |
+| url            | string              | yes      | not null, not empty                          |
+| topics         | `{name, score}[]`   | yes      | not empty                                    |
+| topics[].name  | string              | yes      | an existing topic name                       |
+| topics[].score | number              | yes      | 0.0 – 1.0                                    |
+
+```json
+{
+  "url": "https://www.bankingdive.com/news/example/",
+  "topics": [
+    {"name": "regulation_legal_enforcement", "score": 0.91},
+    {"name": "leadership_personnel", "score": 0.34}
+  ]
 }
 ```
 

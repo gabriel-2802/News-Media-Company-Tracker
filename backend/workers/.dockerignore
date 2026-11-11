@@ -4,3 +4,6 @@
 clusterer/data/
 *.pem
 .DS_Store
+# Classifier training data, caches and checkpoints are not needed at runtime.
+classifier/training/
+classifier/cls_model_output_*/

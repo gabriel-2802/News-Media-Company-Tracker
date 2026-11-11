@@ -18,7 +18,7 @@ COPY classifier/requirements.txt classifier/requirements.txt
 # no GPU access. Once installed, the requirements.txt install below is a
 # no-op for torch since the constraint is already satisfied.
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu "torch>=2.0.0,<2.2" \
+    && pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu "torch>=2.5,<3" \
     && pip install --no-cache-dir -r classifier/requirements.txt
 
 FROM python:3.11-slim AS runtime
@@ -32,8 +32,10 @@ USER appuser
 WORKDIR /app/workers
 
 COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py ./
-# Includes cls_model_output/ — the fine-tuned classifier weights are
-# committed to the repo and loaded from a local path, never downloaded.
+# Includes cls_model_output/ — the fine-tuned banking classifier, loaded
+# from a local path, never downloaded. It is gitignored (too large for git):
+# build it with classifier/training/ (see README) before building this image.
+# training/ itself is excluded via .dockerignore.
 COPY --chown=appuser:appuser classifier/ ./classifier/
 
 CMD ["python", "-m", "classifier.classifier_worker"]

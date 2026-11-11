@@ -1,0 +1,7 @@
+# Training-only dependencies (not installed in the worker image).
+-r ../requirements.txt
+datasets>=3.0
+accelerate>=1.0
+scikit-learn>=1.5
+nltk>=3.9
+pandas>=2.2

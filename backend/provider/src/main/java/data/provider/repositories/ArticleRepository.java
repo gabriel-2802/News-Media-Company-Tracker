@@ -7,6 +7,8 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 public interface ArticleRepository extends Neo4jRepository<Article, String> {
@@ -80,6 +82,24 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
         """)
     Article setTopic(String url, String topicName);
 
+
+    /**
+     * Replaces all topics of an article with the given scored set.
+     * Each map has keys "name" and "score"; topics must already exist.
+     */
+    @Query("""
+        MATCH (s:NewsSource)-[:PUBLISHED]->(a:Article {url: $url})
+        OPTIONAL MATCH (a)-[oldTopic:HAS_TOPIC]->(:Topic)
+        DELETE oldTopic
+        WITH DISTINCT a, s
+        UNWIND $topics AS tp
+        MATCH (t:Topic {name: tp.name})
+        MERGE (a)-[nt:HAS_TOPIC]->(t)
+        SET nt.score = tp.score
+        WITH DISTINCT a, s
+        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
+        """)
+    Article setTopics(String url, List<Map<String, Object>> topics);
 
     @Query("""
             MATCH (n:NewsSource {name: $sourceName})-[:PUBLISHED]->(a:Article)
