@@ -1,0 +1,17 @@
+name, baseUrl, rssUrl, failureCount, isDisabled, articles
+"abc_au", "https://www.abc.net.au", "https://www.abc.net.au/news/feed/51120/rss.xml", 3, TRUE, 0
+"aljazeera", "https://www.aljazeera.com", "https://www.aljazeera.com/xml/rss/all.xml", 3, TRUE, 0
+"bbc", "https://www.bbc.co.uk", "https://feeds.bbci.co.uk/news/world/rss.xml", 3, TRUE, 0
+"cbc", "https://www.cbc.ca", "https://www.cbc.ca/cmlink/rss-world", 3, TRUE, 0
+"dw", "https://www.dw.com", "https://rss.dw.com/rdf/rss-en-all", 3, TRUE, 0
+"euronews", "https://www.euronews.com", "https://www.euronews.com/rss", 3, TRUE, 0
+"example-news", "https://example.com", "https://example.com", 3, TRUE, 0
+"france24", "https://www.france24.com", "https://www.france24.com/en/rss", 3, TRUE, 0
+"guardian", "https://www.theguardian.com", "https://www.theguardian.com/world/rss", 3, TRUE, 0
+"independent", "https://www.independent.co.uk", "https://www.independent.co.uk/news/world/rss", 3, TRUE, 0
+"npr", "https://www.npr.org", "https://feeds.npr.org/1001/rss.xml", 3, TRUE, 0
+"rt", "https://www.rt.com", "https://www.rt.com/rss/news", 3, TRUE, 0
+"sky", "https://news.sky.com", "https://feeds.skynews.com/feeds/rss/world.xml", 3, TRUE, 0
+"thehill", "https://thehill.com", "https://thehill.com/feed", 3, TRUE, 0
+"time", "https://time.com", "https://time.com/feed", 3, TRUE, 0
+"vox", "https://www.vox.com", "https://www.vox.com/rss/index.xml", 3, TRUE, 0
