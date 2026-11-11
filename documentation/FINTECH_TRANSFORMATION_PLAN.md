@@ -26,7 +26,8 @@
 | 4. Classifier | Done | `1fe08a9`, `33b3954` | TFNT macro-F1 0.906, Reuters 0.915 (0.902 / 0.913 with rules). In-domain evaluation still needs ~300 hand labels. |
 | 5. Enricher | Done | `1736add`, Phase 5 commit | 356 companies / 345 tickers (V5 + V6 correction). Enricher worker (dictionary linking + sentence-level FinBERT), `GET /api/companies`, `PATCH /api/articles/enrichment`, derived Story→Company events with impact score. Verified end to end with all three workers. |
 | Refinement (live run) | Done | Refinement commit | First real scrape (140 articles, 7 sources) through all workers. Fixed: deadlocks between concurrent story/enrichment writes (500s), common-phrase company names ("financial institutions"), cookie-banner article bodies, central-bank releases forced to regulation; added earnings / ratings / dividend / leadership / central-bank monetary rules. |
-| 6–10 | Not started | | **Clustering builds topical mega-stories** on official releases (21 sets of minutes in one story; recency uses story update time, not article publish dates); this inflates events, so Phase 9 should come before Phase 7 charts rely on events. |
+| 9. Clustering re-validation | Done (moved ahead of 6–8) | Phase 9 commit | Publish-date window, same-publisher + 0.75 rule for official releases, bank/fintech guard, top-5 candidates, base threshold 0.60. On 140 real articles: biggest story 21 → 6 articles, max span 111 → 1 day, mega-story events gone. `make recluster` rebuilds stories. |
+| 6–8, 10 | Not started | | |
 | Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
 
 ### Deviations from the original plan

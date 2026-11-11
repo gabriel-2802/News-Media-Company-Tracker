@@ -21,11 +21,14 @@ For each message:
     matching story exist at all," and two clusterer instances running that
     check concurrently for two articles of the same brand-new story would
     otherwise both decide "no match" and create duplicate stories:
-      - Queries `story_centroids` for the nearest centroid updated within
-        RECENCY_WINDOW_DAYS.
-      - If the best match's score >= SIMILARITY_THRESHOLD, attaches the
-        article to that Story (Provider) and updates its centroid as a
-        running average (Qdrant).
+      - Queries `story_centroids` for the nearest CLUSTER_CANDIDATES (5)
+        stories whose articles were *published* within STORY_WINDOW_DAYS (3)
+        of this article, and attaches it to the first one clusterer/decision.py
+        accepts: similarity >= SIMILARITY_THRESHOLD (0.533), or for two
+        official releases the same publisher and >= OFFICIAL_SIMILARITY_THRESHOLD
+        (0.75); and if both name banks/fintechs, at least one in common
+        (linked with the shared entity_linker). The centroid is updated as a
+        running average (Qdrant) and the article attached (Provider).
       - Otherwise creates a new Story (Provider — this is the one place
         the Provider write has to happen *before* the Qdrant write, since
         Story IDs are server-generated and there's no way to seed a
@@ -61,6 +64,8 @@ from __future__ import annotations
 
 import json
 import logging
+import os
+import time
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional
 
@@ -80,7 +85,9 @@ from qdrant_client.models import (
     VectorParams,
 )
 
+from clusterer.decision import ArticleView, Policy, StoryView, choose, merged_payload, new_payload
 from clusterer.embedder import ArticleEmbedder
+from entity_linker import Company, EntityLinker
 from env_config import require_env, require_float, require_int
 from log_config import configure_logging
 from provider_client import ProviderClient, ProviderError
@@ -105,7 +112,14 @@ EMBEDDING_DIM = require_int("EMBEDDING_DIM")
 # all-MiniLM-L6-v2 run, since that's what embedder.py uses). Revisit once
 # real traffic accumulates.
 SIMILARITY_THRESHOLD = require_float("SIMILARITY_THRESHOLD")
-RECENCY_WINDOW_DAYS = require_int("RECENCY_WINDOW_DAYS")
+# Story window by article publish date (days on each side of a story's
+# first/last article) and the stricter bar for two official releases.
+# See clusterer/decision.py for the measurements behind these defaults.
+STORY_WINDOW_DAYS = float(os.environ.get("STORY_WINDOW_DAYS", "3"))
+OFFICIAL_SIMILARITY_THRESHOLD = float(os.environ.get("OFFICIAL_SIMILARITY_THRESHOLD", "0.75"))
+CLUSTER_CANDIDATES = int(os.environ.get("CLUSTER_CANDIDATES", "5"))
+UNIVERSE_REFRESH_SECONDS = 60 * float(os.environ.get("UNIVERSE_REFRESH_MINUTES", "60"))
+OFFICIAL_CATEGORIES = {"REGULATOR", "CENTRAL_BANK"}
 
 # The model has no automatic truncation for inputs this short of its
 # max_seq_length, so an unusually long scraped article can drive quadratic
@@ -144,17 +158,21 @@ def ensure_collection(qdrant: QdrantClient) -> None:
             collection_name=CENTROID_COLLECTION,
             vectors_config=VectorParams(size=EMBEDDING_DIM, distance=Distance.COSINE),
         )
+    # Qdrant needs a payload index before a field can be used in a filter.
+    # Re-run on every startup so an older collection gets new indexes too.
+    for field_name in ("lastUpdated", "firstPublishedAt", "lastPublishedAt"):
+        qdrant.create_payload_index(
+            collection_name=CENTROID_COLLECTION,
+            field_name=field_name,
+            field_schema=PayloadSchemaType.DATETIME,
+        )
 
-    # Qdrant requires a payload index before a field can be used in a query
-    # filter — without this, the recency-window filter in
-    # _find_best_candidate fails with HTTP 400. Kept outside the "just
-    # created" branch above (and re-run on every startup) so an existing
-    # collection from before this index existed still gets it.
-    qdrant.create_payload_index(
-        collection_name=CENTROID_COLLECTION,
-        field_name="lastUpdated",
-        field_schema=PayloadSchemaType.DATETIME,
-    )
+
+def _parse_dt(value: Optional[str], default: datetime) -> datetime:
+    if not value:
+        return default
+    dt = datetime.fromisoformat(value)
+    return dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc)
 
 
 # ---------------------------------------------------------------------------
@@ -167,10 +185,32 @@ class ClusteringHandler:
         self._provider = provider
         self._qdrant = qdrant
         self._redis = redis_client
-        # Triggers model load on first use, not at import time — keeps
-        # worker startup fast if this ever gets imported without immediately
-        # running (e.g. tests).
+        # Loads lazily on first use, not at import time.
         self._embedder = ArticleEmbedder.get_instance()
+        self._policy = Policy(
+            base_threshold=SIMILARITY_THRESHOLD,
+            official_threshold=OFFICIAL_SIMILARITY_THRESHOLD,
+            window=timedelta(days=STORY_WINDOW_DAYS),
+        )
+        self._categories: dict[str, Optional[str]] = {}
+        self._linker: Optional[EntityLinker] = None
+        self._bank_ids: frozenset[str] = frozenset()
+        self._loaded_at = 0.0
+        self._refresh_universe()
+
+    def _refresh_universe(self) -> None:
+        """Company universe for the bank/fintech guard (same linker as the enricher)."""
+        companies = self._provider.get_companies()
+        self._linker = EntityLinker(Company(c.id, c.name, c.aliases) for c in companies)
+        self._bank_ids = frozenset(c.id for c in companies if c.kind in ("BANK", "FINTECH"))
+        self._loaded_at = time.monotonic()
+        log.info("Company universe loaded for clustering guard: %d banks/fintechs", len(self._bank_ids))
+
+    def _is_official(self, source_name: str) -> bool:
+        if source_name not in self._categories:
+            source = self._provider.get_source(source_name)
+            self._categories[source_name] = source.category if source else None
+        return self._categories[source_name] in OFFICIAL_CATEGORIES
 
     def handle(self, method: pika.spec.Basic.Deliver, body: bytes, channel: pika.channel.Channel) -> None:
         try:
@@ -187,17 +227,24 @@ class ClusteringHandler:
             channel.basic_ack(delivery_tag=method.delivery_tag)
             return
 
-        # Embedding is the CPU/GPU-bound step (the reason to run more than
-        # one clusterer instance in the first place), so it happens before
-        # the lock and stays fully parallel across instances.
-        vector = _embed_article(self._embedder, article.title, article.body_text)
+        if time.monotonic() - self._loaded_at > UNIVERSE_REFRESH_SECONDS:
+            self._refresh_universe()
 
-        # Everything from here down — "does a matching story exist, and
-        # act on that" — must run as one atomic decision. Without this
-        # lock, two instances processing two articles of the same
-        # brand-new story at nearly the same time could both find no
-        # candidate and both create a story, permanently splitting one
-        # real story into two. Only matters once >1 clusterer runs.
+        # Embedding is the CPU/GPU-bound step (the reason to run more than
+        # one clusterer instance), so it happens before the lock.
+        vector = _embed_article(self._embedder, article.title, article.body_text)
+        source = payload.get("source_name") or article.source
+        view = ArticleView(
+            published_at=article.published_at,
+            source=source,
+            official=self._is_official(source),
+            companies=frozenset(m.company_id for m in self._linker.link(article.title, article.body_text)
+                                if m.company_id in self._bank_ids),
+        )
+
+        # "Is there a matching story, and act on it" must be one atomic
+        # decision across clusterer instances, or two instances could both
+        # create a story for the same new event.
         lock = self._redis.lock(
             CLUSTER_DECISION_LOCK_KEY,
             timeout=CLUSTER_LOCK_TIMEOUT_SECONDS,
@@ -209,88 +256,76 @@ class ClusteringHandler:
                 f"{CLUSTER_LOCK_BLOCKING_TIMEOUT_SECONDS}s"
             )
         try:
-            best_hit = self._find_best_candidate(vector)
-
-            if best_hit is not None and best_hit.score >= SIMILARITY_THRESHOLD:
-                self._attach_to_existing(best_hit, vector, url)
+            candidates = self._find_candidates(vector, view.published_at)
+            chosen, rejected = choose(view, [c for c, _ in candidates], self._policy)
+            if rejected:
+                log.info("Rejected candidates for %s: %s", url, "; ".join(rejected))
+            if chosen is not None:
+                hit = next(h for c, h in candidates if c is chosen)
+                self._attach_to_existing(chosen, hit, vector, view, url)
             else:
-                self._create_and_attach(article.title, vector, url)
+                self._create_and_attach(article.title, vector, view, url)
         finally:
             lock.release()
 
         channel.basic_ack(delivery_tag=method.delivery_tag)
 
-    def _find_best_candidate(self, vector: list[float]) -> Optional[Any]:
-        cutoff = (datetime.now(timezone.utc) - timedelta(days=RECENCY_WINDOW_DAYS)).isoformat()
+    def _find_candidates(self, vector: list[float], published_at: datetime) -> list[tuple[StoryView, Any]]:
+        """Nearest stories whose publish-date span is within the window of this article."""
+        window = timedelta(days=STORY_WINDOW_DAYS)
         hits = self._qdrant.query_points(
             collection_name=CENTROID_COLLECTION,
             query=vector,
-            query_filter=Filter(must=[FieldCondition(key="lastUpdated", range=DatetimeRange(gte=cutoff))]),
-            limit=1,
+            query_filter=Filter(must=[
+                FieldCondition(key="lastPublishedAt", range=DatetimeRange(gte=(published_at - window).isoformat())),
+                FieldCondition(key="firstPublishedAt", range=DatetimeRange(lte=(published_at + window).isoformat())),
+            ]),
+            limit=CLUSTER_CANDIDATES,
             with_vectors=True,
         ).points
-        return hits[0] if hits else None
+        views = []
+        for h in hits:
+            p = h.payload
+            updated = _parse_dt(p.get("lastUpdated"), datetime.now(timezone.utc))
+            views.append((StoryView(
+                story_id=p["storyId"],
+                score=h.score,
+                first_published=_parse_dt(p.get("firstPublishedAt"), updated),
+                last_published=_parse_dt(p.get("lastPublishedAt"), updated),
+                sources=set(p.get("sources", [])),
+                official_only=bool(p.get("officialOnly", False)),
+                companies=set(p.get("companies", [])),
+            ), h))
+        return views
 
-    def _attach_to_existing(self, hit: Any, vector: list[float], url: str) -> None:
-        # Called only from within handle()'s CLUSTER_DECISION_LOCK_KEY
-        # critical section, so `hit` (read a moment ago, inside the same
-        # lock) can be trusted — no other clusterer instance can have
-        # mutated this centroid in between.
-        story_id = hit.payload["storyId"]
-
-        # Vector DB first per the consistency strategy (idempotent upsert
-        # by ID, cheap to retry). NOTE: unlike a plain upsert-by-ID, this
-        # centroid update depends on the *previous* count/vector, so a
-        # transient-failure retry that re-runs this whole handler will
-        # compound the running average an extra time if the Provider write
-        # below succeeded on a prior attempt but the ack was lost. Rare in
-        # practice (requires a crash between the two writes), and only
-        # skews the internal centroid slightly — Neo4j's articleCount
-        # stays authoritative. Acceptable for v1.
-        old_count = hit.payload["articleCount"]
-        new_count = old_count + 1
-        new_vector = _normalize([(ov * old_count + nv) for ov, nv in zip(hit.vector, vector)])
-
+    def _attach_to_existing(self, story: StoryView, hit: Any, vector: list[float], view: ArticleView, url: str) -> None:
+        # Inside the decision lock, so `hit` cannot have changed since it was read.
+        # Vector DB first (idempotent upsert by id). A retry after a lost ack
+        # can compound the running average once; Neo4j's articleCount stays
+        # authoritative, so this only skews the internal centroid slightly.
+        new_count = hit.payload["articleCount"] + 1
+        new_vector = _normalize([(ov * (new_count - 1) + nv) for ov, nv in zip(hit.vector, vector)])
+        payload = merged_payload(story, view, new_count) | {"lastUpdated": datetime.now(timezone.utc).isoformat()}
         self._qdrant.upsert(
             collection_name=CENTROID_COLLECTION,
-            points=[PointStruct(
-                id=story_id,
-                vector=new_vector,
-                payload={
-                    "storyId": story_id,
-                    "articleCount": new_count,
-                    "lastUpdated": datetime.now(timezone.utc).isoformat(),
-                },
-            )],
+            points=[PointStruct(id=story.story_id, vector=new_vector, payload=payload)],
         )
-
-        attached = self._provider.attach_article_to_story(story_id, url)
-        if attached is not None:
-            log.info("Attached (score=%.3f): %s -> story %s", hit.score, url, story_id)
+        if self._provider.attach_article_to_story(story.story_id, url) is not None:
+            log.info("Attached (score=%.3f): %s -> story %s", story.score, url, story.story_id)
         else:
-            log.warning("Provider rejected attach to existing story %s: %s", story_id, url)
+            log.warning("Provider rejected attach to existing story %s: %s", story.story_id, url)
 
-    def _create_and_attach(self, title: str, vector: list[float], url: str) -> None:
-        # Provider first here — Story IDs are server-generated
-        # (@GeneratedValue), so there's no ID to seed a centroid point
-        # under until the Provider assigns one.
+    def _create_and_attach(self, title: str, vector: list[float], view: ArticleView, url: str) -> None:
+        # Provider first: story ids are server-generated, so there is no id to
+        # seed a centroid under until the Provider assigns one.
         new_story = self._provider.create_story(title)
-        attached = self._provider.attach_article_to_story(new_story.id, url)
-        if attached is None:
+        if self._provider.attach_article_to_story(new_story.id, url) is None:
             log.warning("Provider rejected attach to freshly created story %s: %s", new_story.id, url)
             return
-
+        payload = new_payload(new_story.id, view) | {"lastUpdated": datetime.now(timezone.utc).isoformat()}
         self._qdrant.upsert(
             collection_name=CENTROID_COLLECTION,
-            points=[PointStruct(
-                id=new_story.id,
-                vector=vector,
-                payload={
-                    "storyId": new_story.id,
-                    "articleCount": 1,
-                    "lastUpdated": datetime.now(timezone.utc).isoformat(),
-                },
-            )],
+            points=[PointStruct(id=new_story.id, vector=vector, payload=payload)],
         )
         log.info("New story: %s -> story %s", url, new_story.id)
 

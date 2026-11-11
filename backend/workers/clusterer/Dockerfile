@@ -37,7 +37,7 @@ WORKDIR /app/workers
 # volume needed across the 3 clusterer replicas.
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('${EMBEDDING_MODEL_NAME}')"
 
-COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py ./
+COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py entity_linker.py ./
 COPY --chown=appuser:appuser clusterer/ ./clusterer/
 
 CMD ["python", "-m", "clusterer.clusterer_worker"]

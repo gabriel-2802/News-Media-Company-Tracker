@@ -29,6 +29,6 @@ COPY --from=build /opt/hf /opt/hf
 RUN useradd --system --create-home --shell /usr/sbin/nologin appuser
 USER appuser
 WORKDIR /app/workers
-COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py ./
+COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py entity_linker.py ./
 COPY --chown=appuser:appuser enricher/ ./enricher/
 CMD ["python", "-m", "enricher.enricher_worker"]

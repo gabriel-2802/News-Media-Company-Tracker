@@ -273,6 +273,13 @@ postgres-purge: ## Drop the users schema (all tables + migration history) — DE
 
 # ── Combined cleanup ───────────────────────────────────────────────────────────
 
+.PHONY: recluster
+recluster: ## Rebuild all stories: delete stories/events + Qdrant centroids, re-queue every article (needs provider + cluster-worker running) — DESTRUCTIVE for stories
+	@$(call CONFIRM,this deletes all stories and story-company events (articles, topics and mentions are kept) and re-clusters every article.)
+	$(COMPOSE) exec -T neo4j cypher-shell -u neo4j -p $(NEO4J_PASSWORD) "MATCH (s:Story) DETACH DELETE s;"
+	@$(MAKE) _qdrant-purge-exec
+	cd backend/workers && clusterer/venv/bin/python -m clusterer.tools.requeue
+
 .PHONY: purge-dbs
 purge-dbs: ## Wipe ALL data in both Neo4j and Qdrant — DESTRUCTIVE
 	@$(call CONFIRM,this deletes ALL data in Neo4j AND Qdrant. This cannot be undone.)

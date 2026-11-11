@@ -236,11 +236,11 @@ venv/bin/python -m training.train --out cls_model_output
 
 1. Fetch article title + body from the Provider.
 2. Embed the text with a sentence-transformer model (`all-MiniLM-L6-v2`, 384-dim, cosine distance).
-3. Query Qdrant's `story_centroids` collection for the nearest centroid with `lastUpdated` within the last 5 days.
-4. **If the best match's cosine similarity ≥ 0.533:** attach the article to that story and update the centroid as a running average (weighted by article count).
+3. Query Qdrant's `story_centroids` for the 5 nearest stories whose articles were **published** within 3 days of this one.
+4. Attach to the first candidate that passes the rules in `clusterer/decision.py`: similarity ≥ 0.60; two official releases only if from the same publisher and ≥ 0.75; if both name banks/fintechs, at least one in common. Update the centroid as a running average.
 5. **Otherwise:** create a new story and seed its centroid in Qdrant.
 
-**Model & threshold:** validated against 197 human-labeled article pairs (SemEval-2022). The 0.533 threshold maximizes balanced accuracy (88.0% true-positive rate, 80.2% true-negative rate).
+**Thresholds:** 0.533 maximised balanced accuracy on 197 SemEval-2022 pairs; 0.60 is nearly the same there (TPR 0.914, TNR 0.815) and removed every thematic false merge on real financial news (see [Clustering Validation Report](#clustering-validation-report)).
 
 ---
 
@@ -523,11 +523,14 @@ A `Subscription` node tracks "someone is interested in this"-it has no link to *
 | Vector                   | 384-dim, unit-normalized (cosine similarity = dot product) |
 | Payload:`storyId`      | Redundant copy of point ID (for convenience)               |
 | Payload:`articleCount` | Weights the running-average centroid update                |
-| Payload:`lastUpdated`  | Datetime, indexed-powers the recency-window filter         |
+| Payload:`lastUpdated`  | Datetime of the last attach (indexed; informational)       |
+| Payload:`firstPublishedAt` / `lastPublishedAt` | Publish-date span of the story's articles (indexed; powers the date window) |
+| Payload:`sources` / `officialOnly` | Publishers so far / whether all are regulators or central banks |
+| Payload:`companies` | Bank/fintech company ids linked in the story's articles (company guard) |
 
 #### Usage Pattern
 
-1. **Attach to existing story:** Query `story_centroids` for nearest centroid with `lastUpdated` within `RECENCY_WINDOW_DAYS` (5 days) and cosine similarity ≥ `SIMILARITY_THRESHOLD` (0.533). Update centroid as running average.
+1. **Attach to existing story:** Query `story_centroids` for the nearest centroids whose `firstPublishedAt`/`lastPublishedAt` span is within `STORY_WINDOW_DAYS` of the article's publish date; accept the first that passes `clusterer/decision.py`. Update centroid as running average.
 2. **Create new story:** No candidates found-create story in Neo4j first (to get ID), then seed centroid point in Qdrant with that ID.
 
 ### Cross-Database References (By Convention)
@@ -638,7 +641,7 @@ classifier/venv/bin/python -m classifier.training.eval_rules               # rul
 **What it does:**
 
 1. Load the company universe from `GET /api/companies` at startup; reload every `UNIVERSE_REFRESH_MINUTES` (60), or at once if the provider rejects a company id.
-2. Fetch the article; link company mentions with `enricher/linker.py` (dictionary of names + aliases, no NER model):
+2. Fetch the article; link company mentions with the shared `entity_linker.py` (also used by the clusterer) (dictionary of names + aliases, no NER model):
    - acronyms and camel-case brands (SEC, ING, BofA) match case-sensitively;
    - brands that are ordinary words or places (Chase, Block, Affirm, Wise, Halifax) match case-sensitively and only with financial context;
    - names shared by two companies, and names made only of generic words ("Bancorp, Inc."), are skipped;
@@ -680,18 +683,32 @@ Writes `data/company_universe.json`, the generated `V5__seed_company_universe.cy
 
 1. Fetch article title + body from Provider. Drop if not found.
 2. Embed `"{title}\n\n{body_text}"` (truncated to `MAX_EMBED_CHARS` = 4000 to avoid quadratic attention memory) with `ArticleEmbedder` singleton (`sentence-transformers/all-MiniLM-L6-v2`, 384-dim, normalized).
-3. Query Qdrant `story_centroids` for nearest centroid with `lastUpdated` within `RECENCY_WINDOW_DAYS` (5 days).
-4. **If best match cosine similarity ≥ `SIMILARITY_THRESHOLD` (0.533):** attach article to that story via Provider and update centroid as running average (weighted by `articleCount`). Write Qdrant first (idempotent upsert-by-ID, cheap to retry).
-5. **Otherwise:** create new story via Provider first (server-generated ID), then seed centroid in Qdrant.
+3. Link bank/fintech mentions with the shared `entity_linker.py` (same linker as the enricher; company universe from `GET /api/companies`) and look up whether the source is a regulator/central bank.
+4. Query Qdrant `story_centroids` for the `CLUSTER_CANDIDATES` (5) nearest stories whose publish-date span is within `STORY_WINDOW_DAYS` (3) of the article.
+5. Take the first candidate `clusterer/decision.py` accepts, in similarity order:
+   - **date window:** the article's publish date is within 3 days of the story's first/last article;
+   - **threshold:** similarity ≥ `SIMILARITY_THRESHOLD` (0.60); if article and story are both official releases, the same publisher and ≥ `OFFICIAL_SIMILARITY_THRESHOLD` (0.75);
+   - **company guard:** if both name banks/fintechs, at least one in common.
 
-`ensure_collection()` runs on startup - idempotent, creates `story_centroids` collection and `lastUpdated` payload index if needed.
+   Rejected candidates are logged with the reason. Attach via Provider and update the centroid as a running average (weighted by `articleCount`); Qdrant first (idempotent upsert-by-ID).
+6. **Otherwise:** create new story via Provider first (server-generated ID), then seed centroid in Qdrant.
+
+`ensure_collection()` runs on startup - idempotent, creates `story_centroids` and its datetime payload indexes (`lastUpdated`, `firstPublishedAt`, `lastPublishedAt`) if needed.
+
+```bash
+clusterer/venv/bin/python -m unittest discover -s clusterer/tests -t .   # decision rules (cases from real articles)
+```
+
+**Rebuilding stories** after changing the rules: with the provider and a cluster worker running, `make recluster` deletes all stories and events plus the Qdrant centroids and re-queues every article oldest first (`clusterer/tools/requeue.py`). Articles, topics, mentions and sentiment are kept; events are rebuilt as articles rejoin stories.
 
 **Key env vars:**
 
 - `QDRANT_URL` / `QDRANT_API_KEY` - Qdrant connection.
 - `EMBEDDING_MODEL_NAME` / `EMBEDDING_DIM` - model choice and vector size.
-- `SIMILARITY_THRESHOLD` - attach-vs-create cutoff (0.533 from validation).
-- `RECENCY_WINDOW_DAYS` - how far back to look (5 days).
+- `SIMILARITY_THRESHOLD` - base attach cutoff (0.60).
+- `OFFICIAL_SIMILARITY_THRESHOLD` - cutoff for two official releases, same publisher required (0.75).
+- `STORY_WINDOW_DAYS` - publish-date window around a story's articles (3).
+- `CLUSTER_CANDIDATES` - nearest stories considered (5).
 - `MAX_EMBED_CHARS` - input truncation (4000 chars).
 - `CENTROID_COLLECTION` - collection name (`story_centroids`).
 - `REDIS_URL` - global clustering decision lock backend (see "Clusterer Locking" under Scaling Considerations).
@@ -714,7 +731,18 @@ Writes `data/company_universe.json`, the generated `V5__seed_company_universe.cy
 
 - Text truncated at 4000 chars before embedding (original model max is 32768 tokens). Loss of signal for stories diverging deep in long articles.
 - Extraction noise: trafilatura sometimes pulled boilerplate instead of article body (worth broader spot-check before trusting threshold as final).
-- Dataset: 2020-era COVID news, English-only. The threshold has not yet been re-validated on financial news (planned; formulaic headlines like "X beats Q3 estimates" risk false merges across banks).
+- Dataset: 2020-era COVID news, English-only.
+
+**Re-validation on financial news** (140 real articles from the first live run; full notes in [`CLUSTERING_VALIDATION.md`](documentation/CLUSTERING_VALIDATION.md)):
+
+| | Old rules (5-day processing window, 0.533) | Guards + 0.533 | Guards + 0.60 (current) |
+| --- | --- | --- | --- |
+| Stories | 48 | 120 | 129 |
+| Biggest story | 21 articles | 7 | 6 |
+| Stories spanning > 3 days | 12 (max 111 days) | 0 | 0 |
+| Thematic false merges in multi-article stories | most | 6 (0.534–0.584) | 0 found |
+
+The old rules built topical "mega-stories" (21 sets of minutes in one story; every Fed/BoE/ECB monetary release in another), which inflated events: Citigroup's top event came from an ECB speech story (0.695; now 0.534), HSBC's from a minutes story (0.682; now 0.367).
 
 ---
 

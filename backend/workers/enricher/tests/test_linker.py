@@ -10,7 +10,7 @@ import json
 import unittest
 from pathlib import Path
 
-from enricher.linker import Company, EntityLinker
+from entity_linker import Company, EntityLinker
 
 UNIVERSE = Path(__file__).resolve().parents[4] / "data" / "company_universe.json"
 

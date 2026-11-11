@@ -31,7 +31,7 @@ import pika.channel
 import pika.exceptions
 import pika.spec
 
-from enricher.linker import Company, EntityLinker
+from entity_linker import Company, EntityLinker
 from enricher.sentiment import LEAD_SENTENCES, SentimentModel, article_sentiment, sentences, weighted_mean
 from env_config import require_env
 from log_config import configure_logging
