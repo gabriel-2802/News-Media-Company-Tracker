@@ -42,7 +42,10 @@ import pika.channel
 import pika.exceptions
 import pika.spec
 
-from classifier.classifier import NewsClassifier, classifier_input
+from typing import Optional
+
+from classifier.classifier import LEAD_CHARS, NewsClassifier, classifier_input
+from classifier.rules import apply_rules
 from env_config import require_env
 from log_config import configure_logging
 from provider_client import ProviderClient, ProviderError
@@ -73,6 +76,21 @@ class ClassificationHandler:
         # worker startup fast if this ever gets imported without immediately
         # running (e.g. tests).
         self._classifier = NewsClassifier.get_instance()
+        # Source name -> category (REGULATOR, CENTRAL_BANK, ...). Categories
+        # change rarely, so one provider lookup per source per worker is enough.
+        self._categories: dict[str, Optional[str]] = {}
+
+    def _source_category(self, source_name: Optional[str]) -> Optional[str]:
+        if not source_name:
+            return None
+        if source_name not in self._categories:
+            try:
+                source = self._provider.get_source(source_name)
+            except ProviderError as exc:
+                log.warning("Could not look up source %s (%s); rules run without its category", source_name, exc)
+                return None
+            self._categories[source_name] = source.category if source else None
+        return self._categories[source_name]
 
     def handle(self, method: pika.spec.Basic.Deliver, body: bytes, channel: pika.channel.Channel) -> None:
         try:
@@ -90,10 +108,18 @@ class ClassificationHandler:
             return
 
         # Same input view the model was trained on: title + opening of the story.
-        topics = self._classifier.classify(classifier_input(article.title, article.body_text))
+        model_topics = self._classifier.classify(classifier_input(article.title, article.body_text))
+        # Rule layer: fixes regulator/enforcement content the public-data model misses.
+        topics, fired = apply_rules(
+            model_topics,
+            title=article.title,
+            lead=article.body_text[:LEAD_CHARS],
+            source_category=self._source_category(payload.get("source_name") or article.source),
+        )
 
         if self._provider.set_article_topics(url, topics):
-            log.info("Classified: %s -> %s", url, ", ".join(f"{n} ({p:.2f})" for n, p in topics))
+            log.info("Classified: %s -> %s%s", url, ", ".join(f"{n} ({p:.2f})" for n, p in topics),
+                     f" [rules: {', '.join(fired)}]" if fired else "")
         else:
             log.warning("Provider rejected topic update: %s -> %s", url, topics)
 

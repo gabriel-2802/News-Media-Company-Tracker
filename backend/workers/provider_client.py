@@ -69,6 +69,8 @@ class SourceInfo:
     rss_url: str
     disabled: bool
     failure_count: int
+    # NEWS | TRADE_PRESS | REGULATOR | CENTRAL_BANK | FILING (None if unset)
+    category: Optional[str] = None
 
     @classmethod
     def from_dict(cls, row: dict[str, Any]) -> "SourceInfo":
@@ -78,6 +80,7 @@ class SourceInfo:
             rss_url=row["rssUrl"],
             disabled=row["disabled"],
             failure_count=row["failureCount"],
+            category=row.get("category"),
         )
 
 

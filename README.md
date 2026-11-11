@@ -204,6 +204,7 @@ Three independent processes, each consuming from one RabbitMQ queue, calling the
 
 1. Fetch article title + body from the Provider.
 2. Classify title + the opening of the story into one or more of 13 banking topics (multi-label FinBERT; every topic above its tuned threshold, else the single most likely).
+   A rule layer (`classifier/rules.py`) then corrects regulator content the public-data model misses: enforcement / financial-crime / supervision wording adds `regulation_legal_enforcement`, deal wording adds `m_and_a_investments`, and for REGULATOR / CENTRAL_BANK sources `monetary_policy_rates` is kept only when the text is about monetary policy. Rules only add or raise topics, need a financial-context term outside financial sources, and are logged per article. `training/eval_rules.py` measures their effect on the public test sets (TFNT macro-F1 0.906 → 0.902, Reuters 0.915 → 0.913).
 3. Write the scored topics back via `PATCH /api/articles/topics`.
 
 **Model:** `backend/workers/classifier/cls_model_output/` (gitignored; built by `classifier/training/`). Fine-tuned from `ProsusAI/finbert` on public data only (Twitter Financial News Topic + Reuters-21578), with the taxonomy in `training/taxonomy.py` and per-label thresholds in `thresholds.json`. Test scores are in the model's `metrics.json`. Retrain with:
