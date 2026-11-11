@@ -1,0 +1,7 @@
+transformers>=4.46,<5
+torch>=2.5,<3
+numpy<3
+requests
+pika
+python-dotenv
+urllib3<2

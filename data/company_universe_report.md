@@ -1,11 +1,15 @@
 # Company universe build report
 
-360 entities: BANK 328, CENTRAL_BANK 4, FINTECH 19, REGULATOR 9
-SEC bank-SIC companies found: 298 (of which 17 also curated)
+356 entities: BANK 324, CENTRAL_BANK 4, FINTECH 19, REGULATOR 9
+SEC bank-SIC companies found: 298 (of which 21 also curated)
 Curated entities: 79, with LEI: 57
 
 ## Problems to review
 
+- skipped Banco Santander, S.a. (SAN): subsidiary/issuer of a curated company
+- skipped Banco Santander (brasil) S.a. (BSBR): subsidiary/issuer of a curated company
+- skipped Banco Santander Chile (BSAC): subsidiary/issuer of a curated company
+- skipped Barclays Bank Plc (DJP): subsidiary/issuer of a curated company
 - Zions Bancorporation: no unique ACTIVE GLEIF match for legal name 'Zions Bancorporation, National Association'
 - Chime: no unique ACTIVE GLEIF match for legal name 'Chime Financial, Inc.'
 - Stripe: no unique ACTIVE GLEIF match for legal name 'Stripe, Inc.'

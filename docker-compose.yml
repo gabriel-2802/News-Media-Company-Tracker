@@ -225,6 +225,29 @@ services:
       redis:
         condition: service_healthy
 
+  enricher-worker:
+    build:
+      context: ./backend/workers
+      dockerfile: enricher/Dockerfile
+      args:
+        SENTIMENT_MODEL: "${SENTIMENT_MODEL:-ProsusAI/finbert}"
+    profiles: ["apps"]
+    restart: unless-stopped
+    deploy:
+      replicas: 2
+    env_file: .env
+    environment:
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-secret}@rabbitmq:5672/news_monitor"
+      PROVIDER_URL: http://provider:8080/news-provider
+      MANAGER_URL: http://manager:9000/manager
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+      manager:
+        condition: service_healthy
+      provider:
+        condition: service_healthy
+
 volumes:
   neo4j_data:
   neo4j_logs:

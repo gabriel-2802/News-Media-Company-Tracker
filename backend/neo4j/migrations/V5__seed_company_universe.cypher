@@ -686,15 +686,6 @@ MERGE (t:Ticker {symbol: "TD", exchange: "XNYS"})
   SET t.currency = "USD"
 WITH t MATCH (c:Company {name: "Toronto Dominion Bank"})
 MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
-MERGE (c:Company {name: "Banco Santander, S.a."})
-  ON CREATE SET c.id = randomUUID()
-  SET c.kind = "BANK", c.country = "US", c.lei = null,
-      c.aliases = [];
-MERGE (t:Ticker {symbol: "SAN", exchange: "XNYS"})
-  ON CREATE SET t.id = randomUUID()
-  SET t.currency = "USD"
-WITH t MATCH (c:Company {name: "Banco Santander, S.a."})
-MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
 MERGE (c:Company {name: "Sumitomo Mitsui Financial Group, Inc."})
   ON CREATE SET c.id = randomUUID()
   SET c.kind = "BANK", c.country = "US", c.lei = null,
@@ -830,15 +821,6 @@ MERGE (t:Ticker {symbol: "EWBC", exchange: "XNAS"})
   SET t.currency = "USD"
 WITH t MATCH (c:Company {name: "East West Bancorp Inc"})
 MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
-MERGE (c:Company {name: "Banco Santander (brasil) S.a."})
-  ON CREATE SET c.id = randomUUID()
-  SET c.kind = "BANK", c.country = "US", c.lei = null,
-      c.aliases = [];
-MERGE (t:Ticker {symbol: "BSBR", exchange: "XNYS"})
-  ON CREATE SET t.id = randomUUID()
-  SET t.currency = "USD"
-WITH t MATCH (c:Company {name: "Banco Santander (brasil) S.a."})
-MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
 MERGE (c:Company {name: "Woori Financial Group Inc."})
   ON CREATE SET c.id = randomUUID()
   SET c.kind = "BANK", c.country = "US", c.lei = null,
@@ -847,15 +829,6 @@ MERGE (t:Ticker {symbol: "WF", exchange: "XNYS"})
   ON CREATE SET t.id = randomUUID()
   SET t.currency = "USD"
 WITH t MATCH (c:Company {name: "Woori Financial Group Inc."})
-MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
-MERGE (c:Company {name: "Banco Santander Chile"})
-  ON CREATE SET c.id = randomUUID()
-  SET c.kind = "BANK", c.country = "US", c.lei = null,
-      c.aliases = [];
-MERGE (t:Ticker {symbol: "BSAC", exchange: "XNYS"})
-  ON CREATE SET t.id = randomUUID()
-  SET t.currency = "USD"
-WITH t MATCH (c:Company {name: "Banco Santander Chile"})
 MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
 MERGE (c:Company {name: "Pinnacle Financial Partners, Inc."})
   ON CREATE SET c.id = randomUUID()
@@ -3178,13 +3151,4 @@ MERGE (t:Ticker {symbol: "MBBC", exchange: "XNAS"})
   ON CREATE SET t.id = randomUUID()
   SET t.currency = "USD"
 WITH t MATCH (c:Company {name: "Marathon Bancorp, Inc."})
-MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;
-MERGE (c:Company {name: "Barclays Bank Plc"})
-  ON CREATE SET c.id = randomUUID()
-  SET c.kind = "BANK", c.country = "US", c.lei = null,
-      c.aliases = ["Barclays Bank"];
-MERGE (t:Ticker {symbol: "DJP", exchange: "XNYS"})
-  ON CREATE SET t.id = randomUUID()
-  SET t.currency = "USD"
-WITH t MATCH (c:Company {name: "Barclays Bank Plc"})
 MERGE (c)-[l:LISTED_AS]->(t) SET l.primary = true;

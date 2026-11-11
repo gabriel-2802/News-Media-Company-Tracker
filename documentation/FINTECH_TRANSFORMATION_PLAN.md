@@ -24,7 +24,7 @@
 | 2. Banking sources | Done | `428343a` | 41 candidates → 27 PASS seeded via generated V2. Per-source intervals (15/30/60 min) with an atomic Cypher claim. |
 | 3. Graph model | Done | `6846a66` | Multi-label `HAS_TOPIC {score}`, Company/Ticker, Cypher-managed MENTIONS/AFFECTS. |
 | 4. Classifier | Done | `1fe08a9`, `33b3954` | TFNT macro-F1 0.906, Reuters 0.915 (0.902 / 0.913 with rules). In-domain evaluation still needs ~300 hand labels. |
-| 5. Enricher | In progress | `1736add` | Company universe built (360 entities, 349 tickers, 57 verified LEIs). Worker (NER, linking, FinBERT sentiment) not started. |
+| 5. Enricher | Done | `1736add`, Phase 5 commit | 356 companies / 345 tickers (V5 + V6 correction). Enricher worker (dictionary linking + sentence-level FinBERT), `GET /api/companies`, `PATCH /api/articles/enrichment`, derived Story→Company events with impact score. Verified end to end with all three workers. |
 | 6–10 | Not started | | |
 | Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
 
@@ -35,7 +35,12 @@
 - **Phase 3:** MENTIONS/AFFECTS are not mapped on Article/Story entities, because Spring Data Neo4j's `save()` deletes unloaded relationships.
 - **Phase 4:** base model `ProsusAI/finbert`; max length 64 (not 256), bottom 6 layers frozen, 3 epochs. Needed because MPS training at full size ran at 4.4 s/step; the shorter setup trains in about 40 minutes. Attention dropout is 0 (MPS fused attention does not support it).
 - **Phase 4:** added the rule layer (`classifier/rules.py`) after live headlines showed the model maps every Fed release to monetary policy and misses enforcement news.
-- **Migration numbers:** V3 is the entity schema, V4 the topics, V5 the company universe.
+- **Migration numbers:** V3 is the entity schema, V4 the topics, V5 the company universe, V6 a correction removing SEC note issuers/subsidiaries (e.g. Barclays Bank PLC filing for iPath ETNs) that an earlier V5 build seeded as banks.
+- **Phase 5:** no spaCy/GLiNER NER. Linking is a dictionary matcher over curated names and aliases with precision rules (case-sensitive acronyms; common-word brands need case and financial context; ambiguous or all-generic names skipped). With a curated alias list, fuzzy NER mostly adds false links.
+- **Phase 5:** Latin American Santander subsidiaries (Brasil, Chile) are not in the universe (outside US/UK/EU scope, and their names clash with the curated Santander).
+- **Phase 5:** sentiment is scored per sentence (title, lead sentences, sentences naming a company) because FinBERT on a whole paragraph is dominated by one strongly worded sentence; labels use FinBERT's argmax.
+- **Phase 5:** events are derived data recomputed by the provider (`EventService`) on enrichment, story attach and topic changes, rather than written by the enricher, so worker completion order does not matter. The impact formula is documented in PROVIDER_API.md.
+- **Known model gap (Phase 4):** "JPMorgan profit beats estimates" was classified `company_product_news` instead of `earnings_results` in the Phase 5 end-to-end run; an earnings rule or in-domain labels would fix it.
 
 ## Guiding principle: reuse, don't rebuild
 

@@ -92,6 +92,18 @@ curl -s -u "${AUTH}" -X POST "${BASE}/bindings/news_monitor/e/news_monitor/q/art
 -d '{"routing_key":"article.saved","arguments":{}}'
 echo ""
 
+echo "[setup] Creating queue: article.enrich"
+curl -s -u "${AUTH}" -X PUT "${BASE}/queues/news_monitor/article.enrich" \
+-H "Content-Type: application/json" \
+-d '{"durable":true,"auto_delete":false,"arguments":{}}'
+echo ""
+
+echo "[setup] Binding article.enrich -> news_monitor (routing_key: article.saved)"
+curl -s -u "${AUTH}" -X POST "${BASE}/bindings/news_monitor/e/news_monitor/q/article.enrich" \
+-H "Content-Type: application/json" \
+-d '{"routing_key":"article.saved","arguments":{}}'
+echo ""
+
 # Provider-only queue: the Provider publishes directly to it by name via the
 # default exchange (routing key == queue name), so it must NOT be bound to
 # the news_monitor topic exchange — binding it to article.saved (or any

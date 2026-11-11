@@ -37,6 +37,7 @@ public class ArticleService {
     private final ArticleRepository articleRepository;
     private final NewsSourceRepository newsSourceRepository;
     private final TopicRepository topicRepository;
+    private final EventService eventService;
     private final SubscriptionRepository subscriptionRepository;
     private final RabbitTemplate rabbitTemplate;
 
@@ -101,6 +102,7 @@ public class ArticleService {
         final Article article = articleRepository.setTopic(topicSetRequest.url(), topicSetRequest.topic());
 
         notifySubscribers(topicSetRequest.topic(), topicSetRequest.url());
+        eventService.refreshForArticle(topicSetRequest.url());
 
         return new ArticleDto(article);
     }
@@ -126,6 +128,7 @@ public class ArticleService {
         final Article article = articleRepository.setTopics(request.url(), topics);
 
         byName.keySet().forEach(name -> notifySubscribers(name, request.url()));
+        eventService.refreshForArticle(request.url());   // topic weights feed event impact
 
         return new ArticleDto(article);
     }

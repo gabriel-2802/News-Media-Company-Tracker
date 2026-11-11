@@ -7,8 +7,8 @@ import org.springframework.data.neo4j.repository.query.Query;
 import java.util.Optional;
 
 /**
- * Companies and the Cypher-managed MENTIONS / AFFECTS relationships
- * (deliberately not mapped on Article/Story; see Company javadoc).
+ * Companies and their listings. MENTIONS / AFFECTS are written by
+ * CompanyService (enrichment) and EventService (events) with Cypher.
  */
 public interface CompanyRepository extends Neo4jRepository<Company, String> {
 
@@ -22,21 +22,4 @@ public interface CompanyRepository extends Neo4jRepository<Company, String> {
             RETURN c, [(c)-[l:LISTED_AS]->(tk:Ticker) | l], [(c)-[:LISTED_AS]->(tk:Ticker) | tk]
             """)
     Optional<Company> findByTickerSymbol(String symbol);
-
-    @Query("""
-            MATCH (a:Article {url: $articleUrl}), (c:Company {id: $companyId})
-            MERGE (a)-[m:MENTIONS]->(c)
-            SET m.count = $count, m.salience = $salience, m.inTitle = $inTitle, m.sentiment = $sentiment
-            """)
-    void upsertMention(String articleUrl, String companyId, int count, double salience,
-                       boolean inTitle, Double sentiment);
-
-    @Query("""
-            MATCH (s:Story {id: $storyId}), (c:Company {id: $companyId})
-            MERGE (s)-[r:AFFECTS]->(c)
-              ON CREATE SET r.firstSeen = $firstSeen
-            SET r.firstSeen = CASE WHEN $firstSeen < r.firstSeen THEN $firstSeen ELSE r.firstSeen END,
-                r.impactScore = $impactScore
-            """)
-    void upsertAffects(String storyId, String companyId, java.time.ZonedDateTime firstSeen, double impactScore);
 }

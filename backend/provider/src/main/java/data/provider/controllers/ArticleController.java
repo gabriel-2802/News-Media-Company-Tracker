@@ -2,11 +2,13 @@ package data.provider.controllers;
 
 import data.provider.dto.requests.ArticleRequest;
 import data.provider.dto.requests.TopicSetRequest;
+import data.provider.dto.requests.EnrichmentRequest;
 import data.provider.dto.requests.TopicsSetRequest;
 import data.provider.dto.responses.ArticleDto;
 import data.provider.dto.responses.ErrorResponse;
 import data.provider.dto.responses.PageDto;
 import data.provider.services.ArticleService;
+import data.provider.services.CompanyService;
 import data.provider.util.Constants;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -33,6 +35,7 @@ import java.util.List;
 public class ArticleController {
 
     private final ArticleService articleService;
+    private final CompanyService companyService;
 
     @GetMapping
     @Operation(summary = "List all articles", description = "Returns a paginated list of all articles, across all sources, ordered as stored.")
@@ -147,6 +150,18 @@ public class ArticleController {
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<ArticleDto> setTopics(@Valid @RequestBody final TopicsSetRequest request) {
         return ResponseEntity.ok(articleService.setTopics(request));
+    }
+
+    @PatchMapping(Constants.ARTICLES_ENRICHMENT_PATH)
+    @Operation(summary = "Store an article's enrichment",
+            description = "Sets the article's sentiment and replaces its company mentions with the given set, "
+                    + "then refreshes the story-company events of the article's story. Used by the enricher worker.")
+    @ApiResponse(responseCode = "204", description = "Enrichment stored")
+    @ApiResponse(responseCode = "400", description = "Article or a company does not exist, or validation failed",
+            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
+    public ResponseEntity<Void> setEnrichment(@Valid @RequestBody final EnrichmentRequest request) {
+        companyService.setEnrichment(request);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping(Constants.ARTICLES_TRIGGER_SCRAPE_PATH)

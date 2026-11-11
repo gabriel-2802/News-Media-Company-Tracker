@@ -37,6 +37,7 @@ public class StoryService {
     private static final int MAX_ARTICLES_PER_STORY = 100;
 
     private final StoryRepository storyRepository;
+    private final EventService eventService;
     private final ArticleRepository articleRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -67,6 +68,7 @@ public class StoryService {
                 .orElseThrow(() -> new BusinessException(Constants.STORY_DOES_NOT_EXIST_ERROR, storyId));
 
         notifySubscribers(updated, request.articleUrl());
+        eventService.refreshForArticle(request.articleUrl());   // the story may now affect new companies
 
         return new StoryDto(updated);
     }

@@ -2,6 +2,7 @@ package data.provider;
 
 import data.provider.dto.requests.TopicsSetRequest;
 import data.provider.dto.responses.ArticleDto;
+import data.provider.dto.responses.CompanyDto;
 import data.provider.exceptions.BusinessException;
 import data.provider.services.ArticleService;
 import data.provider.models.Article;
@@ -18,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.neo4j.core.Neo4jClient;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -143,25 +143,7 @@ class GraphModelIntegrationTests {
                     assertThat(l.getTicker().getSymbol()).isEqualTo(symbol);
                 });
 
-        companyRepository.upsertMention(url, saved.getId(), 3, 0.8, true, -0.5);
-        companyRepository.upsertMention(url, saved.getId(), 4, 0.9, true, -0.4);   // idempotent: updates, no duplicate
-        ZonedDateTime later = ZonedDateTime.now();
-        ZonedDateTime earlier = later.minusHours(2);
-        companyRepository.upsertAffects(run, saved.getId(), later, 0.4);
-        companyRepository.upsertAffects(run, saved.getId(), earlier, 0.7);         // keeps the earliest firstSeen
-
-        Map<String, Object> edges = neo4j.query("""
-                MATCH (a:Article {url: $url})-[m:MENTIONS]->(c:Company {id: $cid})
-                MATCH (:Story {id: $run})-[r:AFFECTS]->(c)
-                RETURN count(DISTINCT m) AS mentions, m.count AS mentionCount,
-                       count(DISTINCT r) AS affects, r.impactScore AS impact,
-                       r.firstSeen = datetime($earlier) AS keptEarliest
-                """)
-                .bindAll(Map.of("url", url, "cid", saved.getId(), "run", run, "earlier", earlier.toString()))
-                .fetch().one().orElseThrow();
-
-        assertThat(edges).containsEntry("mentions", 1L).containsEntry("mentionCount", 4L)
-                .containsEntry("affects", 1L).containsEntry("impact", 0.7)
-                .containsEntry("keptEarliest", true);
+        assertThat(new CompanyDto(bySymbol).tickers()).singleElement()
+                .satisfies(t -> assertThat(t.exchange()).isEqualTo("XNYS"));
     }
 }

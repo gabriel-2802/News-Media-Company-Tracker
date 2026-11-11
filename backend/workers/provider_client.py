@@ -40,6 +40,8 @@ _ARTICLE_EXISTS_PATH = "/api/articles/exists"
 _ARTICLE_BY_URL_PATH = "/api/articles/by-url"
 _ARTICLE_TOPIC_PATH = "/api/articles/topic"
 _ARTICLE_TOPICS_PATH = "/api/articles/topics"
+_ARTICLE_ENRICHMENT_PATH = "/api/articles/enrichment"
+_COMPANIES_PATH = "/api/companies"
 _ARTICLES_BY_STORY_PATH = "/api/articles/story/{storyId}"
 _STORIES_PATH = "/api/stories"
 _STORIES_RECENT_PATH = "/api/stories/recent"
@@ -81,6 +83,25 @@ class SourceInfo:
             disabled=row["disabled"],
             failure_count=row["failureCount"],
             category=row.get("category"),
+        )
+
+
+@dataclass(frozen=True)
+class CompanyInfo:
+    id: str
+    name: str
+    kind: str
+    aliases: tuple[str, ...]
+    tickers: tuple[str, ...]          # symbols, primary first
+
+    @classmethod
+    def from_dict(cls, row: dict[str, Any]) -> "CompanyInfo":
+        return cls(
+            id=row["id"],
+            name=row["name"],
+            kind=row["kind"],
+            aliases=tuple(row.get("aliases") or ()),
+            tickers=tuple(t["symbol"] for t in row.get("tickers") or ()),
         )
 
 
@@ -220,6 +241,28 @@ class ProviderClient:
             json={"url": url, "topics": [{"name": name, "score": score} for name, score in topics]},
         )
         return ArticleInfo.from_dict(self._json_or_raise(resp))
+
+    def get_companies(self) -> list[CompanyInfo]:
+        """The whole company universe (a few hundred entries) for entity linking."""
+        resp = self._request("GET", _COMPANIES_PATH)
+        return [CompanyInfo.from_dict(row) for row in self._json_or_raise(resp)]
+
+    def set_article_enrichment(self, url: str, sentiment_label: str, sentiment_score: float,
+                               mentions: list[dict[str, Any]]) -> bool:
+        """Store sentiment + company mentions (replacing previous ones).
+
+        Returns False if the provider rejected the payload (400, e.g. a company
+        was removed since the universe was loaded), so the caller can refresh
+        its universe instead of treating it as an outage.
+        """
+        resp = self._request("PATCH", _ARTICLE_ENRICHMENT_PATH, json={
+            "url": url, "sentimentLabel": sentiment_label, "sentimentScore": sentiment_score, "mentions": mentions,
+        })
+        if resp.status_code == _NOT_FOUND_OR_REJECTED:
+            return False
+        if not resp.ok:
+            self._json_or_raise(resp)
+        return True
 
     def get_articles_by_story(self, story_id: str, page: int = 0, count: int = 20) -> list[ArticleInfo]:
         """Articles belonging to a story, most-recently-published first.

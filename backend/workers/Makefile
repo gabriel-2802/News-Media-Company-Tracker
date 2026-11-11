@@ -5,10 +5,11 @@ PYTHON          ?= /opt/homebrew/bin/python3.11
 SCRAPER_VENV    := scraper/venv
 CLASSIFIER_VENV := classifier/venv
 CLUSTERER_VENV  := clusterer/venv
+ENRICHER_VENV   := enricher/venv
 
-.PHONY: setup setup-scraper setup-classifier setup-clusterer scrape-worker classify-worker cluster-worker clean
+.PHONY: setup setup-scraper setup-classifier setup-clusterer setup-enricher scrape-worker classify-worker cluster-worker enrich-worker clean
 
-setup: setup-scraper setup-classifier setup-clusterer
+setup: setup-scraper setup-classifier setup-clusterer setup-enricher
 
 setup-scraper:
 	$(PYTHON) -m venv $(SCRAPER_VENV)
@@ -26,6 +27,11 @@ setup-clusterer:
 	$(CLUSTERER_VENV)/bin/pip install --quiet --upgrade pip
 	$(CLUSTERER_VENV)/bin/pip install --quiet -r clusterer/requirements.txt
 
+setup-enricher:
+	$(PYTHON) -m venv $(ENRICHER_VENV)
+	$(ENRICHER_VENV)/bin/pip install --quiet --upgrade pip
+	$(ENRICHER_VENV)/bin/pip install --quiet -r enricher/requirements.txt
+
 # Run from workers/ (this directory) so `scraper`/`classifier`/`clusterer`
 # resolve as packages and all can import the shared provider_client.py.
 scrape-worker:
@@ -37,5 +43,8 @@ classify-worker:
 cluster-worker:
 	$(CLUSTERER_VENV)/bin/python -m clusterer.clusterer_worker
 
+enrich-worker:
+	$(ENRICHER_VENV)/bin/python -m enricher.enricher_worker
+
 clean:
-	rm -rf $(SCRAPER_VENV) $(CLASSIFIER_VENV) $(CLUSTERER_VENV) __pycache__ scraper/__pycache__ classifier/__pycache__ clusterer/__pycache__
+	rm -rf $(SCRAPER_VENV) $(CLASSIFIER_VENV) $(CLUSTERER_VENV) $(ENRICHER_VENV) __pycache__ scraper/__pycache__ classifier/__pycache__ clusterer/__pycache__

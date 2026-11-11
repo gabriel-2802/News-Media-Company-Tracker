@@ -87,7 +87,7 @@ status: ps
 # ── Local (non-Docker) workers ─────────────────────────────────────────────────
 # Delegates to backend/workers/Makefile, which must run from its own directory.
 
-.PHONY: setup-workers scrape-worker classify-worker cluster-worker
+.PHONY: setup-workers scrape-worker classify-worker cluster-worker enrich-worker
 setup-workers: ## One-time: build a venv per worker type
 	$(MAKE) -C backend/workers setup
 
@@ -100,10 +100,13 @@ classify-worker: ## Run a classifier worker locally
 cluster-worker: ## Run a cluster worker locally
 	$(MAKE) -C backend/workers cluster-worker
 
+enrich-worker: ## Run an enricher worker locally (company linking + sentiment)
+	$(MAKE) -C backend/workers enrich-worker
+
 # ── Logs ───────────────────────────────────────────────────────────────────────
 
 .PHONY: logs
-logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|scraper-worker|classifier-worker|cluster-worker]
+logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|scraper-worker|classifier-worker|cluster-worker|enricher-worker]
 	$(COMPOSE) $(APPS) logs -f $(SERVICE)
 
 .PHONY: logs-manager
@@ -125,6 +128,10 @@ logs-classifier: ## Stream logs for all classifier-worker replicas
 .PHONY: logs-cluster
 logs-cluster: ## Stream logs for all cluster-worker replicas
 	$(COMPOSE) $(APPS) logs -f cluster-worker
+
+.PHONY: logs-enricher
+logs-enricher: ## Stream logs for all enricher-worker replicas
+	$(COMPOSE) $(APPS) logs -f enricher-worker
 
 # ── Cleanup ────────────────────────────────────────────────────────────────────
 

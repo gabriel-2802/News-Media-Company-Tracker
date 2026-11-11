@@ -26,6 +26,7 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`GET /api/articles/by-url`](#get-apiarticlesby-url)
   - [`PATCH /api/articles/topic`](#patch-apiarticlestopic)
   - [`PATCH /api/articles/topics`](#patch-apiarticlestopics)
+  - [`PATCH /api/articles/enrichment`](#patch-apiarticlesenrichment)
   - [`POST /api/articles/trigger-scrape`](#post-apiarticlestrigger-scrape)
   - [`GET /api/articles/search`](#get-apiarticlessearch)
 - [Stories](#stories)
@@ -39,6 +40,8 @@ REST API for registering news sources and ingesting/querying scraped articles, s
 - [Topics](#topics)
   - [`GET /api/topics`](#get-apitopics)
   - [`GET /api/topics/exists`](#get-apitopicsexists)
+- [Companies](#companies)
+  - [`GET /api/companies`](#get-apicompanies)
 - [Subscriptions](#subscriptions)
   - [`POST /api/subscriptions/story/{storyId}`](#post-apisubscriptionsstorystoryid)
   - [`DELETE /api/subscriptions/story/{storyId}`](#delete-apisubscriptionsstorystoryid)
@@ -52,6 +55,8 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`ArticleRequest`](#articlerequest)
   - [`TopicSetRequest`](#topicsetrequest)
   - [`TopicsSetRequest`](#topicssetrequest)
+  - [`EnrichmentRequest`](#enrichmentrequest)
+  - [`CompanyDto`](#companydto)
   - [`StoryDto`](#storydto)
   - [`AttachArticleRequest`](#attacharticlerequest)
   - [`TopicDto`](#topicdto)
@@ -85,6 +90,7 @@ The Provider does not issue tokens itself — it only **validates** JWTs signed 
 | `POST /api/articles`                           | ROLE_ADMIN, ROLE_SYSTEM |
 | `PATCH /api/articles/topic`                    | ROLE_ADMIN, ROLE_SYSTEM |
 | `PATCH /api/articles/topics`                   | ROLE_ADMIN, ROLE_SYSTEM |
+| `PATCH /api/articles/enrichment`               | ROLE_ADMIN, ROLE_SYSTEM |
 | `POST /api/articles/trigger-scrape`            | ROLE_ADMIN              |
 | `POST /api/stories`                            | ROLE_SYSTEM             |
 | `PATCH /api/stories/{storyId}/attach`          | ROLE_SYSTEM             |
@@ -441,6 +447,27 @@ Replaces all of an article's topics with a scored multi-label set, as produced b
 
 ---
 
+### `PATCH /api/articles/enrichment`
+
+**Requires:** `ROLE_ADMIN` or `ROLE_SYSTEM`
+
+Stores the enricher worker's output for one article: sets `sentimentLabel` / `sentimentScore` and **replaces** the article's `MENTIONS` relationships with the given set (an empty list removes them). Every company id must exist; if any is unknown nothing is written. Afterwards the story-company events (`(:Story)-[:AFFECTS]->(:Company)`) of the article's story are recomputed; if the article is not clustered yet, they are created when it joins a story.
+
+**Request body:** [`EnrichmentRequest`](#enrichmentrequest)
+
+**Responses**
+
+| Status | Body                               | Description                                                     |
+| ------ | ---------------------------------- | --------------------------------------------------------------- |
+| 204    | (empty)                            | Enrichment stored and events refreshed                          |
+| 400    | [`ErrorResponse`](#errorresponse) | Article or a company does not exist, or validation failed       |
+| 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication)    |
+| 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_ADMIN`/`ROLE_SYSTEM`                       |
+
+**Events derived from enrichment** (`AFFECTS` properties): `firstSeen` (earliest article of the story mentioning the company), `articleCount`, `sentiment` (mean company sentiment) and `impactScore` in [0, 1] = 0.25 × min(sourceCount / 5, 1) + 0.15 × min(mentioning articles / 3, 1) + 0.20 × strongest salience + 0.25 × max(topic weight × topic score) + 0.15 × |sentiment| + 0.10 if a regulator or central bank published part of the story, capped at 1. Topic weights: enforcement and M&A 1.0, earnings 0.8, monetary policy / leadership / debt 0.6, dividends / analyst / company news 0.5, markets 0.4, FX / macro 0.3, other 0.2. Also recomputed when an article joins a story (`PATCH /api/stories/{storyId}/attach`) or gets new topics.
+
+---
+
 ### `POST /api/articles/trigger-scrape`
 
 **Requires:** `ROLE_ADMIN`
@@ -654,6 +681,29 @@ Check whether a topic with the given name already exists.
 | Status | Body        | Description            |
 | ------ | ----------- | ---------------------- |
 | 200    | `boolean` | Existence check result |
+
+---
+
+## Companies
+
+Base path: `/api/companies`
+
+### `GET /api/companies`
+
+Public. Returns the whole company universe (a few hundred entries: banks, fintechs, regulators, central banks) with aliases and listings, sorted by name. Seeded by the `V5__seed_company_universe` migration. Used by the enricher for entity linking and, later, by the analytics service as its ticker universe.
+
+**Query parameters**
+
+| Name | Type | Required | Description                                                         |
+| ---- | ---- | -------- | ------------------------------------------------------------------- |
+| kind | enum | no       | Only `BANK`, `FINTECH`, `REGULATOR`, `CENTRAL_BANK` or `OTHER`     |
+
+**Responses**
+
+| Status | Body                           | Description          |
+| ------ | ------------------------------ | -------------------- |
+| 200    | [`CompanyDto[]`](#companydto) | Companies retrieved  |
+| 400    | [`ErrorResponse`](#errorresponse) | Unknown `kind`   |
 
 ---
 
@@ -931,6 +981,61 @@ Request body for setting an article's scored topics.
   "topics": [
     {"name": "regulation_legal_enforcement", "score": 0.91},
     {"name": "leadership_personnel", "score": 0.34}
+  ]
+}
+```
+
+### `EnrichmentRequest`
+
+Request body for storing an article's enrichment.
+
+| Field                  | Type      | Required | Constraints                                   |
+| ---------------------- | --------- | -------- | --------------------------------------------- |
+| url                    | string    | yes      | an existing article                           |
+| sentimentLabel         | string    | yes      | `positive`, `negative` or `neutral`           |
+| sentimentScore         | number    | yes      | -1.0 – 1.0 (P(positive) − P(negative))        |
+| mentions               | array     | yes      | may be empty                                  |
+| mentions[].companyId   | string    | yes      | an existing company id                        |
+| mentions[].count       | int       | yes      | ≥ 1                                           |
+| mentions[].salience    | number    | yes      | 0.0 – 1.0                                     |
+| mentions[].inTitle     | boolean   | yes      |                                               |
+| mentions[].sentiment   | number    | no       | -1.0 – 1.0, null if unknown                   |
+
+```json
+{
+  "url": "https://www.fca.org.uk/news/press-releases/example",
+  "sentimentLabel": "negative",
+  "sentimentScore": -0.63,
+  "mentions": [
+    {"companyId": "6f1c…", "count": 5, "salience": 1.0, "inTitle": true, "sentiment": -0.58},
+    {"companyId": "a92e…", "count": 2, "salience": 1.0, "inTitle": true, "sentiment": -0.93}
+  ]
+}
+```
+
+### `CompanyDto`
+
+| Field   | Type          | Description                                                     |
+| ------- | ------------- | --------------------------------------------------------------- |
+| id      | string        | Stable UUID                                                     |
+| name    | string        | Display name                                                    |
+| kind    | enum          | `BANK`, `FINTECH`, `REGULATOR`, `CENTRAL_BANK`, `OTHER`         |
+| country | string        | ISO 3166-1 alpha-2 (`EU` / `INT` for supranational bodies)      |
+| lei     | string        | Legal Entity Identifier when verified by exact GLEIF match, else null |
+| aliases | string[]      | Alternative names used for entity linking                       |
+| tickers | `TickerDto[]` | `{symbol, exchange (ISO 10383 MIC), currency, primary}`, primary first |
+
+```json
+{
+  "id": "6f1c…",
+  "name": "Barclays",
+  "kind": "BANK",
+  "country": "GB",
+  "lei": "213800LBQA1Y9L22JB70",
+  "aliases": ["Barclays Bank"],
+  "tickers": [
+    {"symbol": "BARC", "exchange": "XLON", "currency": "GBP", "primary": true},
+    {"symbol": "BCS", "exchange": "XNYS", "currency": "USD", "primary": false}
   ]
 }
 ```

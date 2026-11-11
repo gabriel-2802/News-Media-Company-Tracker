@@ -60,6 +60,8 @@ public class SecurityConfig {
                         .hasAnyRole(Constants.ROLE_ADMIN, Constants.ROLE_SYSTEM)
                         .requestMatchers(HttpMethod.PATCH, Constants.ARTICLES_BASE_PATH + Constants.ARTICLES_SET_TOPICS_PATH)
                         .hasAnyRole(Constants.ROLE_ADMIN, Constants.ROLE_SYSTEM)
+                        .requestMatchers(HttpMethod.PATCH, Constants.ARTICLES_BASE_PATH + Constants.ARTICLES_ENRICHMENT_PATH)
+                        .hasAnyRole(Constants.ROLE_ADMIN, Constants.ROLE_SYSTEM)
 
                         .requestMatchers(HttpMethod.PATCH, Constants.NEWS_SOURCES_BASE_PATH + Constants.NEWS_SOURCE_RESET_PATH)
                         .hasAnyRole(Constants.ROLE_ADMIN, Constants.ROLE_SYSTEM)

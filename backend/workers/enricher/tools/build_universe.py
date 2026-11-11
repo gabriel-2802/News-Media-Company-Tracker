@@ -193,7 +193,14 @@ def main() -> int:
             if EXCHANGE_MIC.get(row["exchange"]) != t["exchange"]:
                 problems.append(f"{e['name']}: {t['symbol']} SEC exchange {row['exchange']} != curated {t['exchange']}")
 
-    sec_only = [b for b in banks if b["cik"] not in curated_ciks]
+    # SEC filers named after a curated company are its subsidiaries or note
+    # issuers (e.g. "Barclays Bank Plc" files for iPath ETNs such as DJP),
+    # not separate listed banks.
+    curated_prefixes = tuple(e["name"].lower() for e in curated if len(e["name"]) >= 4)
+    issuers = [b for b in banks if b["cik"] not in curated_ciks and b["name"].lower().startswith(curated_prefixes)]
+    for b in issuers:
+        problems.append(f"skipped {b['name']} ({b['tickers'][0]['symbol']}): subsidiary/issuer of a curated company")
+    sec_only = [b for b in banks if b["cik"] not in curated_ciks and b not in issuers]
     print(f"GLEIF lookups for {sum(1 for e in curated if e.get('legalName'))} curated entities...", flush=True)
     entities = []
     for e in curated:

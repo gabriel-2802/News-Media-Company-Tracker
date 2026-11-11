@@ -1334,21 +1334,6 @@
   ]
  },
  {
-  "name": "Banco Santander, S.a.",
-  "kind": "BANK",
-  "country": "US",
-  "lei": null,
-  "aliases": [],
-  "tickers": [
-   {
-    "symbol": "SAN",
-    "exchange": "XNYS",
-    "currency": "USD",
-    "primary": true
-   }
-  ]
- },
- {
   "name": "Sumitomo Mitsui Financial Group, Inc.",
   "kind": "BANK",
   "country": "US",
@@ -1590,21 +1575,6 @@
   ]
  },
  {
-  "name": "Banco Santander (brasil) S.a.",
-  "kind": "BANK",
-  "country": "US",
-  "lei": null,
-  "aliases": [],
-  "tickers": [
-   {
-    "symbol": "BSBR",
-    "exchange": "XNYS",
-    "currency": "USD",
-    "primary": true
-   }
-  ]
- },
- {
   "name": "Woori Financial Group Inc.",
   "kind": "BANK",
   "country": "US",
@@ -1615,21 +1585,6 @@
   "tickers": [
    {
     "symbol": "WF",
-    "exchange": "XNYS",
-    "currency": "USD",
-    "primary": true
-   }
-  ]
- },
- {
-  "name": "Banco Santander Chile",
-  "kind": "BANK",
-  "country": "US",
-  "lei": null,
-  "aliases": [],
-  "tickers": [
-   {
-    "symbol": "BSAC",
     "exchange": "XNYS",
     "currency": "USD",
     "primary": true
@@ -5947,23 +5902,6 @@
    {
     "symbol": "MBBC",
     "exchange": "XNAS",
-    "currency": "USD",
-    "primary": true
-   }
-  ]
- },
- {
-  "name": "Barclays Bank Plc",
-  "kind": "BANK",
-  "country": "US",
-  "lei": null,
-  "aliases": [
-   "Barclays Bank"
-  ],
-  "tickers": [
-   {
-    "symbol": "DJP",
-    "exchange": "XNYS",
     "currency": "USD",
     "primary": true
    }
