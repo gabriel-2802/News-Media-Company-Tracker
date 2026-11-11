@@ -48,6 +48,7 @@ public class NewsService {
                 .region(newsSourceRequest.region())
                 .paywalled(newsSourceRequest.paywalled() != null ? newsSourceRequest.paywalled() : false)
                 .language(newsSourceRequest.language() != null ? newsSourceRequest.language() : "en")
+                .scrapeIntervalMinutes(newsSourceRequest.scrapeIntervalMinutes() != null ? newsSourceRequest.scrapeIntervalMinutes() : 60)
                 .build();
 
         newsSourceRepository.save(source);
@@ -94,8 +95,10 @@ public class NewsService {
                 .region(newsSourceRequest.region())
                 .paywalled(newsSourceRequest.paywalled() != null ? newsSourceRequest.paywalled() : false)
                 .language(newsSourceRequest.language() != null ? newsSourceRequest.language() : "en")
+                .scrapeIntervalMinutes(newsSourceRequest.scrapeIntervalMinutes() != null ? newsSourceRequest.scrapeIntervalMinutes() : 60)
                 .failureCount(existingSource.getFailureCount())
                 .isDisabled(existingSource.getIsDisabled())
+                .lastScrapeQueuedAt(existingSource.getLastScrapeQueuedAt())
                 .build();
 
         newsSourceRepository.save(updatedSource);

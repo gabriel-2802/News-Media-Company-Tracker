@@ -62,6 +62,7 @@ from scraper.news_scraper import (
     BROWSER_UA,
     RATE_LIMIT_SECONDS,
     USER_AGENT,
+    _build_robots,
     parse_rss,
 )
 from env_config import require_env, require_int
@@ -184,10 +185,19 @@ class JobHandler:
             log.warning("[%s] RSS returned no entries", source.name)
             return True
 
-        time.sleep(self._rate_limit)
+        # Honour robots.txt for article pages, including a stricter Crawl-delay.
+        robots = _build_robots(source.base_url)
+        crawl_delay = robots.crawl_delay(USER_AGENT)
+        rate = max(self._rate_limit, float(crawl_delay) if crawl_delay else 0.0)
+
+        time.sleep(rate)
         saved = skipped = failed = 0
 
         for entry in entries:
+            if not robots.can_fetch(USER_AGENT, entry.url):
+                log.info("[%s] robots.txt disallows %s", source.name, entry.url)
+                skipped += 1
+                continue
             if self._provider.article_exists(entry.url):
                 skipped += 1
                 continue
@@ -198,7 +208,7 @@ class JobHandler:
             except (FetchError, ExtractionError) as exc:
                 log.warning("[%s] Article skipped (%s): %s", source.name, entry.url, exc)
                 failed += 1
-                time.sleep(self._rate_limit)
+                time.sleep(rate)
                 continue
 
             article = Article(
@@ -213,13 +223,13 @@ class JobHandler:
 
             if not self._provider.save_article(article):
                 failed += 1
-                time.sleep(self._rate_limit)
+                time.sleep(rate)
                 continue
 
             self._publish(ARTICLE_SAVED_ROUTING_KEY, {"url": article.url, "source_name": article.source})
             saved += 1
             log.info("[%s] Saved + queued for clustering: %s", source.name, article.title[:80])
-            time.sleep(self._rate_limit)
+            time.sleep(rate)
 
         log.info("[%s] Done — saved=%d skipped=%d failed=%d", source.name, saved, skipped, failed)
         return True

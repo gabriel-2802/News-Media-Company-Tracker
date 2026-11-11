@@ -13,8 +13,13 @@ public class ScrapeScheduler {
 
     private final ArticleService articleService;
 
-    @Scheduled(cron = "0 0 */6 * * *")
+    /**
+     * Checks every few minutes (SCRAPE_TICK_MS, default 5 min) which sources
+     * are due according to their own scrapeIntervalMinutes. The tick only
+     * bounds scheduling precision; the per-source interval sets frequency.
+     */
+    @Scheduled(fixedDelayString = "${scrape.tick-ms:300000}", initialDelayString = "${scrape.initial-delay-ms:60000}")
     public void triggerScheduledScrape() {
-        articleService.triggerScrape();
+        articleService.triggerDueScrapes();
     }
 }

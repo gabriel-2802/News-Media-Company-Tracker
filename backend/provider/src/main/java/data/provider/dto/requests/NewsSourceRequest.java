@@ -3,6 +3,8 @@ package data.provider.dto.requests;
 import data.provider.models.Region;
 import data.provider.models.SourceCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 
@@ -40,6 +42,10 @@ public record NewsSourceRequest(
 
         @Schema(description = "ISO 639-1 language code of the source.", example = "en", defaultValue = "en")
         String language,
+
+        @Min(5) @Max(1440)
+        @Schema(description = "Minutes between scheduled scrapes of this source.", example = "30", defaultValue = "60")
+        Integer scrapeIntervalMinutes,
 
         @Schema(description = "Free-text notes about this source.")
         String notes

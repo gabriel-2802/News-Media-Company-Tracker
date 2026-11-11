@@ -5,6 +5,8 @@ import data.provider.models.Region;
 import data.provider.models.SourceCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
 
+import java.time.ZonedDateTime;
+
 @Schema(description = "A registered news source and its current stats.")
 public record NewsSourceDto(
 
@@ -30,6 +32,12 @@ public record NewsSourceDto(
         @Schema(description = "ISO 639-1 language code of the source.", example = "en")
         String language,
 
+        @Schema(description = "Minutes between scheduled scrapes of this source.", example = "30")
+        int scrapeIntervalMinutes,
+
+        @Schema(description = "When the scheduler last queued a scrape job for this source.")
+        ZonedDateTime lastScrapeQueuedAt,
+
         @Schema(description = "Number of consecutive scrape failures recorded for this source.", example = "0")
         int failureCount,
 
@@ -50,6 +58,8 @@ public record NewsSourceDto(
                 newsSource.getRegion(),
                 Boolean.TRUE.equals(newsSource.getPaywalled()),
                 newsSource.getLanguage(),
+                newsSource.getScrapeIntervalMinutes() != null ? newsSource.getScrapeIntervalMinutes() : 60,
+                newsSource.getLastScrapeQueuedAt(),
                 newsSource.getFailureCount(),
                 newsSource.getIsDisabled(),
                 articleCount,

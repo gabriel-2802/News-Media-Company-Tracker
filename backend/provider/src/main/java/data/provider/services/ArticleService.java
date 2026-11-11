@@ -129,6 +129,19 @@ public class ArticleService {
         return sources.size();
     }
 
+    /**
+     * Queues a scrape job for every enabled source whose own
+     * scrapeIntervalMinutes has elapsed since it was last queued.
+     */
+    public int triggerDueScrapes() {
+        final List<String> due = newsSourceRepository.claimDueSources();
+        due.forEach(name -> rabbitTemplate.convertAndSend(scrapeJobsQueue, new ScrapeJobMessage(name)));
+        if (!due.isEmpty()) {
+            log.info(Constants.SCRAPE_DUE_TRIGGERED_LOG, due.size(), due);
+        }
+        return due.size();
+    }
+
     public PageDto<ArticleDto> searchArticles(final String query, final int page, final int count) {
         final String fulltextQuery = FullTextSearchUtil.toPrefixQuery(query);
         return PageDto.of(articleRepository.searchByTitleOrBody(fulltextQuery, PageRequest.of(page, count)), ArticleDto::new);

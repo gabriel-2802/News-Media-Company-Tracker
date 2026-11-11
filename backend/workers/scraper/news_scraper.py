@@ -22,6 +22,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import subprocess
 import sys
 import time
@@ -31,8 +32,9 @@ from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
-from urllib.parse import urljoin
+from urllib.parse import parse_qsl, urlencode, urljoin, urlsplit, urlunsplit
 
+import feedparser
 import requests
 import trafilatura
 from bs4 import BeautifulSoup
@@ -204,7 +206,13 @@ class HttpFetcher(BaseFetcher):
             try:
                 r = self._session.get(url, timeout=self._timeout)
                 r.raise_for_status()
-                return r.text
+                # Without a charset in Content-Type, requests falls back to
+                # ISO-8859-1 for text/*, which turns a UTF-8 BOM into "ï»¿"
+                # before "<?xml" and makes feeds parse to zero entries
+                # (seen on federalreserve.gov). Detect the real encoding.
+                if "charset" not in r.headers.get("Content-Type", "").lower():
+                    r.encoding = r.apparent_encoding
+                return r.text.lstrip("﻿")
             except requests.HTTPError as exc:
                 resp = exc.response
                 status = resp.status_code if resp is not None else None
@@ -498,55 +506,118 @@ def _parse_date(date_str: Optional[str]) -> Optional[datetime]:
         return None
 
 
-def parse_rss(feed_html: str) -> list[RSSEntry]:
-    soup = BeautifulSoup(feed_html, "lxml-xml")
+_TRACKING_PARAMS = re.compile(r"^(utm_\w+|fbclid|gclid|mc_cid|mc_eid|cmpid|xtor|at_\w+)$", re.IGNORECASE)
+
+
+def canonical_url(url: str) -> str:
+    """Drop tracking query params and fragments, keep identity params.
+
+    The old behaviour (url.split("?")[0]) collapsed every article of sites
+    that identify articles by query string (e.g. ?id=123) into one URL.
+    """
+    parts = urlsplit(url.strip())
+    query = [(k, v) for k, v in parse_qsl(parts.query, keep_blank_values=True)
+             if not _TRACKING_PARAMS.match(k)]
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, urlencode(query), ""))
+
+
+def _struct_to_dt(st: object) -> Optional[datetime]:
+    if not st:
+        return None
+    try:
+        return datetime(*st[:6], tzinfo=timezone.utc)  # type: ignore[index]
+    except (TypeError, ValueError):
+        return None
+
+
+_TIME_DATETIME = re.compile(r"<time[^>]*\bdatetime=[\"']([^\"']+)[\"']", re.IGNORECASE)
+
+
+def _date_from_summary(summary: Optional[str]) -> Optional[datetime]:
+    """Some CMS feeds (e.g. Drupal, used by ESMA) carry no pubDate and only
+    embed the date as <time datetime="..."> inside the description HTML."""
+    if not summary:
+        return None
+    m = _TIME_DATETIME.search(summary)
+    return _parse_date(m.group(1)) if m else None
+
+
+def parse_rss(feed: str | bytes) -> list[RSSEntry]:
+    """Parse RSS 0.9x / 1.0 (RDF) / 2.0 and Atom via feedparser.
+
+    feedparser handles BOMs, encodings, RDF feeds, namespaced dates
+    (dc:date, updated, published) and recoverable malformed XML, which the
+    previous BeautifulSoup parser missed (e.g. ESMA's feed parsed with no
+    dates). Returns [] for documents with no entries.
+    """
+    if isinstance(feed, str):
+        feed = feed.lstrip("﻿")
+    parsed = feedparser.parse(feed)
     entries: list[RSSEntry] = []
     seen: set[str] = set()
 
-    rss_items = soup.find_all("item")
-    atom_entries = soup.find_all("entry")
-    items = rss_items if rss_items else atom_entries
-    is_atom = not rss_items and bool(atom_entries)
-
-    for item in items:
-        url: Optional[str] = None
-        if is_atom:
-            for link_tag in item.find_all("link"):
-                if link_tag.get("href") and link_tag.get("rel", "alternate") in ("alternate", ""):
-                    url = str(link_tag["href"])
+    for item in parsed.entries:
+        url = item.get("link") or ""
+        if not url:
+            for link in item.get("links", []):
+                if link.get("rel", "alternate") == "alternate" and link.get("href"):
+                    url = link["href"]
                     break
-            if not url:
-                id_tag = item.find("id")
-                url = _text(id_tag) if id_tag else None
-        else:
-            rss_link = item.find("link")
-            if rss_link is not None:
-                url = _text(rss_link) or str(rss_link.get("href", "") or "")
-            if not url:
-                guid = item.find("guid")
-                url = _text(guid) if guid else None
-
+        if not url:
+            guid = item.get("id") or ""
+            url = guid if guid.startswith("http") else ""
         if not url:
             continue
-        url = url.split("?")[0]
+        url = canonical_url(url)
         if url in seen:
             continue
         seen.add(url)
 
-        title = _text(item.find("title")) or ""
-        if is_atom:
-            author_tag = item.find("author")
-            name_tag = author_tag.find("name") if author_tag else None
-            author: Optional[str] = _text(name_tag)
-            pub_str = _text(item.find("published")) or _text(item.find("updated"))
-        else:
-            author = _text(item.find("dc:creator")) or _text(item.find("author"))
-            pub_str = _text(item.find("pubDate")) or _text(item.find("dc:date"))
+        published = (
+            _struct_to_dt(item.get("published_parsed"))
+            or _struct_to_dt(item.get("updated_parsed"))
+            or _struct_to_dt(item.get("created_parsed"))
+            or _parse_date(item.get("published") or item.get("updated"))
+            or _date_from_summary(item.get("summary"))
+        )
+        entries.append(RSSEntry(
+            url=url,
+            title=(item.get("title") or "").strip(),
+            author=item.get("author") or None,
+            published_at=published,
+        ))
 
-        entries.append(RSSEntry(url=url, title=title, author=author, published_at=_parse_date(pub_str)))
-
-    log.info("Parsed %d entries from %s feed", len(entries), "Atom" if is_atom else "RSS")
+    log.info("Parsed %d entries (%s)", len(entries), parsed.get("version") or "unknown format")
     return entries
+
+
+COMMON_FEED_PATHS = ("/feed", "/feed/", "/rss", "/rss.xml", "/feed.xml", "/atom.xml", "/index.xml", "/news/rss")
+
+
+def discover_feeds(base_url: str, fetcher: BaseFetcher) -> list[str]:
+    """Find candidate feed URLs for a site.
+
+    1. <link rel="alternate" type="application/rss+xml|atom+xml"> on the homepage
+    2. conventional feed paths (/feed, /rss.xml, ...) as a fallback
+    Returns URLs in preference order (news/press-looking feeds first).
+    """
+    found: list[str] = []
+    try:
+        html = fetcher.fetch(base_url)
+        soup = BeautifulSoup(html, "lxml")
+        for tag in soup.find_all("link", attrs={"rel": "alternate"}):
+            typ = (tag.get("type") or "").lower()
+            href = tag.get("href")
+            if href and ("rss" in typ or "atom" in typ):
+                found.append(urljoin(base_url, href))
+    except FetchError:
+        pass
+    found.sort(key=lambda u: 0 if re.search(r"news|press|rss|feed", u, re.IGNORECASE) else 1)
+    for path in COMMON_FEED_PATHS:
+        url = urljoin(base_url, path)
+        if url not in found:
+            found.append(url)
+    return found
 
 
 # ---------------------------------------------------------------------------

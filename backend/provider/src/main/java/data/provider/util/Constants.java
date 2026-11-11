@@ -22,6 +22,7 @@ public final class Constants {
     public static final String NEWS_SOURCE_ADD_SUCCESS_LOG = "News source saved successfully: name={}, id={}";
     public static final String NEWS_SOURCE_UPDATE_SUCCESS_LOG = "News source updated successfully: name={}, id={}";
     public static final String V1_CLASSIFIER_CREATED_LOG = "ClassificationEngineV1 initialized with API URL: {}";
+    public static final String SCRAPE_DUE_TRIGGERED_LOG = "Scheduled scrape: queued {} due source(s): {}";
     public static final String SCRAPE_TRIGGERED_LOG = "Scrape triggered: queued {} job(s) on the scrape jobs queue.";
     public static final String ARTICLE_NOTIFICATION_PUBLISHED_LOG = "Published {} notification: name={}, articleUrl={}";
     public static final String ARTICLE_NOTIFICATION_SKIPPED_LOG = "No subscription for {} '{}' — skipping notification for article {}";
