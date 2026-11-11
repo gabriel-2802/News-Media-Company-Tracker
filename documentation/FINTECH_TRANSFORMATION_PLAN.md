@@ -11,6 +11,31 @@
 | Market universe | **Global English (US / UK / EU)**: banks, fintech/payments, regulators, central banks |
 | Classifier training | **Public datasets only** (no LLM labelling). A small hand-labelled set of our own articles is used **for evaluation only** |
 | Extras in scope | Entity and ticker linking · price data with event overlays · FinBERT sentiment · ticker watchlists and alerts |
+| Service layout | Microservices: every HTTP service in Java (Spring Boot), Python only for the ML/scraping workers. Charts in a separate `analytics` service with its own `market` database on the existing Postgres server |
+| Regulation gap | Fix with a rule layer on top of the model (stays public-data only), not LLM labelling |
+| Commits | No Claude attribution in commit messages |
+
+## Progress log
+
+| Phase | Status | Commit(s) | Notes |
+|---|---|---|---|
+| 0. Baseline and wipe | Done | `6ca0d42`, `b046dd8` | Neo4j migrations squashed to a schema-only V1. Qdrant was already empty (the old API key had been revoked; replaced). |
+| 1. Remove political data | Done | `d13dfb1` | `NewsSource` gained `category`, `region`, `paywalled`, `language`. |
+| 2. Banking sources | Done | `428343a` | 41 candidates → 27 PASS seeded via generated V2. Per-source intervals (15/30/60 min) with an atomic Cypher claim. |
+| 3. Graph model | Done | `6846a66` | Multi-label `HAS_TOPIC {score}`, Company/Ticker, Cypher-managed MENTIONS/AFFECTS. |
+| 4. Classifier | Done | `1fe08a9`, `33b3954` | TFNT macro-F1 0.906, Reuters 0.915 (0.902 / 0.913 with rules). In-domain evaluation still needs ~300 hand labels. |
+| 5. Enricher | In progress | `1736add` | Company universe built (360 entities, 349 tickers, 57 verified LEIs). Worker (NER, linking, FinBERT sentiment) not started. |
+| 6–10 | Not started | | |
+| Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
+
+### Deviations from the original plan
+
+- **Phase 2:** the hardened crawler does not imitate browsers or use a headless browser to get past 403/bot protection (sites that block us are excluded, not worked around). It still honours robots.txt and paywalls. Fixes that were made: encoding detection for charset-less feeds, feedparser, `<time datetime>` dates, tracking-only URL canonicalisation, feed discovery, per-article robots.txt in the worker.
+- **Phase 2:** no `make validate-sources` target; the validator runs as `python -m scraper.tools.validate_sources` (see README).
+- **Phase 3:** MENTIONS/AFFECTS are not mapped on Article/Story entities, because Spring Data Neo4j's `save()` deletes unloaded relationships.
+- **Phase 4:** base model `ProsusAI/finbert`; max length 64 (not 256), bottom 6 layers frozen, 3 epochs. Needed because MPS training at full size ran at 4.4 s/step; the shorter setup trains in about 40 minutes. Attention dropout is 0 (MPS fused attention does not support it).
+- **Phase 4:** added the rule layer (`classifier/rules.py`) after live headlines showed the model maps every Fed release to monetary policy and misses enforcement news.
+- **Migration numbers:** V3 is the entity schema, V4 the topics, V5 the company universe.
 
 ## Guiding principle: reuse, don't rebuild
 

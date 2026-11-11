@@ -140,7 +140,7 @@ Get a single registered news source by name, including its article count.
 
 | Name       | Type   | Description                                   |
 | ---------- | ------ | --------------------------------------------- |
-| sourceName | string | Name of the news source, e.g.`example-news` |
+| sourceName | string | Name of the news source, e.g.`banking-dive` |
 
 **Responses**
 
@@ -184,7 +184,7 @@ Replaces a news source's data with the desired final state. Fails if the new nam
 
 | Name       | Type   | Description                                   |
 | ---------- | ------ | --------------------------------------------- |
-| sourceName | string | Name of the news source, e.g.`example-news` |
+| sourceName | string | Name of the news source, e.g.`banking-dive` |
 
 **Request body:** [`NewsSourceRequest`](#newssourcerequest)
 
@@ -209,7 +209,7 @@ Increments the consecutive scrape-failure counter for the given source. Used by 
 
 | Name       | Type   | Description                                   |
 | ---------- | ------ | --------------------------------------------- |
-| sourceName | string | Name of the news source, e.g.`example-news` |
+| sourceName | string | Name of the news source, e.g.`banking-dive` |
 
 **Responses**
 
@@ -232,7 +232,7 @@ Resets a source's failure counter to `0` and re-enables it (`isDisabled = false`
 
 | Name       | Type   | Description                                   |
 | ---------- | ------ | --------------------------------------------- |
-| sourceName | string | Name of the news source, e.g.`example-news` |
+| sourceName | string | Name of the news source, e.g.`banking-dive` |
 
 **Responses**
 
@@ -374,7 +374,7 @@ Check whether an article with the given URL has already been ingested. Used by t
 
 | Name | Type   | Description                                                                   |
 | ---- | ------ | ----------------------------------------------------------------------------- |
-| url  | string | Canonical URL to check, e.g.`https://example.com/news/senate-passes-budget` |
+| url  | string | Canonical URL to check, e.g.`https://www.bankingdive.com/news/regional-lender-acquires-rival/` |
 
 **Responses**
 
@@ -528,7 +528,7 @@ Creates a new, empty story cluster with the given title.
 
 | Name  | Type   | Description                                                            |
 | ----- | ------ | ---------------------------------------------------------------------- |
-| title | string | Title for the new story cluster, e.g.`Senate passes new budget bill` |
+| title | string | Title for the new story cluster, e.g.`Regional lender agrees to acquire rival in $2.1B deal` |
 
 **Responses**
 
@@ -759,11 +759,13 @@ Decrements the subscription count for the given topic. The subscription is delet
 
 ## RabbitMQ side effects
 
-The Provider is a RabbitMQ producer only — it never consumes. Full topology, queue names, and consumers are documented in [`../RABBIT.md`](../RABBIT.md). Summary of what the HTTP API above triggers:
+The Provider is a RabbitMQ producer only — it never consumes. Full topology, queue names, and consumers are documented in the README's [Message Queue Topology](../README.md#message-queue-topology-rabbitmq) section. Summary of what the HTTP API above triggers:
 
 | Endpoint                                                                              | Condition                                   | Queue                     | Message                                                               |
 | ------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------- | --------------------------------------------------------------------- |
-| `POST /api/articles/trigger-scrape` (and the internal 6-hourly `ScrapeScheduler`) | always, once per registered news source     | `scrape.jobs`           | `{"name": "<sourceName>", "retry_count": 0}`                        |
+| `POST /api/articles/trigger-scrape` | always, once per registered news source     | `scrape.jobs`           | `{"name": "<sourceName>", "retry_count": 0}`                        |
+| `ScrapeScheduler` (every 5 min, internal) | once per enabled source whose `scrapeIntervalMinutes` has elapsed | `scrape.jobs` | `{"name": "<sourceName>", "retry_count": 0}` |
+| `PATCH /api/articles/topics` | once per topic in the request that has a subscription | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}` |
 | `PATCH /api/articles/topic`                                                         | only if a subscription exists for the topic | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}`   |
 | `PATCH /api/stories/{storyId}/attach`                                               | only if a subscription exists for the story | `article.notifications` | `{"name": "<story title>", "articleUrl": "<url>", "type": "STORY"}` |
 
@@ -888,11 +890,11 @@ Request body for saving an article.
 ```json
 {
   "author": "Jane Doe",
-  "title": "Senate passes new budget bill",
-  "url": "https://example.com/news/senate-passes-budget",
+  "title": "Regional lender agrees to acquire rival in $2.1B deal",
+  "url": "https://www.bankingdive.com/news/regional-lender-acquires-rival/",
   "bodyText": "Full article text goes here.",
   "publishedAt": "2026-07-01T14:30:00",
-  "sourceName": "example-news"
+  "sourceName": "banking-dive"
 }
 ```
 
@@ -907,8 +909,8 @@ Request body for tagging an article with a topic.
 
 ```json
 {
-  "url": "https://www.bbc.co.uk/news/articles/ckg8m2xkg84o",
-  "topic": "religion"
+  "url": "https://www.bankingdive.com/news/regional-lender-acquires-rival/",
+  "topic": "m_and_a_investments"
 }
 ```
 
@@ -951,7 +953,7 @@ Response shape for a story cluster.
 ```json
 {
   "id": "550e8400-e29b-41d4-a716-446655440000",
-  "title": "Senate passes new budget bill",
+  "title": "Regional lender agrees to acquire rival in $2.1B deal",
   "createdAt": "2026-07-01T14:00:00Z",
   "lastUpdated": "2026-07-01T18:30:00Z",
   "articleCount": 12,
@@ -971,7 +973,7 @@ Request body for attaching an article to a story.
 
 ```json
 {
-  "articleUrl": "https://example.com/news/senate-passes-budget"
+  "articleUrl": "https://www.bankingdive.com/news/regional-lender-acquires-rival/"
 }
 ```
 

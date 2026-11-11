@@ -1,8 +1,17 @@
 # News Monitor : Complete System Architecture
 
-**News Monitor** is a distributed, backend news processing pipeline designed to ingest, classify, and cluster news articles into stories. The system separates concerns across three independent services : a user-facing manager, a data provider, and a set of Python workers, connected by HTTP and RabbitMQ, each owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
+**News Monitor** is a distributed backend that ingests, classifies and clusters **banking and fintech news** into stories, for an investor-facing app. It started as a generic news monitor and is being transformed step by step (see [`documentation/FINTECH_TRANSFORMATION_PLAN.md`](documentation/FINTECH_TRANSFORMATION_PLAN.md) for the plan and its progress log). The system separates concerns across three independent services : a user-facing manager, a data provider, and a set of Python workers, connected by HTTP and RabbitMQ, each owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
 
-**For detailed API endpoints and schemas, see:** [`PROVIDER_API.md`](PROVIDER_API.md) and [`MANAGER_API.md`](MANAGER_API.md).
+**For detailed API endpoints and schemas, see:** [`PROVIDER_API.md`](documentation/PROVIDER_API.md) and [`MANAGER_API.md`](documentation/MANAGER_API.md).
+
+### Banking / fintech status
+
+| Area | State |
+| --- | --- |
+| Sources | 27 validated US/UK/EU feeds: trade press, financial news, regulators, central banks ([report](data/source_validation/report.md)). Political-orientation data removed. |
+| Topics | 13 banking topics, multi-label with scores: FinBERT fine-tuned on public data + a rule layer for regulator/enforcement content |
+| Entities | 360 companies (banks, fintechs, regulators, central banks) and 349 tickers seeded; article linking (enricher worker) is next |
+| Market data and charts | Planned: separate Spring Boot `analytics` service |
 
 ---
 
@@ -192,7 +201,8 @@ Three independent processes, each consuming from one RabbitMQ queue, calling the
 - Try static HTTP (fast).
 - Fall back to browser user-agent if needed (bypasses UA-based blocks).
 - Fall back to Playwright headless Chrome (for JavaScript-heavy sites).
-- Honor `robots.txt` and rate limits, retry on transient failures.
+- Honor `robots.txt` for every article (including a stricter `Crawl-delay`) and rate limits, retry on transient failures.
+- Feeds are parsed with `feedparser` (RSS 0.9x/1.0/2.0, Atom; encodings detected when the server sends no charset).
 
 #### Classifier Worker
 
@@ -361,13 +371,13 @@ flowchart LR
 **`scrape.jobs`** - One per news source per scrape trigger:
 
 ```json
-{ "name": "bbc", "retry_count": 0 }
+{ "name": "banking-dive", "retry_count": 0 }
 ```
 
 **`article.classify` / `article.cluster`** - Same message, fanned out from `article.saved`:
 
 ```json
-{ "url": "https://example.com/news/...", "source_name": "bbc" }
+{ "url": "https://www.bankingdive.com/news/...", "source_name": "banking-dive" }
 ```
 
 **`article.notifications`** - Published only when subscription exists:
@@ -379,14 +389,14 @@ flowchart LR
 or
 
 ```json
-{ "name": "Senate Debates", "articleUrl": "https://...", "type": "STORY" }
+{ "name": "Regional lender agrees to acquire rival", "articleUrl": "https://...", "type": "STORY" }
 ```
 
 ### Producer & Consumer Summary
 
 | Queue                     | Producer                                                                | Consumer                                  | Condition                                       |
 | ------------------------- | ----------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------- |
-| `scrape.jobs`           | Provider (6h scheduler + manual trigger), Scraper (re-queue on failure) | Scraper worker                            | Always                                          |
+| `scrape.jobs`           | Provider (5-min due-source scheduler + manual trigger), Scraper (re-queue on failure) | Scraper worker                            | Always                                          |
 | `article.classify`      | Scraper (fan-out via topic exchange)                                    | Classifier worker                         | Always, after article saved                     |
 | `article.cluster`       | Scraper (fan-out via topic exchange)                                    | Clusterer worker                          | Always, after article saved                     |
 | `article.notifications` | Provider (`ArticleService`, `StoryService`)                         | Manager (`ArticleNotificationListener`) | Only if subscription exists for the story/topic |
@@ -457,7 +467,15 @@ Index on `(user_id, seen)` for unseen-notification queries. Only written by `Art
 
 ### Neo4j: Provider's Graph Data
 
-**Single graph database, no schemas.** Constraints/indexes provisioned by Cypher migrations (`V1`–`V9`).
+**Single graph database, no schemas.** Schema and seed data come from Cypher migrations in `backend/neo4j/migrations/`, applied automatically when the container starts:
+
+| Migration | Content |
+| --- | --- |
+| `V1__baseline_schema` | Constraints and indexes (squashed from the old generic-news V1–V9) |
+| `V2__seed_banking_sources` | 27 validated sources (generated by `scraper/tools/validate_sources.py`) |
+| `V3__company_ticker_schema` | Company / Ticker / Story constraints, company-name fulltext index, AFFECTS indexes |
+| `V4__seed_banking_topics` | The 13 banking topics (must match `classifier/training/taxonomy.py`) |
+| `V5__seed_company_universe` | 360 companies and 349 tickers (generated by `enricher/tools/build_universe.py`) |
 
 #### Nodes
 
@@ -477,8 +495,11 @@ Index on `(user_id, seen)` for unseen-notification queries. Only written by `Art
 
 ```
 (:NewsSource)-[:PUBLISHED]->(:Article)
-(:Article)-[:HAS_TOPIC]->(:Topic)
+(:Article)-[:HAS_TOPIC {score}]->(:Topic)                         // multi-label
 (:Article)-[:BELONGS_TO]->(:Story)
+(:Article)-[:MENTIONS {count, salience, inTitle, sentiment}]->(:Company)   // Cypher-managed
+(:Story)-[:AFFECTS {firstSeen, impactScore}]->(:Company)                   // Cypher-managed
+(:Company)-[:LISTED_AS {primary}]->(:Ticker)
 (:Subscription)-[:SUBSCRIBES_TO]->(:Story | :Topic)
 ```
 
@@ -536,13 +557,14 @@ Any other exception is logged and the message is nacked for requeue; worker keep
 
 ### Scraper Worker
 
-**Consumes:** `scrape.jobs` (one per news source per 6h) | **Publishes:** `scrape.jobs` (re-queue on failure), `article.saved` (on every saved article) | **Run:** `make scrape-worker`
+**Consumes:** `scrape.jobs` (one per source per its `scrapeIntervalMinutes`) | **Publishes:** `scrape.jobs` (re-queue on failure), `article.saved` (on every saved article) | **Run:** `make scrape-worker`
 
 **What it does:**
 
 1. Get source config (RSS URL, base URL, disabled flag) from Provider.
 2. If disabled: one attempt only-success re-enables it (`reset_failures`), failure keeps it disabled (no re-queue).
 3. If enabled: fetch and parse RSS feed, skip already-ingested URLs, for each new entry:
+   - Skip it if `robots.txt` disallows the URL for our user agent.
    - Fetch HTML via `SmartFetcher` (multi-strategy fallback below).
    - Extract body text with `TrafilaturaExtractor`.
    - Save via `POST /api/articles`.
@@ -560,10 +582,23 @@ Any other exception is logged and the message is nacked for requeue; worker keep
 **Key env vars:**
 
 - `SCRAPE_MAX_ATTEMPTS` - re-queue cap per job.
-- `RSS_BROWSER_UA_SOURCES` - comma-separated sources that need browser UA for RSS.
+- `RSS_BROWSER_UA_SOURCES` - comma-separated sources whose feed needs the browser UA (none of the current banking sources do; empty is fine).
 - `USER_AGENT` / `BROWSER_USER_AGENT` - bot vs. browser identities.
 - `RATE_LIMIT_SECONDS` - delay between requests to same source.
 - `JS_LOAD_WAIT_MS` / `JS_MIN_CHARS` - Playwright wait time and extracted-text threshold.
+
+#### Validating and seeding sources
+
+Sources are not hand-picked into the database. Candidates live in `data/source_candidates.json`; the validator checks each one the way the scraper will fetch it and only seeds those that pass:
+
+```bash
+cd backend/workers
+scraper/venv/bin/python -m scraper.tools.validate_sources                 # validate + report
+scraper/venv/bin/python -m scraper.tools.validate_sources --write         # + regenerate data/sources.json and V2 migration
+scraper/venv/bin/python -m scraper.tools.validate_sources --reuse-report --write   # re-apply rules without network calls
+```
+
+Checks: feed reachable and parseable (with feed discovery from the homepage and common paths), freshness, items per day (sets `scrapeIntervalMinutes` to 15/30/60), `robots.txt`, body extraction with the production fetch chain, paywall markers, and banking relevance. Verdicts: `PASS` (seeded), `HEADLINE_ONLY` (paywalled or unextractable; not seeded, since the scraper drops body-less articles), `FAIL`. The validator does not try to get around bot protection or paywalls. Results: `data/source_validation/report.md`.
 
 ### Classifier Worker
 
@@ -572,10 +607,37 @@ Any other exception is logged and the message is nacked for requeue; worker keep
 **What it does:**
 
 1. Fetch article title + body from Provider (`GET /api/articles/by-url`). Drop if not found.
-2. Classify `"{title}\n\n{body_text}"` with fine-tuned `NewsClassifier` (86% accuracy vs. 52% baseline).
-3. Write topic back via `PATCH /api/articles/topic`.
+2. Classify title + the first 600 characters of the body (max 64 tokens, as in training) with the multi-label `NewsClassifier`; keep every topic above its tuned threshold, else the top one.
+3. Apply the rule layer (`classifier/rules.py`) using the source's category, looked up once per source.
+4. Write the scored topics back via `PATCH /api/articles/topics`, logging any rules that fired.
 
-**Model:** `AutoModelForSequenceClassification`, stored in `cls_model_output/` with `label2id.json`. Loads lazily on first use via `NewsClassifier.get_instance()` - not at import time.
+**Topics:** `earnings_results`, `m_and_a_investments`, `monetary_policy_rates`, `regulation_legal_enforcement`, `debt_capital_markets`, `dividends_buybacks`, `analyst_ratings`, `leadership_personnel`, `fx_currencies`, `macro_economy`, `markets_stock_moves`, `company_product_news`, `other`.
+
+**Model:** `cls_model_output/` (gitignored, about 440 MB): config with `id2label`, tokenizer, `label2id.json`, `thresholds.json`, `metrics.json`. Override the path with `CLASSIFIER_MODEL_DIR`. Loads lazily via `NewsClassifier.get_instance()`. Training data is public only, so its scores on our own articles are not measured yet (needs hand labels).
+
+| Held-out test | Model only | Model + rules |
+| --- | --- | --- |
+| Twitter Financial News, macro-F1 | 0.906 | 0.902 |
+| Reuters-21578, macro-F1 | 0.915 | 0.913 |
+
+```bash
+classifier/venv/bin/python -m unittest discover -s classifier/tests -t .   # rule tests
+classifier/venv/bin/python -m classifier.training.eval_rules               # rule impact on public test sets
+```
+
+### Company Universe (input for the enricher)
+
+`enricher/tools/build_universe.py` builds the entities that articles will be linked to:
+
+- **US banks** from SEC data: NYSE/Nasdaq companies with bank SIC codes 6021, 6022, 6029, 6035, 6036 (uses the SEC-required identifying `USER_AGENT` from `.env`).
+- **Curated** (`data/company_universe_curated.json`): large US banks with display names and aliases, fintechs, UK/EU banks, regulators and central banks. Curated US tickers are checked against the SEC file.
+- **LEIs** from GLEIF, exact legal-name matches only (unmatched stay empty rather than risk a subsidiary's LEI).
+
+```bash
+cd backend/workers && scraper/venv/bin/python -m enricher.tools.build_universe
+```
+
+Writes `data/company_universe.json`, the generated `V5__seed_company_universe.cypher` and `data/company_universe_report.md` (items to review).
 
 ### Clusterer Worker
 
@@ -619,7 +681,7 @@ Any other exception is logged and the message is nacked for requeue; worker keep
 
 - Text truncated at 4000 chars before embedding (original model max is 32768 tokens). Loss of signal for stories diverging deep in long articles.
 - Extraction noise: trafilatura sometimes pulled boilerplate instead of article body (worth broader spot-check before trusting threshold as final).
-- Dataset: 2020-era COVID news, English-only. Suggested threshold is a starting point-revisit once real traffic accumulates.
+- Dataset: 2020-era COVID news, English-only. The threshold has not yet been re-validated on financial news (planned; formulaic headlines like "X beats Q3 estimates" risk false merges across banks).
 
 ---
 
@@ -669,8 +731,9 @@ If provider's public key (`JWT_PUBLIC_KEY_PATH`) doesn't match manager's private
 ### Prerequisites
 
 - Docker + Docker Compose v2 (`docker compose version`)
-- To run manager/provider outside Docker: JDK 21 + Maven
-- To run workers outside Docker: Python 3
+- To run manager/provider outside Docker: JDK 21 + Maven (`export JAVA_HOME=$(/usr/libexec/java_home -v 21)`; Lombok fails to compile on JDK 25)
+- To run workers outside Docker: Python 3.11 (`brew install python@3.11`). The workers Makefile uses `/opt/homebrew/bin/python3.11` by default; override with `make setup PYTHON=...`. The macOS Command Line Tools Python 3.9 crashes when launching the Playwright helper processes.
+- The classifier model is not in git: train it once (see [Classifier Worker](#classifier-worker)) before running the classifier or building its image.
 
 ### One-Time Setup
 
