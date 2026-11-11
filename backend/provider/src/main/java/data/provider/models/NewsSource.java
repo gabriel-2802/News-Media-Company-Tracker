@@ -5,11 +5,6 @@ import lombok.Builder;
 import lombok.Data;
 import org.springframework.data.neo4j.core.schema.*;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 @Node("NewsSource")
 @Data
 @Builder
@@ -23,6 +18,16 @@ public class NewsSource {
     private String rssUrl;
 
     /**
+     * Classification of the publisher, used for event filters.
+     */
+    private SourceCategory category;
+    private Region region;
+    @Builder.Default
+    private Boolean paywalled = false;
+    @Builder.Default
+    private String language = "en";
+
+    /**
      * Data for disabling a source which cannot be fetched from
      */
     @Builder.Default
@@ -30,16 +35,5 @@ public class NewsSource {
     @Builder.Default
     private Boolean isDisabled = false;
 
-    /**
-     * Data for political bias
-     */
-    private String politicalView;
     private String notes;
-    @Builder.Default
-    private List<String> sources  = new ArrayList<>();
-    @CompositeProperty
-    @Builder.Default
-    private Map<String, String> biasScores  = new HashMap<>();
-
-
 }

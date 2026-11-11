@@ -323,7 +323,7 @@ List articles tagged with a given topic, paginated.
 
 | Name      | Type   | Description                         |
 | --------- | ------ | ----------------------------------- |
-| topicName | string | Name of the topic, e.g.`politics` |
+| topicName | string | Name of the topic, e.g.`regulation_legal_enforcement` |
 
 **Query parameters**
 
@@ -625,7 +625,7 @@ Check whether a topic with the given name already exists.
 
 | Name | Type   | Description                                  |
 | ---- | ------ | -------------------------------------------- |
-| name | string | Name of the topic to check, e.g.`Politics` |
+| name | string | Name of the topic to check, e.g.`regulation_legal_enforcement` |
 
 **Responses**
 
@@ -699,7 +699,7 @@ Creates a subscription to the given topic with `count = 1`, or increments the co
 
 | Name      | Type   | Description                                         |
 | --------- | ------ | --------------------------------------------------- |
-| topicName | string | Name of the topic to subscribe to, e.g.`Politics` |
+| topicName | string | Name of the topic to subscribe to, e.g.`regulation_legal_enforcement` |
 
 **Responses**
 
@@ -753,31 +753,33 @@ The Provider is a RabbitMQ producer only — it never consumes. Full topology, q
 
 Response shape for a news source.
 
-| Field         | Type               | Description                                                             |
-| ------------- | ------------------ | ----------------------------------------------------------------------- |
-| name          | string             | Source's unique name                                                    |
-| baseUrl       | string             | Source's homepage/base URL                                              |
-| rssUrl        | string             | Source's RSS feed URL                                                   |
-| failureCount  | int                | Consecutive scrape-failure count                                        |
-| disabled      | boolean            | Whether the source is currently disabled                                |
-| articleCount  | long               | Total number of articles ingested from this source                      |
-| notes         | string             | Free-text notes about this source                                       |
-| politicalView | string             | Political leaning/bias classification, e.g.`center-left`              |
-| sources       | string[]           | Reference sources/citations backing the bias classification             |
-| biasScores    | map<string,string> | Bias scores keyed by rating provider, e.g.`{"AllSides": "Lean Left"}` |
+| Field        | Type    | Description                                                                 |
+| ------------ | ------- | --------------------------------------------------------------------------- |
+| name         | string  | Source's unique name                                                        |
+| baseUrl      | string  | Source's homepage/base URL                                                  |
+| rssUrl       | string  | Source's RSS feed URL                                                       |
+| category     | enum    | `NEWS`, `TRADE_PRESS`, `REGULATOR`, `CENTRAL_BANK` or `FILING`              |
+| region       | enum    | `US`, `UK`, `EU` or `GLOBAL`                                                |
+| paywalled    | boolean | Whether article bodies sit behind a paywall (headline-only ingestion)       |
+| language     | string  | ISO 639-1 language code, e.g. `en`                                          |
+| failureCount | int     | Consecutive scrape-failure count                                            |
+| disabled     | boolean | Whether the source is currently disabled                                    |
+| articleCount | long    | Total number of articles ingested from this source                          |
+| notes        | string  | Free-text notes about this source                                           |
 
 ```json
 {
-  "name": "example-news",
-  "baseUrl": "https://example.com",
-  "rssUrl": "https://example.com/rss",
+  "name": "banking-dive",
+  "baseUrl": "https://www.bankingdive.com",
+  "rssUrl": "https://www.bankingdive.com/feeds/news/",
+  "category": "TRADE_PRESS",
+  "region": "US",
+  "paywalled": false,
+  "language": "en",
   "failureCount": 0,
   "disabled": false,
   "articleCount": 42,
-  "notes": null,
-  "politicalView": "center-left",
-  "sources": [],
-  "biasScores": {}
+  "notes": null
 }
 ```
 
@@ -785,17 +787,24 @@ Response shape for a news source.
 
 Request body for registering/updating a news source.
 
-| Field   | Type   | Required | Constraints         |
-| ------- | ------ | -------- | ------------------- |
-| name    | string | yes      | not null, not empty |
-| baseUrl | string | yes      | not null, not empty |
-| rssUrl  | string | yes      | not null, not empty |
+| Field     | Type    | Required | Constraints                                                     |
+| --------- | ------- | -------- | --------------------------------------------------------------- |
+| name      | string  | yes      | not null, not empty                                             |
+| baseUrl   | string  | yes      | not null, not empty                                             |
+| rssUrl    | string  | yes      | not null, not empty                                             |
+| category  | enum    | yes      | `NEWS`, `TRADE_PRESS`, `REGULATOR`, `CENTRAL_BANK`, `FILING`    |
+| region    | enum    | yes      | `US`, `UK`, `EU`, `GLOBAL`                                      |
+| paywalled | boolean | no       | defaults to `false`                                             |
+| language  | string  | no       | defaults to `en`                                                |
+| notes     | string  | no       | free text                                                       |
 
 ```json
 {
-  "name": "example-news",
-  "baseUrl": "https://example.com",
-  "rssUrl": "https://example.com/rss"
+  "name": "banking-dive",
+  "baseUrl": "https://www.bankingdive.com",
+  "rssUrl": "https://www.bankingdive.com/feeds/news/",
+  "category": "TRADE_PRESS",
+  "region": "US"
 }
 ```
 
@@ -820,7 +829,7 @@ Response shape for an article.
   "url": "https://example.com/news/senate-passes-budget",
   "bodyText": "Full article text goes here.",
   "publishedAt": "2026-07-01T14:30:00",
-  "topic": "politics",
+  "topic": "regulation_legal_enforcement",
   "source": "example-news"
 }
 ```
@@ -918,7 +927,7 @@ Response shape for a topic.
 
 ```json
 {
-  "name": "Politics",
+  "name": "regulation_legal_enforcement",
   "articleCount": 17
 }
 ```
@@ -938,7 +947,7 @@ Response shape for a subscription. Exactly one of `storyId`/`topicName` is popul
 {
   "id": "3f1b2c3d-4e5f-6789-0abc-def123456789",
   "storyId": null,
-  "topicName": "Politics",
+  "topicName": "regulation_legal_enforcement",
   "count": 1
 }
 ```

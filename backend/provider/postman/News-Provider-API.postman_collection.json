@@ -52,7 +52,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{sourceName}}\",\n  \"baseUrl\": \"https://example.com\",\n  \"rssUrl\": \"https://example.com\"\n}"
+              "raw": "{\n  \"name\": \"{{sourceName}}\",\n  \"baseUrl\": \"https://example.com\",\n  \"rssUrl\": \"https://example.com\",\n  \"category\": \"TRADE_PRESS\",\n  \"region\": \"US\"\n}"
             }
           },
           "event": [
@@ -82,7 +82,7 @@
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"name\": \"{{sourceName}}\",\n  \"baseUrl\": \"https://example.com\",\n  \"rssUrl\": \"https://example.com\"\n}"
+              "raw": "{\n  \"name\": \"{{sourceName}}\",\n  \"baseUrl\": \"https://example.com\",\n  \"rssUrl\": \"https://example.com\",\n  \"category\": \"TRADE_PRESS\",\n  \"region\": \"US\"\n}"
             }
           },
           "event": [

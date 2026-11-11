@@ -49,7 +49,7 @@ public class TopicController {
     @ApiResponse(responseCode = "200", description = "Existence check result",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = Boolean.class)))
     public ResponseEntity<Boolean> exists(
-            @Parameter(description = "Name of the topic to check.", example = "Politics", required = true)
+            @Parameter(description = "Name of the topic to check.", example = "regulation_legal_enforcement", required = true)
             @RequestParam final String name) {
         return ResponseEntity.ok(topicService.exists(name));
     }

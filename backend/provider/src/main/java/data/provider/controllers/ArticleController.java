@@ -82,7 +82,7 @@ public class ArticleController {
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = PageDto.class)))
     public ResponseEntity<PageDto<ArticleDto>> getAllArticlesWithTopic(
-            @Parameter(description = "Name of the topic.", example = "Politics", required = true)
+            @Parameter(description = "Name of the topic.", example = "regulation_legal_enforcement", required = true)
             @PathVariable final String topicName,
             @Parameter(description = "Zero-based page index.", example = "0")
             @RequestParam(defaultValue = Constants.DEFAULT_PAGE) final int page,

@@ -13,7 +13,7 @@ public record SubscriptionDto(
         @Schema(description = "ID of the subscribed story, if this is a story subscription.")
         String storyId,
 
-        @Schema(description = "Name of the subscribed topic, if this is a topic subscription.", example = "Politics")
+        @Schema(description = "Name of the subscribed topic, if this is a topic subscription.", example = "regulation_legal_enforcement")
         String topicName,
 
         @Schema(description = "Number of active subscriptions.", example = "1")

@@ -23,7 +23,7 @@ public record ArticleDto(
         @Schema(description = "Timestamp the article was published by the source.", example = "2026-07-01T14:30:00")
         LocalDateTime publishedAt,
 
-        @Schema(description = "Name of the topic of this article", example = "politics")
+        @Schema(description = "Name of the topic of this article", example = "regulation_legal_enforcement")
         String topic,
 
         @Schema(description = "Name of the news source this article was scraped from.", example = "example-news")

@@ -5,7 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 
 @Schema(description = "A topic derived from ingested articles, with the number of articles tagged under it.")
 public record TopicDto(
-        @Schema(description = "Topic name.", example = "Politics")
+        @Schema(description = "Topic name.", example = "regulation_legal_enforcement")
         String name,
 
         @Schema(description = "Number of articles currently tagged with this topic.", example = "17")

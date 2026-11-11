@@ -44,9 +44,10 @@ public class NewsService {
                 .name(newsSourceRequest.name())
                 .rssUrl(newsSourceRequest.rssUrl())
                 .notes(newsSourceRequest.notes())
-                .politicalView(newsSourceRequest.politicalView())
-                .sources(newsSourceRequest.sources())
-                .biasScores(newsSourceRequest.biasScores())
+                .category(newsSourceRequest.category())
+                .region(newsSourceRequest.region())
+                .paywalled(newsSourceRequest.paywalled() != null ? newsSourceRequest.paywalled() : false)
+                .language(newsSourceRequest.language() != null ? newsSourceRequest.language() : "en")
                 .build();
 
         newsSourceRepository.save(source);
@@ -89,9 +90,10 @@ public class NewsService {
                 .baseUrl(newsSourceRequest.baseUrl())
                 .rssUrl(newsSourceRequest.rssUrl())
                 .notes(newsSourceRequest.notes())
-                .politicalView(newsSourceRequest.politicalView())
-                .sources(newsSourceRequest.sources())
-                .biasScores(newsSourceRequest.biasScores())
+                .category(newsSourceRequest.category())
+                .region(newsSourceRequest.region())
+                .paywalled(newsSourceRequest.paywalled() != null ? newsSourceRequest.paywalled() : false)
+                .language(newsSourceRequest.language() != null ? newsSourceRequest.language() : "en")
                 .failureCount(existingSource.getFailureCount())
                 .isDisabled(existingSource.getIsDisabled())
                 .build();

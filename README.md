@@ -137,7 +137,7 @@ Graph structure with four node types and four relationship types:
 
 | Node           | Key properties                                                          | Written by                                                       |
 | -------------- | ----------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `NewsSource` | name, baseUrl, rssUrl, failureCount, isDisabled, politicalView          | Provider (admin setup), scraper worker (increment failure count) |
+| `NewsSource` | name, baseUrl, rssUrl, category, region, paywalled, language, failureCount, isDisabled| Provider (admin setup), scraper worker (increment failure count) |
 | `Article`    | author, title, url (unique), bodyText, publishedAt                      | Scraper worker                                                   |
 | `Topic`      | name (unique)                                                           | Classifier worker                                                |
 | `Story`      | title, createdAt, lastUpdated, articleCount, sourceCount, trendingScore | Clusterer worker                                                 |
@@ -360,7 +360,7 @@ flowchart LR
 **`article.notifications`** - Published only when subscription exists:
 
 ```json
-{ "name": "Politics", "articleUrl": "https://...", "type": "TOPIC" }
+{ "name": "regulation_legal_enforcement", "articleUrl": "https://...", "type": "TOPIC" }
 ```
 
 or
@@ -436,7 +436,7 @@ Unique constraint on `(user_id, type, target_id)` - enforces "can't subscribe tw
 | -------------- | --------------------- | -------------------------------------------------- |
 | `id`         | VARCHAR(36) PK        | UUID                                               |
 | `user_id`    | BIGINT FK             | CASCADE on delete                                  |
-| `message`    | VARCHAR(1000)         | e.g.,`"New article for TOPIC 'Politics': <url>"` |
+| `message`    | VARCHAR(1000)         | e.g.,`"New article for TOPIC 'regulation_legal_enforcement': <url>"` |
 | `seen`       | BOOLEAN DEFAULT FALSE |                                                    |
 | `created_at` | TIMESTAMPTZ           |                                                    |
 
@@ -450,7 +450,7 @@ Index on `(user_id, seen)` for unseen-notification queries. Only written by `Art
 
 | Label            | Key properties                                                          | Constraints                                                                                              |
 | ---------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
-| `NewsSource`   | name, baseUrl, rssUrl, failureCount, isDisabled, politicalView          | `name` UNIQUE, `rssUrl` UNIQUE, index on `baseUrl`                                                 |
+| `NewsSource`   | name, baseUrl, rssUrl, category, region, paywalled, language, failureCount, isDisabled| `name` UNIQUE, `rssUrl` UNIQUE, index on `baseUrl`                                                 |
 | `Article`      | author, title, url, bodyText, publishedAt                               | `url` UNIQUE, indexes on `publishedAt`/`author`/`title`, fulltext index on `[title, bodyText]` |
 | `Topic`        | name                                                                    | `name` UNIQUE                                                                                          |
 | `Story`        | title, createdAt, lastUpdated, articleCount, sourceCount, trendingScore | Fulltext index on`[title]`; identity is the generated `id` property (UUID string)                    |
@@ -604,7 +604,7 @@ Any other exception is logged and the message is nacked for requeue; worker keep
 
 - Text truncated at 4000 chars before embedding (original model max is 32768 tokens). Loss of signal for stories diverging deep in long articles.
 - Extraction noise: trafilatura sometimes pulled boilerplate instead of article body (worth broader spot-check before trusting threshold as final).
-- Dataset: 2020-era COVID news, English-only, no AllSides left/center/right framing. Suggested threshold is a starting point-revisit once real traffic accumulates.
+- Dataset: 2020-era COVID news, English-only. Suggested threshold is a starting point-revisit once real traffic accumulates.
 
 ---
 

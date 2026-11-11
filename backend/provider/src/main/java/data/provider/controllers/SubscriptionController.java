@@ -59,7 +59,7 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "400", description = "Topic does not exist",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<SubscriptionDto> subscribeToTopic(
-            @Parameter(description = "Name of the topic to subscribe to.", example = "Politics", required = true)
+            @Parameter(description = "Name of the topic to subscribe to.", example = "regulation_legal_enforcement", required = true)
             @PathVariable final String topicName) {
         return ResponseEntity.ok(subscriptionService.subscribeToTopic(topicName));
     }
@@ -71,7 +71,7 @@ public class SubscriptionController {
     @ApiResponse(responseCode = "400", description = "No subscription exists for this topic",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
     public ResponseEntity<Void> unsubscribeFromTopic(
-            @Parameter(description = "Name of the topic to unsubscribe from.", example = "Politics", required = true)
+            @Parameter(description = "Name of the topic to unsubscribe from.", example = "regulation_legal_enforcement", required = true)
             @PathVariable final String topicName) {
         subscriptionService.unsubscribeFromTopic(topicName);
         return ResponseEntity.noContent().build();
