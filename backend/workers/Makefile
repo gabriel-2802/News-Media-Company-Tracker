@@ -1,3 +1,7 @@
+# Matches the python:3.11-slim base of the worker Docker images. The macOS
+# Command Line Tools python3 (3.9) segfaults launching Playwright helpers.
+PYTHON          ?= /opt/homebrew/bin/python3.11
+
 SCRAPER_VENV    := scraper/venv
 CLASSIFIER_VENV := classifier/venv
 CLUSTERER_VENV  := clusterer/venv
@@ -7,18 +11,18 @@ CLUSTERER_VENV  := clusterer/venv
 setup: setup-scraper setup-classifier setup-clusterer
 
 setup-scraper:
-	python3 -m venv $(SCRAPER_VENV)
+	$(PYTHON) -m venv $(SCRAPER_VENV)
 	$(SCRAPER_VENV)/bin/pip install --quiet --upgrade pip
 	$(SCRAPER_VENV)/bin/pip install --quiet -r scraper/requirements.txt lxml_html_clean charset-normalizer
 	$(SCRAPER_VENV)/bin/python -m playwright install chromium
 
 setup-classifier:
-	python3 -m venv $(CLASSIFIER_VENV)
+	$(PYTHON) -m venv $(CLASSIFIER_VENV)
 	$(CLASSIFIER_VENV)/bin/pip install --quiet --upgrade pip
 	$(CLASSIFIER_VENV)/bin/pip install --quiet -r classifier/requirements.txt
 
 setup-clusterer:
-	python3 -m venv $(CLUSTERER_VENV)
+	$(PYTHON) -m venv $(CLUSTERER_VENV)
 	$(CLUSTERER_VENV)/bin/pip install --quiet --upgrade pip
 	$(CLUSTERER_VENV)/bin/pip install --quiet -r clusterer/requirements.txt
 
