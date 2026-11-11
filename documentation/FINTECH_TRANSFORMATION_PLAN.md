@@ -25,7 +25,8 @@
 | 3. Graph model | Done | `6846a66` | Multi-label `HAS_TOPIC {score}`, Company/Ticker, Cypher-managed MENTIONS/AFFECTS. |
 | 4. Classifier | Done | `1fe08a9`, `33b3954` | TFNT macro-F1 0.906, Reuters 0.915 (0.902 / 0.913 with rules). In-domain evaluation still needs ~300 hand labels. |
 | 5. Enricher | Done | `1736add`, Phase 5 commit | 356 companies / 345 tickers (V5 + V6 correction). Enricher worker (dictionary linking + sentence-level FinBERT), `GET /api/companies`, `PATCH /api/articles/enrichment`, derived Story→Company events with impact score. Verified end to end with all three workers. |
-| 6–10 | Not started | | |
+| Refinement (live run) | Done | Refinement commit | First real scrape (140 articles, 7 sources) through all workers. Fixed: deadlocks between concurrent story/enrichment writes (500s), common-phrase company names ("financial institutions"), cookie-banner article bodies, central-bank releases forced to regulation; added earnings / ratings / dividend / leadership / central-bank monetary rules. |
+| 6–10 | Not started | | **Clustering builds topical mega-stories** on official releases (21 sets of minutes in one story; recency uses story update time, not article publish dates); this inflates events, so Phase 9 should come before Phase 7 charts rely on events. |
 | Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
 
 ### Deviations from the original plan

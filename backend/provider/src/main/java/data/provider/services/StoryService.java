@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import data.provider.config.Neo4jWrites;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
@@ -38,6 +39,7 @@ public class StoryService {
 
     private final StoryRepository storyRepository;
     private final EventService eventService;
+    private final Neo4jWrites writes;
     private final ArticleRepository articleRepository;
     private final SubscriptionRepository subscriptionRepository;
     private final RabbitTemplate rabbitTemplate;
@@ -57,20 +59,23 @@ public class StoryService {
     }
 
     public StoryDto attachArticle(final String storyId, final AttachArticleRequest request) {
-        if (!storyRepository.existsById(storyId)) {
-            throw new BusinessException(Constants.STORY_DOES_NOT_EXIST_ERROR, storyId);
-        }
-        if (!articleRepository.existsByUrl(request.articleUrl())) {
-            throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.articleUrl());
-        }
+        return writes.write("attachArticle", () -> {
+            if (!storyRepository.existsById(storyId)) {
+                throw new BusinessException(Constants.STORY_DOES_NOT_EXIST_ERROR, storyId);
+            }
+            if (!articleRepository.existsByUrl(request.articleUrl())) {
+                throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.articleUrl());
+            }
 
-        final Story updated = storyRepository.attachArticle(storyId, request.articleUrl(), Instant.now())
-                .orElseThrow(() -> new BusinessException(Constants.STORY_DOES_NOT_EXIST_ERROR, storyId));
+            eventService.lockStory(storyId);          // lock order: story first (see EventService)
+            final Story updated = storyRepository.attachArticle(storyId, request.articleUrl(), Instant.now())
+                    .orElseThrow(() -> new BusinessException(Constants.STORY_DOES_NOT_EXIST_ERROR, storyId));
 
-        notifySubscribers(updated, request.articleUrl());
-        eventService.refreshForArticle(request.articleUrl());   // the story may now affect new companies
+            eventService.refreshForArticle(request.articleUrl());   // the story may now affect new companies
+            notifySubscribers(updated, request.articleUrl());       // last: a retried attempt must not notify twice
 
-        return new StoryDto(updated);
+            return new StoryDto(updated);
+        });
     }
 
     private void notifySubscribers(final Story story, final String articleUrl) {

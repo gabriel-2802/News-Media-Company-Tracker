@@ -23,6 +23,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.PageRequest;
+import data.provider.config.Neo4jWrites;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashMap;
@@ -38,6 +39,7 @@ public class ArticleService {
     private final NewsSourceRepository newsSourceRepository;
     private final TopicRepository topicRepository;
     private final EventService eventService;
+    private final Neo4jWrites writes;
     private final SubscriptionRepository subscriptionRepository;
     private final RabbitTemplate rabbitTemplate;
 
@@ -91,46 +93,53 @@ public class ArticleService {
     }
 
     public ArticleDto setTopic(final TopicSetRequest topicSetRequest) {
-        if (!articleRepository.existsByUrl(topicSetRequest.url())) {
-            throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, topicSetRequest.url());
-        }
+        return writes.write("setTopic", () -> {
+            if (!articleRepository.existsByUrl(topicSetRequest.url())) {
+                throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, topicSetRequest.url());
+            }
 
-        if (!topicRepository.existsByName(topicSetRequest.topic())) {
-            throw new BusinessException(Constants.TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR, topicSetRequest.topic());
-        }
+            if (!topicRepository.existsByName(topicSetRequest.topic())) {
+                throw new BusinessException(Constants.TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR, topicSetRequest.topic());
+            }
 
-        final Article article = articleRepository.setTopic(topicSetRequest.url(), topicSetRequest.topic());
+            eventService.lockStoryOfArticle(topicSetRequest.url());   // lock order: story first
+            final Article article = articleRepository.setTopic(topicSetRequest.url(), topicSetRequest.topic());
 
-        notifySubscribers(topicSetRequest.topic(), topicSetRequest.url());
-        eventService.refreshForArticle(topicSetRequest.url());
+            eventService.refreshForArticle(topicSetRequest.url());
+            notifySubscribers(topicSetRequest.topic(), topicSetRequest.url());   // last: no duplicate on retry
 
-        return new ArticleDto(article);
+            return new ArticleDto(article);
+        });
     }
 
     public ArticleDto setTopics(final TopicsSetRequest request) {
-        if (!articleRepository.existsByUrl(request.url())) {
-            throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.url());
-        }
-
-        // De-duplicate by name, keeping the highest score.
-        final Map<String, Double> byName = new LinkedHashMap<>();
-        request.topics().forEach(t -> byName.merge(t.name(), t.score(), Math::max));
-
-        byName.keySet().forEach(name -> {
-            if (!topicRepository.existsByName(name)) {
-                throw new BusinessException(Constants.TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR, name);
+        return writes.write("setTopics", () -> {
+            if (!articleRepository.existsByUrl(request.url())) {
+                throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.url());
             }
+
+            // De-duplicate by name, keeping the highest score.
+            final Map<String, Double> byName = new LinkedHashMap<>();
+            request.topics().forEach(t -> byName.merge(t.name(), t.score(), Math::max));
+
+            byName.keySet().forEach(name -> {
+                if (!topicRepository.existsByName(name)) {
+                    throw new BusinessException(Constants.TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR, name);
+                }
+            });
+
+            eventService.lockStoryOfArticle(request.url());   // lock order: story first (see EventService)
+            final List<Map<String, Object>> topics = byName.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())               // sorted topic locks
+                    .map(e -> Map.<String, Object>of("name", e.getKey(), "score", e.getValue()))
+                    .toList();
+            final Article article = articleRepository.setTopics(request.url(), topics);
+
+            eventService.refreshForArticle(request.url());   // topic weights feed event impact
+            byName.keySet().forEach(name -> notifySubscribers(name, request.url()));   // last: no duplicate on retry
+
+            return new ArticleDto(article);
         });
-
-        final List<Map<String, Object>> topics = byName.entrySet().stream()
-                .map(e -> Map.<String, Object>of("name", e.getKey(), "score", e.getValue()))
-                .toList();
-        final Article article = articleRepository.setTopics(request.url(), topics);
-
-        byName.keySet().forEach(name -> notifySubscribers(name, request.url()));
-        eventService.refreshForArticle(request.url());   // topic weights feed event impact
-
-        return new ArticleDto(article);
     }
 
     private void notifySubscribers(final String topicName, final String articleUrl) {

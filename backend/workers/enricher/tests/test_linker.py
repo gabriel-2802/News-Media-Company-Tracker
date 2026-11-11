@@ -75,6 +75,17 @@ class LinkerAgainstRealUniverse(unittest.TestCase):
         late = self.names("Regional lenders face deposit pressure", "x " * 400 + "Truist said deposits fell.")
         self.assertGreater(lead["Truist Financial"].salience(), late["Truist Financial"].salience())
 
+    def test_common_phrase_names_do_not_match_prose(self):
+        # From the first live run: "financial institutions" linked to Financial Institutions Inc 8 times.
+        body = "Supervisors said financial institutions must hold more capital. Financial institutions welcomed it."
+        self.assertNotIn("Financial Institutions Inc", self.names("Bank of England publishes FPC record", body))
+        self.assertEqual(self.names("first national survey of savings"), {})
+
+    def test_weak_names_with_corporate_word_still_match_when_capitalised(self):
+        self.assertIn("Northern Trust", self.names("Northern Trust expands custody business"))
+        self.assertNotIn("Northern Trust", self.names("the northern trust fund for schools"))
+        self.assertIn("Citizens Financial Group", self.names("Citizens Bank raises deposit rates"))
+
     def test_mention_sentences_are_collected_for_sentiment(self):
         found = self.names("Barclays settles probe", "Barclays agreed to pay a penalty. Unrelated sentence here.")
         self.assertTrue(any("penalty" in s for s in found["Barclays"].sentences))

@@ -460,6 +460,7 @@ Stores the enricher worker's output for one article: sets `sentimentLabel` / `se
 | Status | Body                               | Description                                                     |
 | ------ | ---------------------------------- | --------------------------------------------------------------- |
 | 204    | (empty)                            | Enrichment stored and events refreshed                          |
+| 503    | [`ErrorResponse`](#errorresponse) | Temporary database conflict after internal retries; retry the request |
 | 400    | [`ErrorResponse`](#errorresponse) | Article or a company does not exist, or validation failed       |
 | 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication)    |
 | 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_ADMIN`/`ROLE_SYSTEM`                       |

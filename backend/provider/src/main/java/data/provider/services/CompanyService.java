@@ -10,8 +10,8 @@ import data.provider.util.Constants;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.neo4j.core.Neo4jClient;
+import data.provider.config.Neo4jWrites;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
 import java.util.HashMap;
@@ -26,6 +26,7 @@ public class CompanyService {
     private final CompanyRepository companyRepository;
     private final ArticleRepository articleRepository;
     private final EventService eventService;
+    private final Neo4jWrites writes;
     private final Neo4jClient neo4j;
 
     public List<CompanyDto> getCompanies(final CompanyKind kind) {
@@ -41,50 +42,54 @@ public class CompanyService {
      * and its MENTIONS edges replaced by the given set. Then refreshes the
      * events of the article's story.
      */
-    @Transactional
     public int setEnrichment(final EnrichmentRequest request) {
-        if (!articleRepository.existsByUrl(request.url())) {
-            throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.url());
-        }
-        final List<String> ids = request.mentions().stream().map(EnrichmentRequest.Mention::companyId).distinct().toList();
-        final long known = neo4j.query("MATCH (c:Company) WHERE c.id IN $ids RETURN count(c)")
-                .bind(ids).to("ids").fetchAs(Long.class).one().orElse(0L);
-        if (known != ids.size()) {
-            throw new BusinessException(Constants.COMPANY_DOES_NOT_EXIST_ERROR, ids.toString());
-        }
+        return writes.write("setEnrichment", () -> {
+            if (!articleRepository.existsByUrl(request.url())) {
+                throw new BusinessException(Constants.ARTICLE_DOES_NOT_EXIST_ERROR, request.url());
+            }
+            final List<String> ids = request.mentions().stream().map(EnrichmentRequest.Mention::companyId).distinct().toList();
+            final long known = neo4j.query("MATCH (c:Company) WHERE c.id IN $ids RETURN count(c)")
+                    .bind(ids).to("ids").fetchAs(Long.class).one().orElse(0L);
+            if (known != ids.size()) {
+                throw new BusinessException(Constants.COMPANY_DOES_NOT_EXIST_ERROR, ids.toString());
+            }
 
-        final List<Map<String, Object>> mentions = request.mentions().stream().map(m -> {
-            final Map<String, Object> row = new HashMap<>();
-            row.put("companyId", m.companyId());
-            row.put("count", m.count());
-            row.put("salience", m.salience());
-            row.put("inTitle", m.inTitle());
-            row.put("sentiment", m.sentiment());     // may be null
-            return row;
-        }).toList();
+            eventService.lockStoryOfArticle(request.url());   // lock order: story first, then companies
+            final List<Map<String, Object>> mentions = request.mentions().stream()
+                    .sorted(Comparator.comparing(EnrichmentRequest.Mention::companyId))   // sorted company locks
+                    .map(m -> {
+                final Map<String, Object> row = new HashMap<>();
+                row.put("companyId", m.companyId());
+                row.put("count", m.count());
+                row.put("salience", m.salience());
+                row.put("inTitle", m.inTitle());
+                row.put("sentiment", m.sentiment());     // may be null
+                return row;
+            }).toList();
 
-        neo4j.query("""
-                MATCH (a:Article {url: $url})
-                SET a.sentimentLabel = $label, a.sentimentScore = $score
-                WITH a
-                OPTIONAL MATCH (a)-[old:MENTIONS]->(:Company)
-                DELETE old
-                """)
-                .bindAll(Map.of("url", request.url(), "label", request.sentimentLabel(), "score", request.sentimentScore()))
-                .run();
-        if (!mentions.isEmpty()) {
             neo4j.query("""
                     MATCH (a:Article {url: $url})
-                    UNWIND $mentions AS m
-                    MATCH (c:Company {id: m.companyId})
-                    MERGE (a)-[r:MENTIONS]->(c)
-                    SET r.count = m.count, r.salience = m.salience, r.inTitle = m.inTitle, r.sentiment = m.sentiment
+                    SET a.sentimentLabel = $label, a.sentimentScore = $score
+                    WITH a
+                    OPTIONAL MATCH (a)-[old:MENTIONS]->(:Company)
+                    DELETE old
                     """)
-                    .bindAll(Map.of("url", request.url(), "mentions", mentions))
+                    .bindAll(Map.of("url", request.url(), "label", request.sentimentLabel(), "score", request.sentimentScore()))
                     .run();
-        }
-        eventService.refreshForArticle(request.url());
-        log.info(Constants.ARTICLE_ENRICHED_LOG, request.url(), mentions.size(), request.sentimentLabel());
-        return mentions.size();
+            if (!mentions.isEmpty()) {
+                neo4j.query("""
+                        MATCH (a:Article {url: $url})
+                        UNWIND $mentions AS m
+                        MATCH (c:Company {id: m.companyId})
+                        MERGE (a)-[r:MENTIONS]->(c)
+                        SET r.count = m.count, r.salience = m.salience, r.inTitle = m.inTitle, r.sentiment = m.sentiment
+                        """)
+                        .bindAll(Map.of("url", request.url(), "mentions", mentions))
+                        .run();
+            }
+            eventService.refreshForArticle(request.url());
+            log.info(Constants.ARTICLE_ENRICHED_LOG, request.url(), mentions.size(), request.sentimentLabel());
+            return mentions.size();
+        });
     }
 }

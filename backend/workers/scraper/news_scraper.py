@@ -396,8 +396,35 @@ class BaseExtractor(ABC):
     def extract(self, html: str, url: str) -> str: ...
 
 
+# Cookie / consent banners that trafilatura sometimes returns as the body
+# (live run: 4 Bank of England document pages yielded only "Our use of
+# cookies ..."; a CoinDesk page started with a TCF privacy notice).
+# Banner phrases only: a bare "consent" would also drop enforcement text
+# such as "agreed to a consent order".
+_CONSENT_LINE = re.compile(
+    r"\b(?:cookies?|cookie (?:policy|settings|preferences)|privacy (?:policy|notice|settings)|your privacy|"
+    r"legitimate interest|Transparency and Consent Framework|consent (?:preferences|settings|to (?:the use of )?cookies)|"
+    r"manage (?:cookie |consent )?(?:settings|preferences)|accept (?:all|recommended)(?: cookies| settings)?|reject all)\b",
+    re.IGNORECASE,
+)
+MIN_ARTICLE_CHARS = 150
+
+
+def strip_consent_boilerplate(text: str) -> str:
+    """Drop lines that are cookie/consent/privacy-banner text."""
+    kept = [line for line in text.splitlines() if not _CONSENT_LINE.search(line)]
+    return "\n".join(line for line in kept if line.strip()).strip()
+
+
 class TrafilaturaExtractor(BaseExtractor):
     def extract(self, html: str, url: str) -> str:
+        body = self._extract(html, url)
+        cleaned = strip_consent_boilerplate(body)
+        if len(cleaned) < MIN_ARTICLE_CHARS:
+            raise ExtractionError(f"Only cookie/consent boilerplate or too little text for {url}")
+        return cleaned
+
+    def _extract(self, html: str, url: str) -> str:
         try:
             raw = trafilatura.bare_extraction(
                 html, url=url, include_comments=False, include_tables=False, as_dict=True

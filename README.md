@@ -214,7 +214,7 @@ Four independent processes, each consuming from one RabbitMQ queue, calling the 
 
 1. Fetch article title + body from the Provider.
 2. Classify title + the opening of the story into one or more of 13 banking topics (multi-label FinBERT; every topic above its tuned threshold, else the single most likely).
-   A rule layer (`classifier/rules.py`) then corrects regulator content the public-data model misses: enforcement / financial-crime / supervision wording adds `regulation_legal_enforcement`, deal wording adds `m_and_a_investments`, and for REGULATOR / CENTRAL_BANK sources `monetary_policy_rates` is kept only when the text is about monetary policy. Rules only add or raise topics, need a financial-context term outside financial sources, and are logged per article. `training/eval_rules.py` measures their effect on the public test sets (TFNT macro-F1 0.906 → 0.902, Reuters 0.915 → 0.913).
+   A rule layer (`classifier/rules.py`) then corrects what the public-data model misses: enforcement / financial-crime / supervision wording adds `regulation_legal_enforcement`; deal, earnings, analyst-rating, dividend/buyback and leadership phrases add their topics; a central bank's monetary title (rate decision, QT/APF, MPC) adds `monetary_policy_rates`; and for REGULATOR / CENTRAL_BANK sources a model-assigned `monetary_policy_rates` is kept only when the text is about monetary policy (for regulators it becomes regulation, for central banks it is just dropped). Rules only add or raise topics, need a financial-context term outside financial sources, and are logged per article. `training/eval_rules.py` measures their effect on the public test sets (TFNT macro-F1 0.906 → 0.887, Reuters 0.915 → 0.913). Most of the TFNT drop is taxonomy disagreement: TFNT files bank results under "Financials" (mapped to company news in training), so earnings rules count as false positives there; remapping that class and retraining is the proper fix.
 3. Write the scored topics back via `PATCH /api/articles/topics`.
 
 **Model:** `backend/workers/classifier/cls_model_output/` (gitignored; built by `classifier/training/`). Fine-tuned from `ProsusAI/finbert` on public data only (Twitter Financial News Topic + Reuters-21578), with the taxonomy in `training/taxonomy.py` and per-label thresholds in `thresholds.json`. Test scores are in the model's `metrics.json`. Retrain with:
@@ -583,7 +583,7 @@ Any other exception is logged and the message is nacked for requeue; worker keep
 2. Static HTTP with browser user-agent - bypasses UA-based blocks (e.g., CBC, NPR).
 3. Headless Chromium via Playwright in a **fresh subprocess** (`playwright_fetch_worker.py`) - pika's blocking connection runs its own asyncio loop, and two asyncio setups in one process were breaking Playwright's dispatcher after long uptime.
 
-`HttpFetcher` honors `Retry-After` on HTTP 429 (capped by `MAX_RETRY_SLEEP`), fetches `robots.txt` with timeout, and fails **open** (allow) on error-a `robots.txt` hiccup never silently kills a source.
+`TrafilaturaExtractor` strips cookie/consent-banner lines and rejects pages left with under 150 characters (some Bank of England document pages extract as nothing but the cookie banner; their content is a PDF). `HttpFetcher` honors `Retry-After` on HTTP 429 (capped by `MAX_RETRY_SLEEP`), fetches `robots.txt` with timeout, and fails **open** (allow) on error-a `robots.txt` hiccup never silently kills a source.
 
 **Key env vars:**
 
@@ -623,7 +623,7 @@ Checks: feed reachable and parseable (with feed discovery from the homepage and 
 
 | Held-out test | Model only | Model + rules |
 | --- | --- | --- |
-| Twitter Financial News, macro-F1 | 0.906 | 0.902 |
+| Twitter Financial News, macro-F1 | 0.906 | 0.887 |
 | Reuters-21578, macro-F1 | 0.915 | 0.913 |
 
 ```bash
@@ -642,9 +642,12 @@ classifier/venv/bin/python -m classifier.training.eval_rules               # rul
    - acronyms and camel-case brands (SEC, ING, BofA) match case-sensitively;
    - brands that are ordinary words or places (Chase, Block, Affirm, Wise, Halifax) match case-sensitively and only with financial context;
    - names shared by two companies, and names made only of generic words ("Bancorp, Inc."), are skipped;
+   - names made only of common English words ("Northern Trust", "Citizens Bank") match case-sensitively, and are skipped unless they contain a corporate word (so "Financial Institutions" / "First National" never match ordinary prose);
    - salience: 0.6 for a title mention, +0.25 if named in the lead, +0.1 per mention (max 1).
 3. FinBERT sentiment (`ProsusAI/finbert`, sentence level): article = 0.5 × title + 0.5 × mean of the first lead sentences; company = weighted mean of the sentences naming it (title counts double); label = FinBERT's most likely class.
 4. `PATCH /api/articles/enrichment` with sentiment and mentions. The provider replaces the article's `MENTIONS` and refreshes the events of its story.
+
+**Concurrent writes:** story attach, topic writes and enrichment all touch a story's events. The provider runs each as one transaction via `Neo4jWrites` (retry outside, transaction inside, retried on Neo4j transient errors such as deadlocks) and takes the story's lock first, writing companies and topics in sorted order, so concurrent writers queue instead of deadlocking. If retries are exhausted the API answers 503 (retry later) instead of 500.
 
 **Events** (`(:Story)-[:AFFECTS]->(:Company)`): derived by the provider (`EventService`) whenever an article is enriched, joins a story, or gets new topics, so the order in which the workers finish does not matter. Properties: `firstSeen` (earliest article), `articleCount`, `sentiment`, and `impactScore` in [0, 1] = 0.25 × breadth (sources / 5) + 0.15 × coverage (mentioning articles / 3) + 0.20 × strongest salience + 0.25 × topic weight (enforcement and M&A 1.0, earnings 0.8, FX 0.3, ...) + 0.15 × |sentiment| + 0.10 if a regulator or central bank published part of the story; capped at 1.
 

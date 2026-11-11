@@ -69,6 +69,7 @@ public class EventService {
                + 0.25 * topic
                + 0.15 * abs(sentiment)
                + CASE WHEN official THEN 0.10 ELSE 0.0 END AS raw
+            ORDER BY c.id   // consistent lock order across transactions
             MERGE (s)-[r:AFFECTS]->(c)
             SET r.firstSeen = CASE WHEN firstLocal IS NULL THEN coalesce(r.firstSeen, datetime())
                                    ELSE datetime({datetime: firstLocal, timezone: 'UTC'}) END,
@@ -79,6 +80,25 @@ public class EventService {
             """;
 
     private final Neo4jClient neo4j;
+
+    /*
+     * Lock ordering. Story attach, enrichment and topic writes all end up
+     * writing the story's AFFECTS events; without a common order they locked
+     * article/story/company nodes in different sequences and deadlocked under
+     * load. Every such write therefore takes the story's lock first (writes to
+     * one story queue up), and companies/topics are written in sorted order.
+     */
+
+    /** Take the write lock of a story (no-op if it does not exist). */
+    public void lockStory(final String storyId) {
+        neo4j.query("MATCH (s:Story {id: $id}) SET s.lastWriteAt = datetime()").bind(storyId).to("id").run();
+    }
+
+    /** Take the write lock of the story this article belongs to (no-op if not clustered). */
+    public void lockStoryOfArticle(final String articleUrl) {
+        neo4j.query("MATCH (:Article {url: $url})-[:BELONGS_TO]->(s:Story) SET s.lastWriteAt = datetime()")
+                .bind(articleUrl).to("url").run();
+    }
 
     /** Recompute all events of the story this article belongs to (no-op if it is not clustered yet). */
     public long refreshForArticle(final String articleUrl) {

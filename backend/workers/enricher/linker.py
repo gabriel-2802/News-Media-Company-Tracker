@@ -37,6 +37,22 @@ GENERIC_TOKENS = {
     "co.", "company", "plc", "ltd", "ltd.", "limited", "n.a.", "na", "capital", "services", "national",
     "association", "sa", "s.a.", "ag", "se", "nv", "n.v.", "spa", "s.p.a.",
 }
+# Ordinary words that many US bank names are built from. A name made only of
+# GENERIC/COMMON words ("Financial Institutions", "First National") reads as
+# plain English: such "weak" names match case-sensitively, and only if they
+# also contain a corporate word ("Northern Trust", "Citizens Bank" stay;
+# "Financial Institutions" — 8 false links in the first live run — is skipped).
+COMMON_TOKENS = {
+    "institutions", "institution", "first", "united", "american", "community", "security", "savings", "federal",
+    "investors", "citizens", "peoples", "people's", "home", "mutual", "commerce", "commercial", "merchants",
+    "farmers", "union", "city", "state", "county", "republic", "south", "north", "east", "west", "southern",
+    "northern", "eastern", "western", "central", "pacific", "atlantic", "great", "independent", "enterprise",
+    "premier", "preferred",
+}
+CORPORATE_TOKENS = {
+    "bank", "bancorp", "bancorporation", "bancshares", "bankshares", "banc", "trust", "corp", "corp.",
+    "corporation", "inc", "inc.", "co", "co.", "company", "plc", "holdings", "group",
+}
 FINANCE_CONTEXT = re.compile(
     r"\b(?:banks?|banking|lenders?|loans?|lending|deposits?|credit|fintech|payments?|cards?|mortgages?|savings|"
     r"interest rates?|accounts?|"
@@ -72,9 +88,17 @@ class Mention:
         return round(min(1.0, max(0.1, score)), 3)
 
 
+def _tokens(form: str) -> list[str]:
+    return [t.strip(",.()").lower() for t in form.split() if t.strip(",.()")]
+
+
 def _is_generic(form: str) -> bool:
-    tokens = [t.strip(",.()").lower() for t in form.split()]
-    return all(t in GENERIC_TOKENS or not t for t in tokens)
+    return all(t in GENERIC_TOKENS for t in _tokens(form))
+
+
+def _is_weak(form: str) -> bool:
+    """Made only of generic/common English words (see COMMON_TOKENS)."""
+    return all(t in GENERIC_TOKENS or t in COMMON_TOKENS for t in _tokens(form))
 
 
 def _pattern(forms: Iterable[str], flags: int) -> Optional[re.Pattern]:
@@ -94,6 +118,8 @@ class EntityLinker:
                 form = form.strip()
                 if len(form) < 2 or _is_generic(form):
                     continue
+                if _is_weak(form) and not any(t in CORPORATE_TOKENS for t in _tokens(form)):
+                    continue
                 owners[form.lower()].add(c.id)
                 display.setdefault(form.lower(), form)
 
@@ -107,7 +133,7 @@ class EntityLinker:
             if bare.lower() in AMBIGUOUS_WORDS:
                 contextual.append(form)
                 self._owner[form] = company_id
-            elif _ACRONYM.match(form):
+            elif _ACRONYM.match(form) or _is_weak(form):
                 exact.append(form)
                 self._owner[form] = company_id
             else:

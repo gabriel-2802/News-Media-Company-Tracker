@@ -1,5 +1,7 @@
 package data.provider.exceptions;
 
+import data.provider.config.TransientNeo4jError;
+
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
@@ -58,8 +60,16 @@ public class GlobalExceptionHandler {
     }
 
     // Fallback for anything unhandled
+    // Neo4j transient errors (e.g. deadlocks) that survived the service-level
+    // retries: tell the client it is safe to retry instead of a generic 500.
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneric(Exception ex) {
+        // Neo4j transient errors (deadlocks) that survived the service-level
+        // retries: tell the client it is safe to retry instead of a generic 500.
+        if (TransientNeo4jError.isTransient(ex)) {
+            log.warn("Transient database error after retries: {}", ex.getMessage());
+            return build(HttpStatus.SERVICE_UNAVAILABLE, "Temporary database conflict, retry the request");
+        }
         log.error("Unexpected error occurred", ex);
         return build(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected error occurred");
     }
