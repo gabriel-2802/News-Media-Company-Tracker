@@ -762,6 +762,8 @@ Response shape for a news source.
 | region       | enum    | `US`, `UK`, `EU` or `GLOBAL`                                                |
 | paywalled    | boolean | Whether article bodies sit behind a paywall (headline-only ingestion)       |
 | language     | string  | ISO 639-1 language code, e.g. `en`                                          |
+| scrapeIntervalMinutes | int | Minutes between scheduled scrapes (5–1440, default 60)              |
+| lastScrapeQueuedAt | datetime | When the scheduler last queued this source (null = never)       |
 | failureCount | int     | Consecutive scrape-failure count                                            |
 | disabled     | boolean | Whether the source is currently disabled                                    |
 | articleCount | long    | Total number of articles ingested from this source                          |
@@ -776,6 +778,8 @@ Response shape for a news source.
   "region": "US",
   "paywalled": false,
   "language": "en",
+  "scrapeIntervalMinutes": 30,
+  "lastScrapeQueuedAt": "2026-11-11T16:05:00Z",
   "failureCount": 0,
   "disabled": false,
   "articleCount": 42,
@@ -796,6 +800,7 @@ Request body for registering/updating a news source.
 | region    | enum    | yes      | `US`, `UK`, `EU`, `GLOBAL`                                      |
 | paywalled | boolean | no       | defaults to `false`                                             |
 | language  | string  | no       | defaults to `en`                                                |
+| scrapeIntervalMinutes | int | no | 5–1440, defaults to `60` |
 | notes     | string  | no       | free text                                                       |
 
 ```json
@@ -812,25 +817,36 @@ Request body for registering/updating a news source.
 
 Response shape for an article.
 
-| Field       | Type     | Description                                          |
-| ----------- | -------- | ---------------------------------------------------- |
-| author      | string   | Article author (may be null/blank)                   |
-| title       | string   | Article title                                        |
-| url         | string   | Canonical article URL                                |
-| bodyText    | string   | Full article body text                               |
-| publishedAt | datetime | ISO-8601 local date-time the article was published   |
-| topic       | string   | Name of the article's topic, if tagged (may be null) |
-| source      | string   | Name of the source that published it                 |
+| Field          | Type            | Description                                                        |
+| -------------- | --------------- | ------------------------------------------------------------------ |
+| author         | string          | Article author (may be null/blank)                                 |
+| title          | string          | Article title                                                      |
+| url            | string          | Canonical article URL                                              |
+| bodyText       | string          | Full article body text                                             |
+| publishedAt    | datetime        | ISO-8601 local date-time the article was published                 |
+| topic          | string          | Highest-scoring topic, if tagged (kept for backwards compatibility)|
+| topics         | `{name, score}[]` | All topics with classifier confidence, highest first             |
+| sentimentLabel | string          | `positive` / `negative` / `neutral` (null until enriched)          |
+| sentimentScore | number          | Signed sentiment in [-1, 1] (null until enriched)                  |
+| language       | string          | ISO 639-1 code                                                     |
+| source         | string          | Name of the source that published it                               |
 
 ```json
 {
   "author": "Jane Doe",
-  "title": "Senate passes new budget bill",
-  "url": "https://example.com/news/senate-passes-budget",
+  "title": "Regional lender fined over AML controls",
+  "url": "https://www.bankingdive.com/news/example/",
   "bodyText": "Full article text goes here.",
   "publishedAt": "2026-07-01T14:30:00",
   "topic": "regulation_legal_enforcement",
-  "source": "example-news"
+  "topics": [
+    {"name": "regulation_legal_enforcement", "score": 0.91},
+    {"name": "leadership_personnel", "score": 0.34}
+  ],
+  "sentimentLabel": "negative",
+  "sentimentScore": -0.62,
+  "language": "en",
+  "source": "banking-dive"
 }
 ```
 

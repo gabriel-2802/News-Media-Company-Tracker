@@ -72,8 +72,9 @@ it keeps a local **read model** (CQRS-style).
 4. **Squash migrations.** Because the Neo4j purge deletes `__Migration` nodes, the old `V2__seed_news_sources` (BBC, RT, …) and `V8__adding_topics` (HuffPost labels) would re-run. Replace `V1`–`V9` with a clean baseline:
    - `V1__baseline_schema.cypher`: constraints and indexes (Article.url, NewsSource.name, Topic.name, Story.id, Company.id, Ticker.symbol), full-text index
    - `V2__seed_banking_sources.cypher`: generated from the validated source list (Phase 2)
-   - `V3__seed_banking_topics.cypher`: the new taxonomy (Phase 4)
-   - `V4__seed_company_universe.cypher`: banks, fintechs, regulators and tickers (Phase 5)
+   - `V3__company_ticker_schema.cypher`: Company/Ticker/Story constraints and relationship indexes (Phase 3)
+   - `V4__seed_banking_topics.cypher`: the new taxonomy (Phase 4)
+   - `V5__seed_company_universe.cypher`: banks, fintechs, regulators and tickers (Phase 5)
    - Postgres: keep `V1`–`V6`, add `V7__ticker_subscriptions.sql` (Phase 8)
 
 **Done when:** a fresh `make dev` comes up with empty stores and only the new seeds.
@@ -199,7 +200,7 @@ Mapped from the `twitter-financial-news-topic` labels plus Reuters-21578 categor
   3. Salience: title mention > lead > body count.
   4. FinBERT sentiment on title + lead, plus **entity-level sentiment** on sentences mentioning each company (store the average on `MENTIONS`).
   5. `PATCH /api/articles/{id}/enrichment` on the provider.
-- **Company universe seed** (`tools/build_universe.py` produces `V4__seed_company_universe.cypher`):
+- **Company universe seed** (`tools/build_universe.py` produces `V5__seed_company_universe.cypher`):
   - US: SEC `company_tickers.json` filtered by bank SIC codes (about 400 listed banks)
   - UK/EU: FSB G-SIB list + EBA-supervised large banks + major listed fintechs (GLEIF for LEIs, manual ticker mapping for about 60 names)
   - Regulators and central banks as `kind=REGULATOR|CENTRAL_BANK` (no ticker; used for event filters)

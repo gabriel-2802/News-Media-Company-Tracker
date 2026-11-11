@@ -14,8 +14,7 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
     @Query(
             value = """
         MATCH (s:NewsSource)-[:PUBLISHED]->(a:Article)
-        OPTIONAL MATCH (a)-[:HAS_TOPIC]->(t:Topic)
-        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
         ORDER BY a.publishedAt DESC
         SKIP $skip LIMIT $limit
         """,
@@ -29,8 +28,7 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
     @Query(
             value = """
         MATCH (s:NewsSource {name: $sourceName})-[:PUBLISHED]->(a:Article)
-        OPTIONAL MATCH (a)-[:HAS_TOPIC]->(t:Topic)
-        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
         ORDER BY a.publishedAt DESC
         SKIP $skip LIMIT $limit
         """,
@@ -45,7 +43,7 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
             value = """
         MATCH (t:Topic {name: $topicName})<-[:HAS_TOPIC]-(a:Article)
         OPTIONAL MATCH (a)<-[:PUBLISHED]-(s:NewsSource)
-        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
         ORDER BY a.publishedAt DESC
         SKIP $skip LIMIT $limit
         """,
@@ -59,19 +57,26 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
     @Query(
             value = """
     MATCH (s:NewsSource)-[:PUBLISHED]->(a:Article {url: $url})
-    OPTIONAL MATCH (a)-[:HAS_TOPIC]->(t:Topic)
-    RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+    RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
     """
     )
     Optional<Article> findByUrlWithSourceAndTopic(String url);
 
+    /**
+     * Replaces all topics of an article with a single one (score 1.0).
+     * Kept for the current single-label classifier; the multi-label
+     * endpoint arrives with the banking classifier (Phase 4).
+     */
     @Query("""
         MATCH (s:NewsSource)-[:PUBLISHED]->(a:Article {url: $url})
         OPTIONAL MATCH (a)-[oldTopic:HAS_TOPIC]->(:Topic)
         DELETE oldTopic
+        WITH DISTINCT a, s
         MERGE (t:Topic {name: $topicName})
-        MERGE (a)-[:HAS_TOPIC]->(t)
-        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+        MERGE (a)-[nt:HAS_TOPIC]->(t)
+        SET nt.score = 1.0
+        WITH a, s
+        RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
         """)
     Article setTopic(String url, String topicName);
 
@@ -91,8 +96,7 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
     @Query(
             value = """
             MATCH (s:NewsSource)-[:PUBLISHED]->(a:Article)-[:BELONGS_TO]->(story:Story {id: $storyId})
-            OPTIONAL MATCH (a)-[:HAS_TOPIC]->(t:Topic)
-            RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+            RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
             ORDER BY a.publishedAt DESC
             SKIP $skip LIMIT $limit
             """,
@@ -110,8 +114,7 @@ public interface ArticleRepository extends Neo4jRepository<Article, String> {
                     CALL db.index.fulltext.queryNodes('""" + Constants.ARTICLE_SEARCH_FULLTEXT_IDX + """
                     ', $query) YIELD node AS a, score
                     MATCH (s:NewsSource)-[:PUBLISHED]->(a)
-                    OPTIONAL MATCH (a)-[:HAS_TOPIC]->(t:Topic)
-                    RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], t, [(a)-[ht:HAS_TOPIC]->(t) | ht]
+                    RETURN a, s, [(s)-[r:PUBLISHED]->(a) | r], [(a)-[ht:HAS_TOPIC]->(tt:Topic) | ht], [(a)-[:HAS_TOPIC]->(tt:Topic) | tt]
                     ORDER BY score DESC
                     SKIP $skip LIMIT $limit
                     """,
