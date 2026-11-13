@@ -11,6 +11,8 @@ fell" scored -0.96). So texts are scored sentence by sentence and combined:
                    "Fed holds rates steady")
   * article      = 0.5 * title + 0.5 * mean(first lead sentences)
   * company      = weighted mean over sentences mentioning it, title weight 2
+  * rules        = sentences about a regulator ending an enforcement action
+                   are scored +0.5 / positive (FinBERT reads them as negative)
 """
 from __future__ import annotations
 
@@ -27,11 +29,31 @@ MAX_LENGTH = 128
 LEAD_SENTENCES = 3
 _SENTENCE_END = re.compile(r"(?<=[.!?])\s+(?=[A-Z0-9\"'“])")
 
+# FinBERT reads "termination of enforcement action" as negative because of the
+# word "enforcement". For the bank concerned, a regulator ending an action (or
+# lifting a consent order) removes an overhang, so such sentences are scored
+# moderately positive instead.
+_REGULATORY_ACTION = r"(?:enforcement actions?|consent orders?|cease[- ]and[- ]desist(?: orders?)?|written agreements?)"
+_ACTION_ENDED = re.compile(
+    rf"\b(?:terminat(?:es|ed|ing|ion)|lift(?:s|ed|ing)?|rescind(?:s|ed)?|end(?:s|ed)?)\b"
+    rf"(?:\s+(?:of|the|an|a|its|their|two|three|several|all))*\s+(?:\w+\s+){{0,2}}{_REGULATORY_ACTION}"
+    rf"|\b{_REGULATORY_ACTION}\s+(?:\w+\s+){{0,6}}(?:was|were|has been|have been|is|are)\s+"
+    rf"(?:terminated|lifted|rescinded|ended)\b",
+    re.IGNORECASE,
+)
+ACTION_ENDED_SCORE = 0.5
+
 
 @dataclass(frozen=True)
 class Score:
     value: float          # P(positive) - P(negative)
     label: str            # positive | negative | neutral (argmax)
+
+
+def apply_rules(texts: list[str], scores: list[Score]) -> list[Score]:
+    """Correct model scores for wording FinBERT is known to misread (see _ACTION_ENDED)."""
+    return [Score(max(s.value, ACTION_ENDED_SCORE), "positive") if _ACTION_ENDED.search(t) else s
+            for t, s in zip(texts, scores)]
 
 
 def sentences(text: str, limit: int) -> list[str]:
@@ -62,7 +84,8 @@ class SentimentModel:
         enc = self.tokenizer(texts, return_tensors="pt", truncation=True, max_length=MAX_LENGTH, padding=True)
         with torch.no_grad():
             probs = torch.softmax(self.model(**enc).logits, dim=-1)
-        return [Score(round(float(p[self._pos] - p[self._neg]), 4), self.id2label[int(p.argmax())]) for p in probs]
+        raw = [Score(round(float(p[self._pos] - p[self._neg]), 4), self.id2label[int(p.argmax())]) for p in probs]
+        return apply_rules(texts, raw)
 
 
 def article_sentiment(title: Score, lead: list[Score]) -> Score:

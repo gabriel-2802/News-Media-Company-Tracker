@@ -50,9 +50,18 @@ public class EventService {
             Map.entry("macro_economy", 0.3),
             Map.entry("other", 0.2));
 
+    /**
+     * Company kinds that never get events. Regulators and central banks are the actors in most
+     * official releases ("Fed announces enforcement action against X") and are linked whenever they
+     * publish; an event on them is not an investor event. They keep their MENTIONS, and their releases
+     * still raise the impact of events on the companies they name (the official-source bonus).
+     */
+    static final List<String> NON_EVENT_KINDS = List.of("REGULATOR", "CENTRAL_BANK");
+
     private static final String DROP_STALE = """
             MATCH (:Article {url: $url})-[:BELONGS_TO]->(s:Story)-[old:AFFECTS]->(c:Company)
             WHERE NOT EXISTS { (s)<-[:BELONGS_TO]-(:Article)-[:MENTIONS]->(c) }
+               OR c.kind IN $nonEventKinds
             WITH s, c, old
             DELETE old
             RETURN s.id AS storyId, c.id AS companyId, c.name AS companyName, null AS symbol, null AS exchange,
@@ -63,6 +72,7 @@ public class EventService {
     private static final String REFRESH = """
             MATCH (:Article {url: $url})-[:BELONGS_TO]->(s:Story)
             MATCH (s)<-[:BELONGS_TO]-(a:Article)-[m:MENTIONS]->(c:Company)
+            WHERE NOT coalesce(c.kind, '') IN $nonEventKinds
             WITH s, c, count(DISTINCT a) AS mentioning, min(a.publishedAt) AS firstLocal,
                  max(m.salience) AS salience, avg(coalesce(m.sentiment, a.sentimentScore, 0.0)) AS sentiment
             WITH s, c, mentioning, firstLocal, salience, sentiment,
@@ -126,10 +136,10 @@ public class EventService {
      */
     public long refreshForArticle(final String articleUrl) {
         final List<EventMessage> messages = new ArrayList<>();
-        neo4j.query(DROP_STALE).bind(articleUrl).to("url").fetch().all()
+        neo4j.query(DROP_STALE).bindAll(Map.of("url", articleUrl, "nonEventKinds", NON_EVENT_KINDS)).fetch().all()
                 .forEach(row -> messages.add(EventMessage.fromRow(row, true)));
         final Collection<Map<String, Object>> rows = neo4j.query(REFRESH)
-                .bindAll(Map.of("url", articleUrl, "weights", TOPIC_WEIGHTS))
+                .bindAll(Map.of("url", articleUrl, "weights", TOPIC_WEIGHTS, "nonEventKinds", NON_EVENT_KINDS))
                 .fetch().all();
         rows.forEach(row -> messages.add(EventMessage.fromRow(row, false)));
         publisher.publish(messages);
