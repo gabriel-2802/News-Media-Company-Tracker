@@ -1,0 +1,63 @@
+server:
+  port: ${ANALYTICS_PORT:8090}
+  servlet:
+    context-path: /analytics
+
+spring:
+  application:
+    name: analytics
+  datasource:
+    url: jdbc:postgresql://${DB_HOST:localhost}:${POSTGRES_PORT:5433}/${MARKET_DB_NAME:market}
+    username: ${MARKET_DB_USER:analytics}
+    password: ${MARKET_DB_PASSWORD:analytics}
+  flyway:
+    enabled: true
+  rabbitmq:
+    # Same broker/vhost as the other services; parsed from RABBITMQ_URL in RabbitConfig.
+    listener:
+      simple:
+        default-requeue-rejected: false
+
+rabbitmq:
+  url: ${RABBITMQ_URL:amqp://admin:secret@localhost:5672/news_monitor}
+
+jwt:
+  public-key-path: ${JWT_PUBLIC_KEY_PATH:../keys/jwt-public.pem}
+
+analytics:
+  provider-url: ${PROVIDER_URL:http://localhost:8080/news-provider}
+  manager-url: ${MANAGER_URL:http://localhost:9000/manager}
+  system-code: ${SYSTEM_CODE:}
+  events-queue: ${ANALYTICS_EVENTS_QUEUE:analytics.events}
+  market-data:
+    # none | twelvedata
+    provider: ${MARKET_DATA_PROVIDER:none}
+    history-days: ${MARKET_HISTORY_DAYS:730}
+    request-delay-ms: ${MARKET_REQUEST_DELAY_MS:8000}   # Twelve Data free tier: 8 requests/minute
+    twelvedata:
+      base-url: ${TWELVEDATA_BASE_URL:https://api.twelvedata.com}
+      api-key: ${TWELVEDATA_API_KEY:}
+      # Exchanges the configured plan covers (free tier: US). Others are skipped.
+      exchanges: ${TWELVEDATA_EXCHANGES:XNYS,XNAS,ARCX}
+  ingest-cron: ${MARKET_INGEST_CRON:0 30 22 * * MON-FRI}        # after US close, UTC
+  impact-interval-ms: ${IMPACT_INTERVAL_MS:1800000}
+  # Market-model benchmark per exchange of the event's listing: SYMBOL@MIC.
+  benchmarks:
+    XNYS: KBE@ARCX
+    XNAS: KBE@ARCX
+  study:
+    estimation-start: -250
+    estimation-end: -30
+    min-estimation-days: 60
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info

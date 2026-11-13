@@ -19,6 +19,8 @@ rabbitmq:
   url: ${RABBITMQ_URL:amqp://admin:secret@localhost:5672/news_monitor}
   scrape-jobs-queue: ${SCRAPE_JOBS_QUEUE:scrape.jobs}
   article-notifications-queue: ${ARTICLE_NOTIFICATIONS_QUEUE:article.notifications}
+  news-exchange: ${NEWS_EXCHANGE:news_monitor}
+  event-upserted-routing-key: ${EVENT_UPSERTED_ROUTING_KEY:event.upserted}
 
 # The provider only validates tokens issued by the manager, it never issues
 # its own — it only ever needs the manager's public key, never the private

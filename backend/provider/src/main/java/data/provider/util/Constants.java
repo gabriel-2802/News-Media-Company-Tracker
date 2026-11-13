@@ -14,6 +14,7 @@ public final class Constants {
     public static final String NEWS_SOURCE_URLS_UNREACHABLE_ERROR = "News source URLs are not reachable: baseUrl = {}, rssUrl = {}.";
     public static final String NEWS_SOURCE_DOMAIN_MISMATCH_ERROR = "RSS URL domain does not match base URL domain: baseUrl = {}, rssUrl = {}.";
     public static final String ARTICLE_DOES_NOT_EXIST_ERROR = "Article with the URL = {} does not exist.";
+    public static final String EVENT_DOES_NOT_EXIST_ERROR = "No event for story {} and company {}";
     public static final String COMPANY_DOES_NOT_EXIST_ERROR = "One or more companies do not exist: {}";
     public static final String ARTICLE_ENRICHED_LOG = "Enriched {}: {} company mention(s), sentiment {}";
     public static final String TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR = "Topic with the name = {} does not exist.";
@@ -62,6 +63,8 @@ public final class Constants {
     // topic paths
     public static final String TOPICS_BASE_PATH = "/api/topics";
     public static final String COMPANIES_BASE_PATH = "/api/companies";
+    public static final String EVENTS_BASE_PATH = "/api/events";
+    public static final String EVENTS_IMPACT_PATH = "/{storyId}/{companyId}/impact";
     public static final String ARTICLES_ENRICHMENT_PATH = "/enrichment";
     public static final String TOPICS_EXISTS_PATH = "/exists";
 

@@ -106,7 +106,7 @@ enrich-worker: ## Run an enricher worker locally (company linking + sentiment)
 # ── Logs ───────────────────────────────────────────────────────────────────────
 
 .PHONY: logs
-logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|scraper-worker|classifier-worker|cluster-worker|enricher-worker]
+logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|analytics|scraper-worker|classifier-worker|cluster-worker|enricher-worker]
 	$(COMPOSE) $(APPS) logs -f $(SERVICE)
 
 .PHONY: logs-manager
@@ -116,6 +116,10 @@ logs-manager: ## Stream manager logs
 .PHONY: logs-provider
 logs-provider: ## Stream provider logs
 	$(COMPOSE) $(APPS) logs -f provider
+
+.PHONY: logs-analytics
+logs-analytics: ## Stream analytics service logs
+	$(COMPOSE) $(APPS) logs -f analytics
 
 .PHONY: logs-scraper
 logs-scraper: ## Stream logs for all scraper-worker replicas

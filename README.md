@@ -11,7 +11,7 @@
 | Sources | 27 validated US/UK/EU feeds: trade press, financial news, regulators, central banks ([report](data/source_validation/report.md)). Political-orientation data removed. |
 | Topics | 13 banking topics, multi-label with scores: FinBERT fine-tuned on public data + a rule layer for regulator/enforcement content |
 | Entities and sentiment | 356 companies (banks, fintechs, regulators, central banks) and 345 tickers. The enricher worker links articles to them, scores FinBERT sentiment per article and per company, and the provider derives Story→Company events with an impact score |
-| Market data and charts | Planned: separate Spring Boot `analytics` service |
+| Market data and event studies | Spring Boot `analytics` service with its own `market` database: event read model fed by RabbitMQ, daily prices behind a pluggable provider (needs an API key), market-model event studies written back to the provider. Chart APIs are next (Phase 7) |
 
 ---
 
@@ -369,6 +369,7 @@ flowchart LR
 | `article.cluster`       | yes     | `news_monitor`     | `article.saved` | Clusterer worker consumes; scraper produces.                                                               |
 | `article.enrich`        | yes     | `news_monitor`     | `article.saved` | Enricher worker consumes; scraper produces. |
 | `article.notifications` | yes     | (none)               | n/a               | Provider produces; manager consumes.**Not bound to topic exchange** (isolated from scraper fan-out). |
+| `analytics.events`      | yes     | `news_monitor`     | `event.upserted`  | Analytics consumes; provider produces when a story-company event changes (after commit). |
 
 ### Message Shapes
 
@@ -405,6 +406,7 @@ or
 | `article.cluster`       | Scraper (fan-out via topic exchange)                                    | Clusterer worker                          | Always, after article saved                     |
 | `article.enrich`        | Scraper (fan-out via topic exchange)                                    | Enricher worker                           | Always, after article saved                     |
 | `article.notifications` | Provider (`ArticleService`, `StoryService`)                         | Manager (`ArticleNotificationListener`) | Only if subscription exists for the story/topic |
+| `analytics.events`      | Provider (`EventService`, after commit)                                | Analytics (`EventListener`)               | Whenever an event is created, updated or removed |
 
 ---
 
@@ -544,6 +546,37 @@ No enforced foreign keys; each string agreement is application-level:
 | Article`url` | Neo4j`Article.url` | Worker messages (`article.classify`/`article.cluster`/`article.enrich` payloads), `article.notifications` |
 
 **Consistency failure is soft:** if a manager subscription points to a deleted story, provider's `existsByStoryId` returns `false` and no notification is published. No database error.
+
+---
+
+## Analytics Service (Spring Boot + Postgres `market`)
+
+**Location:** `backend/analytics/` | **Port:** 8090, context path `/analytics` | **Run:** `cd backend/analytics && mvn spring-boot:run` (or the `analytics` compose service)
+
+A separate microservice for market data and, from Phase 7, chart APIs. It owns the `market` database (same Postgres server, its own `analytics` user with no access to the manager's database; schema via Flyway) and never queries Neo4j.
+
+**Event read model.** The provider publishes `event.upserted` on the `news_monitor` exchange after every committed change to a `(:Story)-[:AFFECTS]->(:Company)` event (including removals, `deleted: true`). Analytics consumes them from `analytics.events` into its `events` table. Each message carries a `version` (epoch ms): an upsert applies only if newer than the stored row and any tombstone left by a delete, so duplicates and out-of-order delivery are harmless. `POST /api/admin/events/rebuild[?since=]` replays the provider's `GET /api/events` to rebuild the table.
+
+**Prices.** `prices_daily` holds daily bars per listing (symbol + ISO 10383 MIC) for every primary ticker in `GET /api/companies` plus the benchmarks, fetched incrementally after the US close (`MARKET_INGEST_CRON`) through a `MarketDataProvider`:
+
+| `MARKET_DATA_PROVIDER` | Behaviour |
+| --- | --- |
+| `none` (default) | Runs, fetches nothing; event studies stay pending |
+| `twelvedata` | Twelve Data `time_series` with `TWELVEDATA_API_KEY`; covers the exchanges in `TWELVEDATA_EXCHANGES` (free plan: US). Requests are spaced by `MARKET_REQUEST_DELAY_MS` (8 s for 8/min) |
+
+Stooq's free CSV endpoint now sits behind a JavaScript bot check, so there is no keyless source; a free Twelve Data key is enough for US listings.
+
+**Event studies.** For events on listed companies whose exchange has a benchmark (`analytics.benchmarks`, default KBE for NYSE/Nasdaq), `ImpactService` runs a market-model event study every 30 min: OLS of the stock's daily log returns on the benchmark's over trading days [-250, -30] (at least 60), abnormal return on day 0 (first trading day on/after the event), CAR[-1,+1] with a t-test, and CAR[-5,+5] once five trading days have passed. Results go to `event_impact` and to the provider (`PATCH /api/events/{storyId}/{companyId}/impact`, ROLE_SYSTEM).
+
+**Admin (ROLE_ADMIN / ROLE_SYSTEM):** `POST /api/admin/events/rebuild`, `POST /api/admin/prices/ingest`, `POST /api/admin/impact/run`. Scheduled jobs take a lease in `job_locks`, so only one replica runs each.
+
+**Existing Postgres volume:** the `market` database and user are created by `backend/postgres/init/10-market-db.sh` only on an empty volume. On an existing one, create them once:
+
+```bash
+docker compose exec postgres psql -U postgres -c "CREATE USER analytics WITH PASSWORD '<MARKET_DB_PASSWORD>';" -c "CREATE DATABASE market OWNER analytics;" -c "REVOKE CONNECT ON DATABASE news_monitor FROM PUBLIC;"
+```
+
+**Tests:** `cd backend/analytics && mvn test`: the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against its documented response shapes; the read model's version guards and tombstones run against the `market` database.
 
 ---
 
@@ -844,6 +877,7 @@ Both workflows share the same infra containers and `.env`. `make up-full`'s serv
 | -------- | --------------------------------------- | -------------------- | -------------------- |
 | Manager  | `http://localhost:9000/manager`       | `/actuator/health` | `/swagger-ui.html` |
 | Provider | `http://localhost:8080/news-provider` | `/actuator/health` | `/swagger-ui.html` |
+| Analytics | `http://localhost:8090/analytics` | `/actuator/health` | `/swagger-ui.html` |
 
 Seeded admin login (from `AdminSeeder` — override via `APP_ADMIN_*` in `.env`):
 

@@ -42,6 +42,9 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`GET /api/topics/exists`](#get-apitopicsexists)
 - [Companies](#companies)
   - [`GET /api/companies`](#get-apicompanies)
+- [Events](#events)
+  - [`GET /api/events`](#get-apievents)
+  - [`PATCH /api/events/{storyId}/{companyId}/impact`](#patch-apieventsstoryidcompanyidimpact)
 - [Subscriptions](#subscriptions)
   - [`POST /api/subscriptions/story/{storyId}`](#post-apisubscriptionsstorystoryid)
   - [`DELETE /api/subscriptions/story/{storyId}`](#delete-apisubscriptionsstorystoryid)
@@ -708,6 +711,34 @@ Public. Returns the whole company universe (a few hundred entries: banks, fintec
 
 ---
 
+## Events
+
+Base path: `/api/events`. An event is a `(:Story)-[:AFFECTS]->(:Company)` relationship, derived by the provider (see `PATCH /api/articles/enrichment`). Every committed change is also published as `event.upserted` (see [RabbitMQ side effects](#rabbitmq-side-effects)).
+
+### `GET /api/events`
+
+Public. Events ordered by last update, for consumers rebuilding their copy (the analytics service).
+
+| Name  | Type   | Required | Description                                  |
+| ----- | ------ | -------- | -------------------------------------------- |
+| since | string | no       | ISO-8601 datetime; omit for all events       |
+| page  | int    | no       | Zero-based, default 0                        |
+| count | int    | no       | 1–1000, default 200                          |
+
+Each item: `storyId`, `companyId`, `companyName`, `symbol` / `exchange` / `currency` (primary listing, null if unlisted), `storyTitle`, `firstSeen`, `impactScore`, `articleCount`, `sentiment`, `topics`, `deleted` (always false here), `version` (epoch ms; 0 for events last changed before versioning existed).
+
+### `PATCH /api/events/{storyId}/{companyId}/impact`
+
+**Requires:** `ROLE_ADMIN` or `ROLE_SYSTEM`. Written by the analytics service after an event study; does not publish `event.upserted`.
+
+```json
+{"benchmark": "KBE", "abnormalReturn": -0.018, "car1": -0.031, "car5": null, "beta": 1.12, "pValue": 0.04, "estimationDays": 220}
+```
+
+Stored on the `AFFECTS` relationship as `benchmark`, `abnormalReturn`, `car1`, `car5`, `beta`, `pValue`, `estimationDays`, `impactComputedAt`. Returns 204, or 400 if the event does not exist.
+
+---
+
 ## Subscriptions
 
 Base path: `/api/subscriptions`
@@ -816,6 +847,7 @@ The Provider is a RabbitMQ producer only — it never consumes. Full topology, q
 | ------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------- | --------------------------------------------------------------------- |
 | `POST /api/articles/trigger-scrape` | always, once per registered news source     | `scrape.jobs`           | `{"name": "<sourceName>", "retry_count": 0}`                        |
 | `ScrapeScheduler` (every 5 min, internal) | once per enabled source whose `scrapeIntervalMinutes` has elapsed | `scrape.jobs` | `{"name": "<sourceName>", "retry_count": 0}` |
+| Event refresh (enrichment, story attach, topic writes) | after commit, once per created/updated/removed event | `news_monitor` exchange, key `event.upserted` → `analytics.events` | `EventMessage`: event fields + `deleted` + `version` |
 | `PATCH /api/articles/topics` | once per topic in the request that has a subscription | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}` |
 | `PATCH /api/articles/topic`                                                         | only if a subscription exists for the topic | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}`   |
 | `PATCH /api/stories/{storyId}/attach`                                               | only if a subscription exists for the story | `article.notifications` | `{"name": "<story title>", "articleUrl": "<url>", "type": "STORY"}` |

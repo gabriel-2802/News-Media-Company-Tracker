@@ -27,7 +27,8 @@
 | 5. Enricher | Done | `1736add`, Phase 5 commit | 356 companies / 345 tickers (V5 + V6 correction). Enricher worker (dictionary linking + sentence-level FinBERT), `GET /api/companies`, `PATCH /api/articles/enrichment`, derived Story→Company events with impact score. Verified end to end with all three workers. |
 | Refinement (live run) | Done | Refinement commit | First real scrape (140 articles, 7 sources) through all workers. Fixed: deadlocks between concurrent story/enrichment writes (500s), common-phrase company names ("financial institutions"), cookie-banner article bodies, central-bank releases forced to regulation; added earnings / ratings / dividend / leadership / central-bank monetary rules. |
 | 9. Clustering re-validation | Done (moved ahead of 6–8) | Phase 9 commit | Publish-date window, same-publisher + 0.75 rule for official releases, bank/fintech guard, top-5 candidates, base threshold 0.60. On 140 real articles: biggest story 21 → 6 articles, max span 111 → 1 day, mega-story events gone. `make recluster` rebuilds stories. |
-| 6–8, 10 | Not started | | |
+| 6. Analytics service | Done (prices need an API key) | Phase 6 commit | Spring Boot service with its own `market` DB; provider publishes `event.upserted` after commit, `GET /api/events` and the impact write-back; version-guarded read model; pluggable daily-price ingest (Twelve Data); market-model event study with write-back. Verified end to end: rebuild 234/234 events, 90 live updates via RabbitMQ, event study + authenticated write-back on synthetic prices (β 1.22 vs 1.2, AR −3.85% vs −4% planted). |
+| 7–8, 10 | Not started | | |
 | Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
 
 ### Deviations from the original plan
@@ -42,6 +43,7 @@
 - **Phase 5:** Latin American Santander subsidiaries (Brasil, Chile) are not in the universe (outside US/UK/EU scope, and their names clash with the curated Santander).
 - **Phase 5:** sentiment is scored per sentence (title, lead sentences, sentences naming a company) because FinBERT on a whole paragraph is dominated by one strongly worded sentence; labels use FinBERT's argmax.
 - **Phase 5:** events are derived data recomputed by the provider (`EventService`) on enrichment, story attach and topic changes, rather than written by the enricher, so worker completion order does not matter. The impact formula is documented in PROVIDER_API.md.
+- **Phase 6:** plain Postgres (no TimescaleDB) as decided; lease table instead of ShedLock (not yet confirmed for Spring Framework 7); Stooq is no longer usable (JavaScript bot check), so prices need a Twelve Data key; benchmarks configured for US exchanges only (KBE), so UK/EU events wait for a benchmark and a plan covering those exchanges.
 - **Known model gap (Phase 4):** "JPMorgan profit beats estimates" was classified `company_product_news` instead of `earnings_results` in the Phase 5 end-to-end run; an earnings rule or in-domain labels would fix it.
 
 ## Guiding principle: reuse, don't rebuild

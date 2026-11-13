@@ -66,8 +66,12 @@ services:
       POSTGRES_USER: "${POSTGRES_USER:-postgres}"
       POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-secret}"
       POSTGRES_DB: "${POSTGRES_DB:-news_monitor}"
+      MARKET_DB_NAME: "${MARKET_DB_NAME:-market}"
+      MARKET_DB_USER: "${MARKET_DB_USER:-analytics}"
+      MARKET_DB_PASSWORD: "${MARKET_DB_PASSWORD:-analytics}"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backend/postgres/init:/docker-entrypoint-initdb.d:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-news_monitor}"]
       interval: 15s
@@ -152,6 +156,38 @@ services:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8080/news-provider/actuator/health"]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 45s
+
+  analytics:
+    build:
+      context: ./backend/analytics
+      dockerfile: Dockerfile
+    profiles: ["apps"]
+    restart: unless-stopped
+    ports:
+      - "8090:8090"
+    env_file: .env
+    environment:
+      DB_HOST: postgres
+      POSTGRES_PORT: 5432
+      RABBITMQ_URL: "amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-secret}@rabbitmq:5672/news_monitor"
+      PROVIDER_URL: http://provider:8080/news-provider
+      MANAGER_URL: http://manager:9000/manager
+      JWT_PUBLIC_KEY_PATH: /keys/jwt-public.pem
+    volumes:
+      - ./backend/keys:/keys:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      provider:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8090/analytics/actuator/health"]
       interval: 15s
       timeout: 10s
       retries: 10

@@ -5,6 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.neo4j.core.Neo4jClient;
 import org.springframework.stereotype.Service;
 
+import data.provider.dto.messages.EventMessage;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -48,7 +53,11 @@ public class EventService {
     private static final String DROP_STALE = """
             MATCH (:Article {url: $url})-[:BELONGS_TO]->(s:Story)-[old:AFFECTS]->(c:Company)
             WHERE NOT EXISTS { (s)<-[:BELONGS_TO]-(:Article)-[:MENTIONS]->(c) }
+            WITH s, c, old
             DELETE old
+            RETURN s.id AS storyId, c.id AS companyId, c.name AS companyName, null AS symbol, null AS exchange,
+                   null AS currency, s.title AS storyTitle, null AS firstSeen, null AS impactScore,
+                   null AS articleCount, null AS sentiment, [] AS topics, timestamp() AS version
             """;
 
     private static final String REFRESH = """
@@ -75,11 +84,21 @@ public class EventService {
                                    ELSE datetime({datetime: firstLocal, timezone: 'UTC'}) END,
                 r.impactScore = round(CASE WHEN raw > 1.0 THEN 1.0 ELSE raw END, 3),
                 r.articleCount = mentioning,
-                r.sentiment = round(sentiment, 3)
-            RETURN count(r) AS events
+                r.sentiment = round(sentiment, 3),
+                r.updatedAt = datetime(),
+                r.version = timestamp()
+            WITH s, c, r
+            OPTIONAL MATCH (c)-[:LISTED_AS {primary: true}]->(t:Ticker)
+            RETURN s.id AS storyId, c.id AS companyId, c.name AS companyName,
+                   t.symbol AS symbol, t.exchange AS exchange, t.currency AS currency,
+                   s.title AS storyTitle, toString(r.firstSeen) AS firstSeen, r.impactScore AS impactScore,
+                   r.articleCount AS articleCount, r.sentiment AS sentiment,
+                   COLLECT { MATCH (s)<-[:BELONGS_TO]-(:Article)-[:HAS_TOPIC]->(tp:Topic) RETURN DISTINCT tp.name ORDER BY tp.name } AS topics,
+                   r.version AS version
             """;
 
     private final Neo4jClient neo4j;
+    private final EventPublisher publisher;
 
     /*
      * Lock ordering. Story attach, enrichment and topic writes all end up
@@ -100,13 +119,21 @@ public class EventService {
                 .bind(articleUrl).to("url").run();
     }
 
-    /** Recompute all events of the story this article belongs to (no-op if it is not clustered yet). */
+    /**
+     * Recompute all events of the story this article belongs to (no-op if it
+     * is not clustered yet) and publish them, plus removals, as event.upserted
+     * after commit.
+     */
     public long refreshForArticle(final String articleUrl) {
-        neo4j.query(DROP_STALE).bind(articleUrl).to("url").run();
-        final long events = neo4j.query(REFRESH)
+        final List<EventMessage> messages = new ArrayList<>();
+        neo4j.query(DROP_STALE).bind(articleUrl).to("url").fetch().all()
+                .forEach(row -> messages.add(EventMessage.fromRow(row, true)));
+        final Collection<Map<String, Object>> rows = neo4j.query(REFRESH)
                 .bindAll(Map.of("url", articleUrl, "weights", TOPIC_WEIGHTS))
-                .fetchAs(Long.class).one().orElse(0L);
-        log.debug("Refreshed {} event(s) for the story of {}", events, articleUrl);
-        return events;
+                .fetch().all();
+        rows.forEach(row -> messages.add(EventMessage.fromRow(row, false)));
+        publisher.publish(messages);
+        log.debug("Refreshed {} event(s) for the story of {}", rows.size(), articleUrl);
+        return rows.size();
     }
 }
