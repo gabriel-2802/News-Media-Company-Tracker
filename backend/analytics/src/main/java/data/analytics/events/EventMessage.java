@@ -20,4 +20,11 @@ public record EventMessage(
         Double sentiment,
         List<String> topics,
         boolean deleted,
-        long version) {}
+        long version) {
+
+    /** A removal of (storyId, companyId) at the given version. */
+    public static EventMessage tombstone(final String storyId, final String companyId, final long version) {
+        return new EventMessage(storyId, companyId, null, null, null, null, null, null, null, null, null,
+                List.of(), true, version);
+    }
+}

@@ -71,6 +71,14 @@ public class EventRepository {
         return jdbc.sql("SELECT count(*) FROM events").query(Long.class).single();
     }
 
+    /** Keys (storyId, companyId) of stored events whose version is older than {@code version}. */
+    public List<List<String>> keysWithVersionBefore(final long version) {
+        return jdbc.sql("SELECT story_id, company_id FROM events WHERE version < ?")
+                .param(version)
+                .query((rs, i) -> List.of(rs.getString(1), rs.getString(2)))
+                .list();
+    }
+
     public Optional<StoredEvent> find(final String storyId, final String companyId) {
         return jdbc.sql("SELECT story_id, company_id, symbol, exchange, first_seen, version FROM events WHERE story_id = ? AND company_id = ?")
                 .params(storyId, companyId)

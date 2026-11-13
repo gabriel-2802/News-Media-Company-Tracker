@@ -20,6 +20,7 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -32,6 +33,7 @@ class EventRebuildIntegrationTests {
 
     @MockitoBean private ProviderClient provider;
     @Autowired private EventRebuildService rebuild;
+    @Autowired private EventRepository eventRepository;
     @Autowired private JdbcClient jdbc;
     @Autowired private RabbitTemplate rabbit;
 
@@ -68,6 +70,57 @@ class EventRebuildIntegrationTests {
         page1.set(0, msg(500, 20, true));                                  // removed upstream since
         assertThat(rebuild.rebuild("2026-01-01T00:00:00Z")).isEqualTo(1);
         assertThat(stored()).isEqualTo(501);
+    }
+
+    /**
+     * The shared market database also holds real events, so the mocked full feed contains every stored row
+     * at its current version (no change) plus this run's test events.
+     */
+    private List<EventMessage> currentRowsAsFeed() {
+        return jdbc.sql("SELECT story_id, company_id, version FROM events WHERE story_id NOT LIKE ?").param(run + "%")
+                .query((rs, i) -> new EventMessage(rs.getString(1), rs.getString(2), null, null, null, null, null,
+                        "2026-11-10T09:00:00Z", 0.5, 1L, 0.0, List.of(), false, rs.getLong(3)))
+                .list();
+    }
+
+    private void feed(List<EventMessage> messages) {
+        when(provider.events(isNull(), eq(0), anyInt())).thenReturn(messages);   // < PAGE: a single page
+    }
+
+    @Test
+    void fullRebuildRemovesEventsMissingUpstreamButKeepsNewerOnes() {
+        long future = System.currentTimeMillis() + 3_600_000;
+        eventRepository.apply(msg(1, 10, false));
+        eventRepository.apply(msg(2, 10, false));            // removed upstream without a tombstone
+        eventRepository.apply(msg(3, future, false));        // arrived live during the rebuild
+        long realBefore = jdbc.sql("SELECT count(*) FROM events WHERE story_id NOT LIKE ?").param(run + "%")
+                .query(Long.class).single();
+
+        // Built when the rebuild asks for it, so real events stored meanwhile by live messages are included.
+        when(provider.events(isNull(), eq(0), anyInt())).thenAnswer(inv -> {
+            List<EventMessage> upstream = new ArrayList<>(currentRowsAsFeed());
+            upstream.add(msg(1, 10, false));
+            return upstream;
+        });
+
+        assertThat(rebuild.rebuild(null)).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT story_id FROM events WHERE story_id LIKE ? ORDER BY story_id").param(run + "%")
+                .query(String.class).list()).containsExactly(run + "-1", run + "-3");
+        assertThat(jdbc.sql("SELECT count(*) FROM event_tombstones WHERE story_id = ?").param(run + "-2")
+                .query(Long.class).single()).isEqualTo(1L);
+        assertThat(jdbc.sql("SELECT count(*) FROM events WHERE story_id NOT LIKE ?").param(run + "%")
+                .query(Long.class).single()).isEqualTo(realBefore);
+    }
+
+    @Test
+    void emptyFeedOrPartialRebuildRemovesNothing() {
+        eventRepository.apply(msg(1, 10, false));
+        feed(List.of());
+        assertThat(rebuild.rebuild(null)).isZero();
+
+        when(provider.events(eq("2026-11-01T00:00:00Z"), eq(0), anyInt())).thenReturn(List.of());
+        assertThat(rebuild.rebuild("2026-11-01T00:00:00Z")).isZero();
+        assertThat(stored()).isEqualTo(1);
     }
 
     @Test
