@@ -34,8 +34,17 @@ public class CompanyDirectory {
         return refresh(provider.companies());
     }
 
+    /**
+     * Replaces the directory with the given listings. An empty or missing list is never applied: the
+     * provider always seeds a company universe, so "no companies" means a failed or mocked call, and
+     * wiping the table would strip names from every chart until the next successful refresh.
+     */
     @Transactional
     public int refresh(final List<ProviderClient.CompanyListing> companies) {
+        if (companies == null || companies.isEmpty()) {
+            log.warn("Provider returned no companies; keeping the existing company directory");
+            return 0;
+        }
         jdbc.sql("DELETE FROM companies").update();
         int n = 0;
         for (ProviderClient.CompanyListing c : companies) {
