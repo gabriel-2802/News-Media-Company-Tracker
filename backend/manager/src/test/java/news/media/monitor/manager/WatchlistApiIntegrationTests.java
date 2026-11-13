@@ -51,7 +51,7 @@ class WatchlistApiIntegrationTests {
         email = TestUsers.email();
         TestUsers.create(jdbc, email);
         when(companies.find(anyString())).thenReturn(Optional.empty());
-        for (String s : List.of("JPM", "GS", "BRK.B")) {
+        for (String s : List.of("JPM", "GS", "BRK.B", "NDA FI")) {
             when(companies.find(s)).thenReturn(Optional.of(new CompanyDirectory.Ticker(s, "XNYS", "USD", "co-" + s, "Name " + s)));
         }
         when(analytics.quotes(anyList())).thenReturn(List.of());
@@ -89,6 +89,8 @@ class WatchlistApiIntegrationTests {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.topics[0]").value("earnings_results"));
         mvc.perform(as(put("/api/users/me/watchlist/BRK.B"))).andExpect(status().isCreated());
+        mvc.perform(as(put("/api/users/me/watchlist/NDA FI"))).andExpect(status().isCreated());       // Helsinki listing with a space
+        mvc.perform(as(delete("/api/users/me/watchlist/NDA FI"))).andExpect(status().isNoContent());
 
         var listing = new AnalyticsClient.Listing("JPM", "XNYS", "USD", "JPMorgan Chase", "co-JPM");
         when(analytics.quotes(anyList())).thenReturn(List.of(new AnalyticsClient.Quote(listing, 1_762_992_000L, 310.5, 305.0, 5.5, 1.8)));
@@ -126,6 +128,8 @@ class WatchlistApiIntegrationTests {
         mvc.perform(put("/api/users/me/watchlist/JPM")).andExpect(status().isUnauthorized());
         mvc.perform(as(put("/api/users/me/watchlist/NOPE"))).andExpect(status().isNotFound());
         mvc.perform(as(put("/api/users/me/watchlist/J$M"))).andExpect(status().isBadRequest());
+        mvc.perform(as(put("/api/users/me/watchlist/A  B"))).andExpect(status().isBadRequest());           // two spaces
+        mvc.perform(as(put("/api/users/me/watchlist/ABCDEFGHIJKLMNOPQRSTU"))).andExpect(status().isBadRequest());  // 21 chars
         mvc.perform(json(put("/api/users/me/watchlist/JPM"), "{\"minImpact\":1.5}")).andExpect(status().isBadRequest());
         mvc.perform(json(put("/api/users/me/watchlist/JPM"), "{\"topics\":[\"Bad Topic\"]}")).andExpect(status().isBadRequest());
         mvc.perform(json(put("/api/users/me/watchlist/JPM"), "{not json")).andExpect(status().isBadRequest());

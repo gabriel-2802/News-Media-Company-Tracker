@@ -7,3 +7,4 @@ clusterer/data/
 # Classifier training data, caches and checkpoints are not needed at runtime.
 classifier/training/
 classifier/cls_model_output_*/
+classifier/cls_model_output */

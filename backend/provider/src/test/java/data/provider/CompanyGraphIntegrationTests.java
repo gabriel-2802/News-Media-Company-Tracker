@@ -7,7 +7,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.neo4j.core.Neo4jClient;
 
 import java.util.Map;
@@ -21,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * a recent story affecting both (with CAR), an old story affecting only A.
  */
 @SpringBootTest
+// Never publish to the shared broker: event.upserted from test fixtures would reach analytics/manager.
+@MockitoBean(types = RabbitTemplate.class)
 class CompanyGraphIntegrationTests {
 
     @Autowired private Neo4jClient neo4j;

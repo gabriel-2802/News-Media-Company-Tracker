@@ -1,0 +1,46 @@
+# Nightly health check of the seeded news sources (Phase 10).
+# Fails (and so notifies) when more than 20 % of the seeded sources are not PASS.
+# Needs a repository variable SCRAPER_USER_AGENT: an honest bot UA with a contact URL/email.
+name: source-health
+
+on:
+  schedule:
+    - cron: "17 3 * * *"        # 03:17 UTC daily
+  workflow_dispatch:
+
+jobs:
+  check-sources:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: backend/workers
+    env:
+      USER_AGENT: ${{ vars.SCRAPER_USER_AGENT }}
+      BROWSER_USER_AGENT: ${{ vars.SCRAPER_BROWSER_USER_AGENT || 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/130.0 Safari/537.36' }}
+      REQUEST_TIMEOUT_CONNECT: "5"
+      REQUEST_TIMEOUT_READ: "10"
+      RATE_LIMIT_SECONDS: "2.0"
+      MAX_RETRIES: "3"
+      RETRY_BACKOFF: "3.0"
+      MAX_RETRY_SLEEP: "60.0"
+      JS_LOAD_WAIT_MS: "3000"
+      JS_MIN_CHARS: "200"
+      SCRAPER_OUTPUT_PATH: /dev/null
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install scraper dependencies
+        run: |
+          python -m pip install --quiet -r scraper/requirements.txt lxml_html_clean charset-normalizer
+          python -m playwright install --with-deps chromium
+      - name: Check seeded sources
+        run: python -m scraper.tools.validate_sources --seeded --max-fail-ratio 0.2 --report-dir "$RUNNER_TEMP/source-health"
+      - name: Upload report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: source-health-report
+          path: ${{ runner.temp }}/source-health

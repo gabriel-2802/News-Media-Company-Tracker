@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rss version="2.0"><channel><title>Trade press</title>
+<item><title>Bank A to buy Bank B</title><link>https://news.example.test/story?id=101&amp;utm_source=rss&amp;utm_medium=feed#comments</link><pubDate>Mon, 27 Oct 2026 09:00:00 +0000</pubDate></item>
+<item><title>Bank A to buy Bank B (dup)</title><link>https://news.example.test/story?id=101&amp;fbclid=abc</link><pubDate>Mon, 27 Oct 2026 09:00:00 +0000</pubDate></item>
+<item><title>Different story, same path</title><link>https://news.example.test/story?id=102</link><pubDate>Mon, 27 Oct 2026 10:00:00 +0000</pubDate></item>
+</channel></rss>

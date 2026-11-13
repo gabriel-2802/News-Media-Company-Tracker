@@ -103,6 +103,30 @@ cluster-worker: ## Run a cluster worker locally
 enrich-worker: ## Run an enricher worker locally (company linking + sentiment)
 	$(MAKE) -C backend/workers enrich-worker
 
+# ── Tests ──────────────────────────────────────────────────────────────────────
+# Java suites run against the local infra (`make up`) and its .env credentials;
+# each test cleans up the rows/nodes it creates.
+
+.PHONY: test test-java test-workers validate-sources check-sources e2e
+test: test-java test-workers ## Run every test suite (needs `make up`)
+
+test-java: ## Provider, analytics and manager tests (JDK 21)
+	cd backend/provider && mvn -q test
+	cd backend/analytics && mvn -q test
+	cd backend/manager && SPRING_DATASOURCE_PASSWORD=$(POSTGRES_PASSWORD) DB_USERNAME=$(POSTGRES_USER) DB_NAME=$(POSTGRES_DB) mvn -q test
+
+test-workers: ## Worker unit tests (scraper fixtures, linker golden set, classifier smoke, clustering rules)
+	$(MAKE) -C backend/workers test
+
+validate-sources: ## Validate all candidate sources and rewrite data/source_validation/report.*
+	$(MAKE) -C backend/workers validate-sources
+
+check-sources: ## Health check of seeded sources: exit 1 when more than 20 % are not PASS
+	$(MAKE) -C backend/workers check-sources
+
+e2e: ## End-to-end check against running services (see backend/e2e/e2e_check.py)
+	backend/workers/scraper/venv/bin/python backend/e2e/e2e_check.py
+
 # ── Logs ───────────────────────────────────────────────────────────────────────
 
 .PHONY: logs

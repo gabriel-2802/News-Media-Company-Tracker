@@ -597,7 +597,7 @@ Daily studies cannot separate two stories about the same company on the same day
 docker compose exec postgres psql -U postgres -c "CREATE USER analytics WITH PASSWORD '<MARKET_DB_PASSWORD>';" -c "CREATE DATABASE market OWNER analytics;" -c "REVOKE CONNECT ON DATABASE news_monitor FROM PUBLIC;"
 ```
 
-**Tests:** `cd backend/analytics && mvn test` (24): chart endpoints through HTTP against the market database (shapes, marker placement and style, downsampling, weighted sentiment, heatmap values, quotes, error codes, ETag 304); the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database.
+**Tests:** `cd backend/analytics && mvn test` (26): chart endpoints through HTTP against the market database (shapes, marker placement and style, downsampling, weighted sentiment, heatmap values, quotes, error codes, ETag 304); the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database; rebuild from the provider's paged event feed, and the RabbitMQ consumer fed a provider-shaped message.
 
 ---
 
@@ -838,6 +838,19 @@ If provider's public key (`JWT_PUBLIC_KEY_PATH`) doesn't match manager's private
 - Manager's own login/register work fine.
 - Every call from manager or worker to provider fails `401 Unauthorized` (signature verification fails).
 - Silent from outside - manager looks healthy, but data operations fail silently.
+
+---
+
+## Testing and Verification
+
+| Command | What it runs |
+| --- | --- |
+| `make test` | Every suite below (needs `make up`; Java on JDK 21) |
+| `make test-java` | Provider (20), analytics (26), manager (9) integration tests against the local Neo4j / Postgres. Every test cleans up what it creates, and none publishes to the shared broker (`RabbitTemplate` is mocked in the provider tests). |
+| `make test-workers` | Scraper (23: feed fixtures reproducing live quirks such as the Fed's BOM without a charset, ESMA's date-only-in-`<time>` feed, Atom/RDF, tracking params, retries/Retry-After, robots.txt, extraction, source-health threshold), enricher (16, including a 50-headline entity-linking golden set), classifier (35: rules + model smoke test that is skipped without the trained model), clusterer (12) |
+| `make e2e` | `backend/e2e/e2e_check.py` against running services and workers: triggers a scrape, waits until new articles have topics, sentiment and a story, checks new events and a ticker alert (test users watch every listed ticker), `/overlay` bars + markers for 5 banks, then deletes its users. Configure with `MANAGER_URL`, `PROVIDER_URL`, `ANALYTICS_URL`, `E2E_TIMEOUT_MINUTES` |
+| `make check-sources` | Re-validates the seeded sources; exits 1 when more than 20 % are not PASS. Runs nightly in `.github/workflows/source-health.yml` (needs a `SCRAPER_USER_AGENT` repository variable) |
+| `make validate-sources` | Validates all candidates and rewrites `data/source_validation/report.*` |
 
 ---
 

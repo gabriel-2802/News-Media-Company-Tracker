@@ -25,7 +25,8 @@ import java.util.List;
 @SecurityRequirement(name = "bearerAuth")
 public class WatchlistController {
 
-    private static final String SYMBOL = "[A-Za-z0-9.\\-]{1,20}";
+    /** Up to 20 chars; one inner space for listings like Nordea's "NDA FI" (Helsinki). */
+    private static final String SYMBOL = "(?=.{1,20}$)[A-Za-z0-9.\\-]+(?: [A-Za-z0-9.\\-]+)?";
 
     private final WatchlistService watchlistService;
 

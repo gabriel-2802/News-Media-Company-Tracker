@@ -61,6 +61,7 @@ FINANCE_CONTEXT = re.compile(
     re.IGNORECASE,
 )
 LEAD_CHARS = 300
+_PRECEDING_NAME = re.compile(r"(?<![.!?:]\s)(?<!^)\b[A-Z][\w&.'-]*\s$")
 _ACRONYM = re.compile(r"^(?:the )?[A-Z0-9&.\-]{2,6}$|^[A-Z][a-z]*[A-Z][A-Za-z]*$")
 
 
@@ -127,15 +128,21 @@ class EntityLinker:
         unique = {display[k]: next(iter(ids)) for k, ids in owners.items() if len(ids) == 1}
 
         self._owner: dict[str, str] = {}
+        self._weak: set[str] = set()            # companies matched through a common-words name
         exact, contextual, insensitive = [], [], []
         for form, company_id in unique.items():
             bare = re.sub(r"^the ", "", form, flags=re.IGNORECASE)
             if bare.lower() in AMBIGUOUS_WORDS:
                 contextual.append(form)
                 self._owner[form] = company_id
+                if form.startswith("the "):                       # "the Fed" also at a sentence start
+                    contextual.append("T" + form[1:])
+                    self._owner["T" + form[1:]] = company_id
             elif _ACRONYM.match(form) or _is_weak(form):
                 exact.append(form)
                 self._owner[form] = company_id
+                if _is_weak(form):
+                    self._weak.add(company_id)
             else:
                 insensitive.append(form)
                 self._owner[form.lower()] = company_id
@@ -153,6 +160,10 @@ class EntityLinker:
             for m in pattern.finditer(text):
                 key = m.group(0) if case_sensitive else m.group(0).lower()
                 company_id = self._owner.get(key)
+                if company_id and case_sensitive and company_id in self._weak and _PRECEDING_NAME.search(text, 0, m.start()):
+                    # "New York Community Bancorp" is not "Community Bancorp": a common-words
+                    # name right after a capitalised word is the tail of a longer, unknown name.
+                    continue
                 if company_id:
                     hits.append((m.start(), m.end(), company_id))
         # Earliest first, then longest; drop hits overlapping an accepted one.

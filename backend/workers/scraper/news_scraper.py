@@ -593,7 +593,9 @@ def parse_rss(feed: str | bytes) -> list[RSSEntry]:
         if not url:
             guid = item.get("id") or ""
             url = guid if guid.startswith("http") else ""
-        if not url:
+        # feedparser copies an Atom <id> into "link" when there is no <link>,
+        # so a urn:/tag: id would otherwise be fetched (and stored) as a URL.
+        if not url.lower().startswith(("http://", "https://")):
             continue
         url = canonical_url(url)
         if url in seen:

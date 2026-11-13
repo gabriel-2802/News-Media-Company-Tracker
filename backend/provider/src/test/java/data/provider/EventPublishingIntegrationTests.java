@@ -111,6 +111,26 @@ class EventPublishingIntegrationTests {
     }
 
     @Test
+    void versionsIncreaseAcrossUpdatesAndDeletes() throws InterruptedException {
+        companyService.setEnrichment(new EnrichmentRequest(url, "negative", -0.6, List.of(new Mention(bank, 1, 0.9, true, -0.6))));
+        long v1 = published().getLast().version();
+        clearInvocations(rabbitTemplate);
+        Thread.sleep(5);                                                   // versions are epoch ms
+
+        companyService.setEnrichment(new EnrichmentRequest(url, "negative", -0.7, List.of(new Mention(bank, 3, 0.9, true, -0.7))));
+        EventMessage update = published().getLast();
+        assertThat(update.deleted()).isFalse();
+        assertThat(update.version()).isGreaterThan(v1);
+        clearInvocations(rabbitTemplate);
+        Thread.sleep(5);
+
+        companyService.setEnrichment(new EnrichmentRequest(url, "neutral", 0.0, List.of()));     // no company left
+        EventMessage delete = published().stream().filter(m -> bank.equals(m.companyId())).findFirst().orElseThrow();
+        assertThat(delete.deleted()).isTrue();
+        assertThat(delete.version()).isGreaterThan(update.version());
+    }
+
+    @Test
     void nothingIsPublishedWhenTheWriteRollsBack() {
         assertThatThrownBy(() -> companyService.setEnrichment(new EnrichmentRequest(url, "negative", -0.6,
                 List.of(new Mention(run + "-missing", 1, 0.9, true, -0.6))))).isInstanceOf(BusinessException.class);

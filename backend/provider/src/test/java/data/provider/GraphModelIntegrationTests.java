@@ -16,7 +16,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.neo4j.core.Neo4jClient;
 
 import java.util.List;
@@ -33,6 +35,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Every node it creates carries a unique run marker and is deleted afterwards.
  */
 @SpringBootTest
+// Never publish to the shared broker: event.upserted from test fixtures would reach analytics/manager.
+@MockitoBean(types = RabbitTemplate.class)
 class GraphModelIntegrationTests {
 
     @Autowired

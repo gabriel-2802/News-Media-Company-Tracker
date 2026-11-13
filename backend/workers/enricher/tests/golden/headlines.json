@@ -1,0 +1,334 @@
+[
+ {
+  "title": "Wells Fargo asset cap lifted by Federal Reserve after seven years",
+  "expect": [
+   "Federal Reserve",
+   "Wells Fargo"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Goldman Sachs and Morgan Stanley lead bond sale for Apple",
+  "expect": [
+   "Goldman Sachs",
+   "Morgan Stanley"
+  ],
+  "why": "Apple is not in the banking universe"
+ },
+ {
+  "title": "Citi to cut 20,000 jobs as Jane Fraser pushes restructuring",
+  "expect": [
+   "Citigroup"
+  ],
+  "why": "short brand alias"
+ },
+ {
+  "title": "Capital One completes Discover acquisition, creating card giant",
+  "expect": [
+   "Capital One"
+  ],
+  "why": "Discover is no longer listed (acquired)"
+ },
+ {
+  "title": "HSBC shares fall after profit warning in Hong Kong unit",
+  "expect": [
+   "HSBC"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Barclays fined by FCA over financial crime controls",
+  "expect": [
+   "Barclays",
+   "Financial Conduct Authority"
+  ],
+  "why": "regulator acronym"
+ },
+ {
+  "title": "Santander UK raises mortgage rates for first-time buyers",
+  "expect": [
+   "Banco Santander"
+  ],
+  "why": "subsidiary maps to the listed parent"
+ },
+ {
+  "title": "Deutsche Bank and Commerzbank merger talks resurface",
+  "expect": [
+   "Commerzbank",
+   "Deutsche Bank"
+  ],
+  "why": ""
+ },
+ {
+  "title": "UniCredit builds stake in Commerzbank, irking Berlin",
+  "expect": [
+   "Commerzbank",
+   "UniCredit"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Société Générale names new chief executive",
+  "expect": [
+   "Société Générale"
+  ],
+  "why": "accented name"
+ },
+ {
+  "title": "ING cuts savings rate as ECB eases policy",
+  "expect": [
+   "European Central Bank",
+   "ING Group"
+  ],
+  "why": "two acronyms"
+ },
+ {
+  "title": "Bank of England cuts Bank Rate to 4%",
+  "expect": [
+   "Bank of England"
+  ],
+  "why": "'Bank Rate' is not a company"
+ },
+ {
+  "title": "The Fed's discount window sees record borrowing",
+  "expect": [
+   "Federal Reserve"
+  ],
+  "why": "'the Fed' at a sentence start"
+ },
+ {
+  "title": "The fed-up customers complained about fees",
+  "expect": [],
+  "why": "lowercase 'fed' is not the Fed"
+ },
+ {
+  "title": "CFPB sues Zelle operator Early Warning over fraud",
+  "expect": [
+   "CFPB"
+  ],
+  "why": "Early Warning is private"
+ },
+ {
+  "title": "SEC charges crypto exchange with operating unregistered platform",
+  "expect": [
+   "SEC"
+  ],
+  "why": ""
+ },
+ {
+  "title": "The page loads in under a sec on mobile",
+  "expect": [],
+  "why": "acronyms are case-sensitive"
+ },
+ {
+  "title": "Coinbase wins dismissal of SEC lawsuit",
+  "expect": [
+   "Coinbase",
+   "SEC"
+  ],
+  "why": ""
+ },
+ {
+  "title": "PayPal partners with Shopify on checkout",
+  "expect": [
+   "PayPal"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Stripe valuation tops $90 billion in tender offer",
+  "expect": [
+   "Stripe"
+  ],
+  "why": "common-word brand with finance context"
+ },
+ {
+  "title": "Referees stripe the field before kickoff",
+  "expect": [],
+  "why": "lowercase common word"
+ },
+ {
+  "title": "Revolut secures UK banking licence",
+  "expect": [
+   "Revolut"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Visa and Mastercard settle swipe-fee lawsuit",
+  "expect": [
+   "Mastercard",
+   "Visa"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Student visa backlog frustrates universities",
+  "expect": [],
+  "why": "lowercase visa"
+ },
+ {
+  "title": "American Express raises Platinum card fee",
+  "expect": [
+   "American Express"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Block's Cash App fined by state regulators",
+  "expect": [
+   "Block"
+  ],
+  "why": "possessive"
+ },
+ {
+  "title": "Investors bought a block of shares",
+  "expect": [],
+  "why": "lowercase block"
+ },
+ {
+  "title": "Chase Sapphire card gets new lounge perks",
+  "expect": [
+   "JPMorgan Chase"
+  ],
+  "why": "consumer brand"
+ },
+ {
+  "title": "Chase the dream: a profile of a marathon runner",
+  "expect": [],
+  "why": "no finance context"
+ },
+ {
+  "title": "Halifax raises mortgage rates",
+  "expect": [
+   "Lloyds Banking Group"
+  ],
+  "why": "brand of Lloyds"
+ },
+ {
+  "title": "Halifax hosts the summer festival",
+  "expect": [],
+  "why": "place name without finance context"
+ },
+ {
+  "title": "SoFi stock jumps after record member growth",
+  "expect": [
+   "SoFi Technologies"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Charles Schwab reports higher net interest margin",
+  "expect": [
+   "Charles Schwab"
+  ],
+  "why": ""
+ },
+ {
+  "title": "State Street and Apollo team up on private credit ETF",
+  "expect": [
+   "State Street"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Truist sells insurance unit stake",
+  "expect": [
+   "Truist Financial"
+  ],
+  "why": ""
+ },
+ {
+  "title": "PNC to buy FirstBank for $4.1 billion",
+  "expect": [
+   "PNC Financial Services"
+  ],
+  "why": "FirstBank is private"
+ },
+ {
+  "title": "U.S. Bancorp names new CEO",
+  "expect": [
+   "U.S. Bancorp"
+  ],
+  "why": "dotted name"
+ },
+ {
+  "title": "KeyCorp gets investment from Scotiabank",
+  "expect": [
+   "KeyCorp"
+  ],
+  "why": "'Scotiabank' is not an alias of Bank of Nova Scotia"
+ },
+ {
+  "title": "Key takeaways from the jobs report",
+  "expect": [],
+  "why": "common word 'Key'"
+ },
+ {
+  "title": "Silicon Valley Bank collapse: lessons two years on",
+  "expect": [],
+  "why": "failed bank, not in the universe"
+ },
+ {
+  "title": "First Republic depositors moved to JPMorgan",
+  "expect": [
+   "JPMorgan Chase"
+  ],
+  "why": "failed bank skipped, acquirer linked"
+ },
+ {
+  "title": "New York Community Bancorp rebrands as Flagstar",
+  "expect": [],
+  "why": "must not link the unrelated Vermont 'Community Bancorp'; the old NYCB name is not an alias of Flagstar"
+ },
+ {
+  "title": "Community Bancorp raises quarterly dividend",
+  "expect": [
+   "Community Bancorp"
+  ],
+  "why": "the real Community Bancorp"
+ },
+ {
+  "title": "First Northern Community Bancorp reports earnings",
+  "expect": [
+   "First Northern Community Bancorp"
+  ],
+  "why": "longest name wins"
+ },
+ {
+  "title": "Smallville Bancorp, Inc. reports quarterly earnings",
+  "expect": [],
+  "why": "unknown bancorp"
+ },
+ {
+  "title": "Supervisors said financial institutions must hold more capital",
+  "expect": [],
+  "why": "common phrase, not Financial Institutions Inc"
+ },
+ {
+  "title": "Lloyds sets aside more for motor finance claims",
+  "expect": [
+   "Lloyds Banking Group"
+  ],
+  "why": ""
+ },
+ {
+  "title": "NatWest returns to full private ownership",
+  "expect": [
+   "NatWest Group"
+  ],
+  "why": ""
+ },
+ {
+  "title": "Banks brace for Basel III endgame capital rules",
+  "expect": [],
+  "why": "generic"
+ },
+ {
+  "title": "Swiss regulator FINMA reprimands UBS over Credit Suisse integration",
+  "expect": [
+   "UBS"
+  ],
+  "why": "FINMA and Credit Suisse not in the universe"
+ }
+]

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom"><title>Fintech blog</title>
+<entry><title>Payments startup raises Series B</title>
+<link rel="alternate" href="https://fintech.example.test/2026/10/payments-series-b"/>
+<link rel="self" href="https://fintech.example.test/api/entries/42"/>
+<id>tag:fintech.example.test,2026:42</id><updated>2026-10-20T08:15:00+01:00</updated><author><name>A. Writer</name></author></entry>
+<entry><title>Entry identified only by an http id</title>
+<id>https://fintech.example.test/2026/10/id-only</id><updated>2026-10-19T08:00:00Z</updated></entry>
+<entry><title>Entry with no usable link</title><id>urn:uuid:1</id><updated>2026-10-18T08:00:00Z</updated></entry>
+</feed>

@@ -7,7 +7,7 @@ CLASSIFIER_VENV := classifier/venv
 CLUSTERER_VENV  := clusterer/venv
 ENRICHER_VENV   := enricher/venv
 
-.PHONY: setup setup-scraper setup-classifier setup-clusterer setup-enricher scrape-worker classify-worker cluster-worker enrich-worker clean
+.PHONY: test validate-sources check-sources setup setup-scraper setup-classifier setup-clusterer setup-enricher scrape-worker classify-worker cluster-worker enrich-worker clean
 
 setup: setup-scraper setup-classifier setup-clusterer setup-enricher
 
@@ -48,3 +48,19 @@ enrich-worker:
 
 clean:
 	rm -rf $(SCRAPER_VENV) $(CLASSIFIER_VENV) $(CLUSTERER_VENV) $(ENRICHER_VENV) __pycache__ scraper/__pycache__ classifier/__pycache__ clusterer/__pycache__
+
+# ── Tests and source checks (run from this directory) ─────────────────────────
+test:
+	$(SCRAPER_VENV)/bin/python -m unittest discover -s scraper/tests -t .
+	$(CLASSIFIER_VENV)/bin/python -m unittest discover -s classifier/tests -t .
+	$(ENRICHER_VENV)/bin/python -m unittest discover -s enricher/tests -t .
+	$(CLUSTERER_VENV)/bin/python -m unittest discover -s clusterer/tests -t .
+
+# Validate every candidate and rewrite data/source_validation/report.*
+validate-sources:
+	$(SCRAPER_VENV)/bin/python -m scraper.tools.validate_sources
+
+# Health check of the seeded sources; fails when more than 20 % are not PASS.
+SOURCE_REPORT_DIR ?= /tmp/source-health
+check-sources:
+	$(SCRAPER_VENV)/bin/python -m scraper.tools.validate_sources --seeded --max-fail-ratio 0.2 --report-dir $(SOURCE_REPORT_DIR)

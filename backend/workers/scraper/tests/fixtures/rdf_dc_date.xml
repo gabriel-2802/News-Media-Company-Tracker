@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" xmlns="http://purl.org/rss/1.0/" xmlns:dc="http://purl.org/dc/elements/1.1/">
+<channel rdf:about="https://central.example.test/"><title>Central bank</title></channel>
+<item rdf:about="https://central.example.test/press/2026/rate-decision"><title>Monetary policy decision</title>
+<link>https://central.example.test/press/2026/rate-decision</link><dc:date>2026-10-30T13:15:00+01:00</dc:date></item>
+</rdf:RDF>

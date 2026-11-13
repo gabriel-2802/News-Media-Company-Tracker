@@ -305,10 +305,11 @@ def _apply_paywall_rule(r: Result, c: Candidate) -> Result:
 # Output
 # ---------------------------------------------------------------------------
 
-def _write_report(results: list[Result]) -> None:
-    REPORT_DIR.mkdir(parents=True, exist_ok=True)
+def _write_report(results: list[Result], report_dir: Optional[Path] = None) -> None:
+    report_dir = report_dir or REPORT_DIR
+    report_dir.mkdir(parents=True, exist_ok=True)
     stamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%MZ")
-    (REPORT_DIR / "report.json").write_text(
+    (report_dir / "report.json").write_text(
         json.dumps({"generatedAt": stamp, "results": [asdict(r) for r in results]}, indent=2) + "\n"
     )
 
@@ -340,7 +341,7 @@ def _write_report(results: list[Result]) -> None:
             f"| {r.newestItemAgeHours if r.newestItemAgeHours is not None else '–'} | {pct(r.extractionRate)} "
             f"| {pct(r.relevanceRate)} | {r.scrapeIntervalMinutes or '–'} min | {notes} |"
         )
-    (REPORT_DIR / "report.md").write_text("\n".join(lines) + "\n")
+    (report_dir / "report.md").write_text("\n".join(lines) + "\n")
 
 
 def _cypher_str(v: Optional[str]) -> str:
@@ -402,6 +403,12 @@ def main() -> int:
     ap.add_argument("--reuse-report", action="store_true",
                     help="skip network checks: re-apply verdict rules to data/source_validation/report.json "
                          "(after editing candidate metadata such as `paywalled`)")
+    ap.add_argument("--seeded", action="store_true",
+                    help="health check: validate only the sources currently seeded (data/sources.json)")
+    ap.add_argument("--max-fail-ratio", type=float,
+                    help="exit 1 when more than this share (0-1) of the validated sources is not PASS")
+    ap.add_argument("--report-dir", type=Path,
+                    help="write report.md/json here instead of data/source_validation/ (e.g. for nightly runs)")
     args = ap.parse_args()
 
     logging.getLogger().setLevel(logging.WARNING)
@@ -421,8 +428,11 @@ def main() -> int:
     if args.only:
         wanted = {n.strip() for n in args.only.split(",")}
         selected = [c for c in selected if c.name in wanted]
-    if args.write and args.only:
-        ap.error("--write needs the full candidate list (drop --only)")
+    if args.seeded:
+        seeded = {s["name"] for s in json.loads(SOURCES_PATH.read_text())}
+        selected = [c for c in selected if c.name in seeded]
+    if args.write and (args.only or args.seeded):
+        ap.error("--write needs the full candidate list (drop --only/--seeded)")
 
     def run(c: Candidate) -> Result:
         try:
@@ -442,11 +452,23 @@ def main() -> int:
         nested = list(pool.map(lambda group: [run(c) for c in group], by_host.values()))
     results = [r for group in nested for r in group]
 
-    _write_report(results)
-    print(f"\nReport: {(REPORT_DIR / 'report.md').relative_to(REPO_ROOT)}")
+    report_dir = args.report_dir.resolve() if args.report_dir else REPORT_DIR
+    _write_report(results, report_dir)
+    print(f"\nReport: {report_dir / 'report.md'}")
     if args.write:
         _write_seeds(results, candidates)
-    return 0
+    return health_exit_code(results, args.max_fail_ratio)
+
+
+def health_exit_code(results: list[Result], max_fail_ratio: Optional[float]) -> int:
+    """1 when the share of non-PASS sources exceeds max_fail_ratio (None: never fail)."""
+    if max_fail_ratio is None or not results:
+        return 0
+    failing = [r.name for r in results if r.verdict != "PASS"]
+    ratio = len(failing) / len(results)
+    print(f"Source health: {len(failing)}/{len(results)} not PASS ({ratio:.0%}, limit {max_fail_ratio:.0%})"
+          + (f": {', '.join(sorted(failing))}" if failing else ""))
+    return 1 if ratio > max_fail_ratio else 0
 
 
 if __name__ == "__main__":
