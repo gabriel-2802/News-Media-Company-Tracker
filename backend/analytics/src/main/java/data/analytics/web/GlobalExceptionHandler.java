@@ -6,7 +6,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import jakarta.validation.ConstraintViolationException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.client.RestClientException;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.server.ResponseStatusException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 @RestControllerAdvice
 @Slf4j
@@ -16,6 +22,23 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> upstream(final RestClientException ex) {
         log.warn("Upstream call failed: {}", ex.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(ErrorResponse.of(502, "Bad Gateway", "Upstream service failed"));
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<ErrorResponse> status(final ResponseStatusException ex) {
+        final int code = ex.getStatusCode().value();
+        return ResponseEntity.status(code).body(ErrorResponse.of(code, HttpStatus.valueOf(code).getReasonPhrase(), ex.getReason()));
+    }
+
+    @ExceptionHandler({MethodArgumentTypeMismatchException.class, ConstraintViolationException.class,
+            HandlerMethodValidationException.class, MissingServletRequestParameterException.class})
+    public ResponseEntity<ErrorResponse> badRequest(final Exception ex) {
+        return ResponseEntity.badRequest().body(ErrorResponse.of(400, "Bad Request", ex.getMessage()));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ErrorResponse> notFound(final NoResourceFoundException ex) {
+        return ResponseEntity.status(404).body(ErrorResponse.of(404, "Not Found", ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)

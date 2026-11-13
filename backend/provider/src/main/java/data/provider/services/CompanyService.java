@@ -2,6 +2,7 @@ package data.provider.services;
 
 import data.provider.dto.requests.EnrichmentRequest;
 import data.provider.dto.responses.CompanyDto;
+import data.provider.dto.responses.GraphDto;
 import data.provider.exceptions.BusinessException;
 import data.provider.models.CompanyKind;
 import data.provider.repositories.ArticleRepository;
@@ -15,6 +16,8 @@ import org.springframework.stereotype.Service;
 
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -35,6 +38,46 @@ public class CompanyService {
                 .sorted(Comparator.comparing(c -> c.getName().toLowerCase()))
                 .map(CompanyDto::new)
                 .toList();
+    }
+
+    /**
+     * Graph around the company listed under `symbol`: its stories first seen
+     * in the last `days` days (at most `limit`, highest impact first) and
+     * every company those stories affect.
+     */
+    public GraphDto graph(final String symbol, final int days, final int limit) {
+        final List<Map<String, Object>> rows = new ArrayList<>(neo4j.query("""
+                MATCH (c:Company)-[:LISTED_AS]->(:Ticker {symbol: $symbol})
+                WITH c LIMIT 1
+                MATCH (s:Story)-[r:AFFECTS]->(c)
+                WHERE r.firstSeen >= datetime() - duration({days: $days})
+                WITH c, s, r ORDER BY r.impactScore DESC LIMIT $limit
+                MATCH (s)-[e:AFFECTS]->(other:Company)
+                OPTIONAL MATCH (other)-[:LISTED_AS {primary: true}]->(t:Ticker)
+                RETURN c.id AS centre, s.id AS storyId, s.title AS storyTitle, s.articleCount AS storyArticles,
+                       toString(r.firstSeen) AS firstSeen, other.id AS companyId, other.name AS companyName,
+                       other.kind AS kind, t.symbol AS symbol, e.impactScore AS impact, e.sentiment AS sentiment, e.car1 AS car1
+                """).bindAll(Map.of("symbol", symbol, "days", days, "limit", limit)).fetch().all());
+        if (rows.isEmpty()) {
+            final boolean exists = neo4j.query("MATCH (:Company)-[:LISTED_AS]->(t:Ticker {symbol: $symbol}) RETURN count(t) > 0")
+                    .bind(symbol).to("symbol").fetchAs(Boolean.class).one().orElse(false);
+            if (!exists) {
+                throw new BusinessException(Constants.TICKER_DOES_NOT_EXIST_ERROR, symbol);
+            }
+            return new GraphDto(List.of(), List.of());
+        }
+        final Map<String, GraphDto.Node> nodes = new LinkedHashMap<>();
+        final List<GraphDto.Edge> edges = new ArrayList<>();
+        for (Map<String, Object> r : rows) {
+            final String storyId = (String) r.get("storyId");
+            nodes.putIfAbsent(storyId, new GraphDto.Node(storyId, "story", (String) r.get("storyTitle"), null, null,
+                    (String) r.get("firstSeen"), r.get("storyArticles") == null ? null : ((Number) r.get("storyArticles")).intValue()));
+            final String companyId = (String) r.get("companyId");
+            nodes.putIfAbsent(companyId, new GraphDto.Node(companyId, "company", (String) r.get("companyName"),
+                    (String) r.get("kind"), (String) r.get("symbol"), null, null));
+            edges.add(new GraphDto.Edge(storyId, companyId, (Double) r.get("impact"), (Double) r.get("sentiment"), (Double) r.get("car1")));
+        }
+        return new GraphDto(List.copyOf(nodes.values()), edges);
     }
 
     /**

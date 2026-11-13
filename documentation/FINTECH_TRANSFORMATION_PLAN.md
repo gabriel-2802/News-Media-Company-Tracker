@@ -29,7 +29,8 @@
 | 9. Clustering re-validation | Done (moved ahead of 6–8) | Phase 9 commit | Publish-date window, same-publisher + 0.75 rule for official releases, bank/fintech guard, top-5 candidates, base threshold 0.60. On 140 real articles: biggest story 21 → 6 articles, max span 111 → 1 day, mega-story events gone. `make recluster` rebuilds stories. |
 | 6. Analytics service | Done (prices need an API key) | Phase 6 commit | Spring Boot service with its own `market` DB; provider publishes `event.upserted` after commit, `GET /api/events` and the impact write-back; version-guarded read model; pluggable daily-price ingest (Twelve Data); market-model event study with write-back. Verified end to end: rebuild 234/234 events, 90 live updates via RabbitMQ, event study + authenticated write-back on synthetic prices (β 1.22 vs 1.2, AR −3.85% vs −4% planted). |
 | 6b. Live market data | Done | Live-test commit | With a Twelve Data key: two live bugs fixed (Nasdaq lookup: XNAS rejected, now US-by-country; errors are HTTP 4xx, not 200). 315 US listings / 153,981 bars, no gaps; 59 event studies cross-checked against an independent NumPy/SciPy implementation (max diff 2·10⁻¹³) and verified on Neo4j; unchanged results no longer re-written. |
-| 7–8, 10 | Not started | | |
+| 7. Chart APIs | Done | Phase 7 commit | Analytics `/api/charts`: price (downsampling), events (setMarkers-ready, snapped to day 0), overlay, sentiment, news volume, event impact with AR path, topic volume, sector heatmap, quotes; ETag + 60 s cache; provider company graph. 23 analytics + 19 provider tests; live on real data, markers match event-study day 0 and CAR for all 59 studied events. |
+| 8, 10 | Not started | | |
 | Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
 
 ### Deviations from the original plan
@@ -45,6 +46,7 @@
 - **Phase 5:** sentiment is scored per sentence (title, lead sentences, sentences naming a company) because FinBERT on a whole paragraph is dominated by one strongly worded sentence; labels use FinBERT's argmax.
 - **Phase 5:** events are derived data recomputed by the provider (`EventService`) on enrichment, story attach and topic changes, rather than written by the enricher, so worker completion order does not matter. The impact formula is documented in PROVIDER_API.md.
 - **Phase 6:** plain Postgres (no TimescaleDB) as decided; lease table instead of ShedLock (not yet confirmed for Spring Framework 7); Stooq is no longer usable (JavaScript bot check), so prices need a Twelve Data key; benchmarks configured for US exchanges only (KBE), so UK/EU events wait for a benchmark and a plan covering those exchanges.
+- **Phase 7:** no macro-series endpoint (no FRED/ECB ingestion yet) and no story-timeline endpoint (article lists stay on the provider's `/api/articles/story/{id}`); caching is HTTP (ETag + `max-age`) rather than Caffeine/Redis, which is enough at this size.
 - **Known model gap (Phase 4):** "JPMorgan profit beats estimates" was classified `company_product_news` instead of `earnings_results` in the Phase 5 end-to-end run; an earnings rule or in-domain labels would fix it.
 
 ## Guiding principle: reuse, don't rebuild

@@ -34,6 +34,7 @@ public class PriceIngestService {
     private final PriceRepository prices;
     private final ProviderClient provider;
     private final JobLock lock;
+    private final CompanyDirectory directory;
 
     @Scheduled(cron = "${analytics.ingest-cron}", zone = "UTC")
     public void scheduled() {
@@ -58,7 +59,9 @@ public class PriceIngestService {
             final int at = b.lastIndexOf('@');
             all.add(new Listing(b.substring(0, at), b.substring(at + 1)));
         });
-        provider.companies().forEach(c -> c.tickers().stream().filter(ProviderClient.CompanyListing.Ticker::primary)
+        final var companies = provider.companies();
+        directory.refresh(companies);              // names for charts (heatmap, quotes)
+        companies.forEach(c -> c.tickers().stream().filter(ProviderClient.CompanyListing.Ticker::primary)
                 .forEach(t -> all.add(new Listing(t.symbol(), t.exchange()))));
         return all;
     }

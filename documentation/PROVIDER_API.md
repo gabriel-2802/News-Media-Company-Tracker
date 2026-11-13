@@ -42,6 +42,7 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`GET /api/topics/exists`](#get-apitopicsexists)
 - [Companies](#companies)
   - [`GET /api/companies`](#get-apicompanies)
+  - [`GET /api/companies/{symbol}/graph`](#get-apicompaniessymbolgraph)
 - [Events](#events)
   - [`GET /api/events`](#get-apievents)
   - [`PATCH /api/events/{storyId}/{companyId}/impact`](#patch-apieventsstoryidcompanyidimpact)
@@ -691,6 +692,18 @@ Check whether a topic with the given name already exists.
 ## Companies
 
 Base path: `/api/companies`
+
+### `GET /api/companies/{symbol}/graph`
+
+Public. Node-link graph around the company listed under `symbol`: its stories first seen in the last `days` days (1–365, default 30; at most `limit` stories, 1–200, default 50, highest impact first) and every company those stories affect.
+
+```json
+{"nodes": [{"id": "…", "type": "story", "label": "Goldman Sachs, Citi among banks…", "firstSeen": "2026-11-10T09:00:00Z", "articleCount": 2},
+           {"id": "…", "type": "company", "label": "Citigroup", "kind": "BANK", "symbol": "C"}],
+ "edges": [{"source": "<storyId>", "target": "<companyId>", "impactScore": 0.53, "sentiment": 0.34, "car1": 0.0297}]}
+```
+
+Empty `nodes`/`edges` when the company has no stories in the window; 400 if no company is listed under the symbol.
 
 ### `GET /api/companies`
 

@@ -1,6 +1,7 @@
 package data.analytics.web;
 
 import data.analytics.events.EventRebuildService;
+import data.analytics.market.CompanyDirectory;
 import data.analytics.market.PriceIngestService;
 import data.analytics.study.ImpactService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -24,6 +25,7 @@ public class AdminController {
     private final EventRebuildService rebuild;
     private final PriceIngestService ingest;
     private final ImpactService impact;
+    private final CompanyDirectory directory;
 
     @PostMapping("/events/rebuild")
     @Operation(summary = "Rebuild the event read model from the provider's GET /api/events")
@@ -35,6 +37,12 @@ public class AdminController {
     @Operation(summary = "Fetch new daily bars for all covered listings and benchmarks now")
     public ResponseEntity<PriceIngestService.Summary> ingestPrices() {
         return ResponseEntity.ok(ingest.ingest());
+    }
+
+    @PostMapping("/companies/refresh")
+    @Operation(summary = "Refresh the local company directory (names for charts) from the provider")
+    public ResponseEntity<Map<String, Object>> refreshCompanies() {
+        return ResponseEntity.ok(Map.of("listings", directory.refreshFromProvider()));
     }
 
     @PostMapping("/impact/run")

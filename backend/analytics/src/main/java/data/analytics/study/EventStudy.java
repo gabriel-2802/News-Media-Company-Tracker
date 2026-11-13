@@ -29,6 +29,11 @@ public final class EventStudy {
     public record Result(LocalDate eventDay, double alpha, double beta, double ar0, Double car1, Double car5,
                          Double pValue, int estimationDays, boolean complete) {}
 
+    /** One trading day around the event: offset from day 0, returns, abnormal and cumulative abnormal return. */
+    public record PathPoint(int offset, LocalDate day, double stockReturn, double benchmarkReturn, double ar, double car) {}
+
+    public record Detailed(Result result, List<PathPoint> path) {}
+
     private final int estimationStart;
     private final int estimationEnd;
     private final int minEstimationDays;
@@ -44,6 +49,15 @@ public final class EventStudy {
 
     /** Empty if day 0 has not traded yet or the estimation window is too short. */
     public Optional<Result> run(final List<Bar> stock, final List<Bar> benchmark, final LocalDate eventDate) {
+        return compute(stock, benchmark, eventDate).map(Detailed::result);
+    }
+
+    /** Like run(), plus the day-by-day abnormal returns for trading days [-5, +5] (cumulated from -5). */
+    public Optional<Detailed> runDetailed(final List<Bar> stock, final List<Bar> benchmark, final LocalDate eventDate) {
+        return compute(stock, benchmark, eventDate);
+    }
+
+    private Optional<Detailed> compute(final List<Bar> stock, final List<Bar> benchmark, final LocalDate eventDate) {
         final TreeMap<LocalDate, Double> s = closes(stock);
         final TreeMap<LocalDate, Double> m = closes(benchmark);
         final List<LocalDate> days = new ArrayList<>(s.keySet());
@@ -91,7 +105,15 @@ public final class EventStudy {
             final double t = car1 / (sigma * Math.sqrt(3));
             p = 2 * (1 - new TDistribution(n - 2).cumulativeProbability(Math.abs(t)));
         }
-        return Optional.of(new Result(retDays.get(t0), alpha, beta, ar0, car1, car5, p, n, car5 != null));
+        final Result result = new Result(retDays.get(t0), alpha, beta, ar0, car1, car5, p, n, car5 != null);
+        final List<PathPoint> path = new ArrayList<>();
+        double car = 0;
+        for (int k = Math.max(0, t0 - 5); k <= Math.min(last, t0 + 5); k++) {
+            final double a = ar(rets, k, alpha, beta);
+            car += a;
+            path.add(new PathPoint(k - t0, retDays.get(k), rets.get(k)[0], rets.get(k)[1], a, car));
+        }
+        return Optional.of(new Detailed(result, List.copyOf(path)));
     }
 
     private static double ar(final List<double[]> rets, final int i, final double alpha, final double beta) {

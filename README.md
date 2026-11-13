@@ -11,7 +11,7 @@
 | Sources | 27 validated US/UK/EU feeds: trade press, financial news, regulators, central banks ([report](data/source_validation/report.md)). Political-orientation data removed. |
 | Topics | 13 banking topics, multi-label with scores: FinBERT fine-tuned on public data + a rule layer for regulator/enforcement content |
 | Entities and sentiment | 356 companies (banks, fintechs, regulators, central banks) and 345 tickers. The enricher worker links articles to them, scores FinBERT sentiment per article and per company, and the provider derives Story→Company events with an impact score |
-| Market data and event studies | Spring Boot `analytics` service with its own `market` database: event read model fed by RabbitMQ, daily prices behind a pluggable provider (needs an API key), market-model event studies written back to the provider. Chart APIs are next (Phase 7) |
+| Market data and event studies | Spring Boot `analytics` service with its own `market` database: event read model fed by RabbitMQ, daily prices behind a pluggable provider (needs an API key), market-model event studies written back to the provider. Chart APIs: price, event markers, overlay, sentiment, news and topic volume, event-impact paths, sector heatmap, quotes ([CHARTS_API.md](documentation/CHARTS_API.md)); company graph on the provider |
 
 ---
 
@@ -553,7 +553,7 @@ No enforced foreign keys; each string agreement is application-level:
 
 **Location:** `backend/analytics/` | **Port:** 8090, context path `/analytics` | **Run:** `cd backend/analytics && mvn spring-boot:run` (or the `analytics` compose service)
 
-A separate microservice for market data and, from Phase 7, chart APIs. It owns the `market` database (same Postgres server, its own `analytics` user with no access to the manager's database; schema via Flyway) and never queries Neo4j.
+A separate microservice for market data and the chart APIs ([CHARTS_API.md](documentation/CHARTS_API.md)). It owns the `market` database (same Postgres server, its own `analytics` user with no access to the manager's database; schema via Flyway) and never queries Neo4j.
 
 **Event read model.** The provider publishes `event.upserted` on the `news_monitor` exchange after every committed change to a `(:Story)-[:AFFECTS]->(:Company)` event (including removals, `deleted: true`). Analytics consumes them from `analytics.events` into its `events` table. Each message carries a `version` (epoch ms): an upsert applies only if newer than the stored row and any tombstone left by a delete, so duplicates and out-of-order delivery are harmless. `POST /api/admin/events/rebuild[?since=]` replays the provider's `GET /api/events` to rebuild the table.
 
@@ -572,7 +572,9 @@ Daily studies cannot separate two stories about the same company on the same day
 
 **Live verification (2026-11-13, free Twelve Data plan):** the first full ingest loaded 315 US listings, 153,981 daily bars over two years (median 501 bars per listing; shorter histories are recent IPOs such as Klarna and Circle) with no missing trading days or invalid values, using 640 of 800 daily credits across two runs. All 59 US events got an event study (β 0.35–1.15 against KBE); an independent NumPy/SciPy re-implementation matched every α, β, AR, CAR and p-value to within 2·10⁻¹³, and all 59 results were found unchanged on the provider's `AFFECTS` relationships.
 
-**Admin (ROLE_ADMIN / ROLE_SYSTEM):** `POST /api/admin/events/rebuild`, `POST /api/admin/prices/ingest`, `POST /api/admin/impact/run`. Scheduled jobs take a lease in `job_locks`, so only one replica runs each.
+**Chart APIs** (`/api/charts/*`, public, cached 60 s with ETags): price, events, overlay, sentiment, news-volume, event impact with its [-5, +5] path, topic volume, sector heatmap and quotes. Times are unix seconds so arrays go straight into TradingView Lightweight Charts or ECharts; full reference in [CHARTS_API.md](documentation/CHARTS_API.md). Company names come from a local `companies` table, refreshed from `GET /api/companies` at startup and on every price ingest.
+
+**Admin (ROLE_ADMIN / ROLE_SYSTEM):** `POST /api/admin/events/rebuild`, `POST /api/admin/prices/ingest`, `POST /api/admin/impact/run`, `POST /api/admin/companies/refresh`. Scheduled jobs take a lease in `job_locks`, so only one replica runs each.
 
 **Existing Postgres volume:** the `market` database and user are created by `backend/postgres/init/10-market-db.sh` only on an empty volume. On an existing one, create them once:
 
@@ -580,7 +582,7 @@ Daily studies cannot separate two stories about the same company on the same day
 docker compose exec postgres psql -U postgres -c "CREATE USER analytics WITH PASSWORD '<MARKET_DB_PASSWORD>';" -c "CREATE DATABASE market OWNER analytics;" -c "REVOKE CONNECT ON DATABASE news_monitor FROM PUBLIC;"
 ```
 
-**Tests:** `cd backend/analytics && mvn test` (15): the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database.
+**Tests:** `cd backend/analytics && mvn test` (23): chart endpoints through HTTP against the market database (shapes, marker placement and style, downsampling, weighted sentiment, heatmap values, quotes, error codes, ETag 304); the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database.
 
 ---
 

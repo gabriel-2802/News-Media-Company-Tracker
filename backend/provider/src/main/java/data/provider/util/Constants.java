@@ -15,6 +15,7 @@ public final class Constants {
     public static final String NEWS_SOURCE_DOMAIN_MISMATCH_ERROR = "RSS URL domain does not match base URL domain: baseUrl = {}, rssUrl = {}.";
     public static final String ARTICLE_DOES_NOT_EXIST_ERROR = "Article with the URL = {} does not exist.";
     public static final String EVENT_DOES_NOT_EXIST_ERROR = "No event for story {} and company {}";
+    public static final String TICKER_DOES_NOT_EXIST_ERROR = "No company listed under {}";
     public static final String COMPANY_DOES_NOT_EXIST_ERROR = "One or more companies do not exist: {}";
     public static final String ARTICLE_ENRICHED_LOG = "Enriched {}: {} company mention(s), sentiment {}";
     public static final String TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR = "Topic with the name = {} does not exist.";
