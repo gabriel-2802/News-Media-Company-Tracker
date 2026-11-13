@@ -27,6 +27,19 @@ Read-only JSON for investor charts, served by the analytics service under `http:
 | `GET /latest-events` | `symbols` (1–50, comma list) | `[{symbol, exchange, storyId, companyId, title, firstSeen, impactScore, sentiment, articleCount, topics}]`; most recent event per symbol (any exchange); symbols without events are left out. Used by the manager's watchlist |
 | `GET /quotes` | `symbols` (1–50, comma list) | `[{listing, time, last, previousClose, change, changePct}]`; unknown, ambiguous or unpriced symbols are left out |
 
+## Admin endpoints
+
+Under `/analytics/api/admin`, `ROLE_ADMIN` or `ROLE_SYSTEM` token required (issued by the manager):
+
+| Endpoint | Does |
+| --- | --- |
+| `POST /events/rebuild[?since=]` | Replays the provider's `GET /api/events` into the event read model (idempotent) |
+| `POST /prices/ingest` | Runs the incremental daily-price ingest now |
+| `POST /impact/run` | Runs pending event studies now and writes results back to the provider |
+| `POST /companies/refresh` | Reloads company names from the provider |
+
+How events and prices reach these endpoints: [SYSTEM_FLOW.md § Event consumers](SYSTEM_FLOW.md#4-event-consumers-alerts-and-market-analytics).
+
 The provider serves the company graph (a Neo4j traversal): `GET /news-provider/api/companies/{symbol}/graph?days=30&limit=50` → `{nodes: [{id, type (company/story), label, kind, symbol, firstSeen, articleCount}], edges: [{source, target, impactScore, sentiment, car1}]}`. See [PROVIDER_API.md](PROVIDER_API.md#companies).
 
 ## Examples

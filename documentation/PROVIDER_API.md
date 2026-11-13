@@ -78,7 +78,7 @@ All `GET` endpoints are public — no token required. Every mutating endpoint (`
 Authorization: Bearer <token>
 ```
 
-The Provider does not issue tokens itself — it only **validates** JWTs signed with the same `jwt.secret` as the [manager service](../manager/MANAGER_API.md), which is the sole issuer. Callers authenticate against the manager and reuse that token here:
+The Provider does not issue tokens itself — it only **validates** JWTs (RS256) with the manager's RSA public key (`JWT_PUBLIC_KEY_PATH`); the [manager service](MANAGER_API.md) holds the private key and is the sole issuer. Callers authenticate against the manager and reuse that token here:
 
 - **Human callers (ROLE_ADMIN):** `POST /api/auth/login` on the manager with an admin account's email/password.
 - **Service callers (ROLE_SYSTEM):** `POST /api/auth/login` on the manager with `{"systemCode": "<shared secret>"}` and no password. The manager itself generates one such system token once at startup (for its own outbound calls into `/api/subscriptions/**`), and each Python worker (`workers/provider_client.py`) does the same at construction, transparently re-logging-in if the Provider ever responds `401` (expired token).
@@ -707,7 +707,7 @@ Empty `nodes`/`edges` when the company has no stories in the window; 400 if no c
 
 ### `GET /api/companies`
 
-Public. Returns the whole company universe (a few hundred entries: banks, fintechs, regulators, central banks) with aliases and listings, sorted by name. Seeded by the `V5__seed_company_universe` migration. Used by the enricher for entity linking and, later, by the analytics service as its ticker universe.
+Public. Returns the whole company universe (a few hundred entries: banks, fintechs, regulators, central banks) with aliases and listings, sorted by name. Seeded by the `V5__seed_company_universe` migration. Used by the enricher and clusterer for entity linking, by the analytics service as its ticker universe, and by the manager to validate watchlist symbols.
 
 **Query parameters**
 
@@ -860,7 +860,7 @@ The Provider is a RabbitMQ producer only — it never consumes. Full topology, q
 | ------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------- | --------------------------------------------------------------------- |
 | `POST /api/articles/trigger-scrape` | always, once per registered news source     | `scrape.jobs`           | `{"name": "<sourceName>", "retry_count": 0}`                        |
 | `ScrapeScheduler` (every 5 min, internal) | once per enabled source whose `scrapeIntervalMinutes` has elapsed | `scrape.jobs` | `{"name": "<sourceName>", "retry_count": 0}` |
-| Event refresh (enrichment, story attach, topic writes) | after commit, once per created/updated/removed event | `news_monitor` exchange, key `event.upserted` → `analytics.events` | `EventMessage`: event fields + `deleted` + `version` |
+| Event refresh (enrichment, story attach, topic writes) | after commit, once per created/updated/removed event | `news_monitor` exchange, key `event.upserted` → `analytics.events` (analytics) and `manager.events` (ticker alerts) | `EventMessage`: event fields + `deleted` + `version` |
 | `PATCH /api/articles/topics` | once per topic in the request that has a subscription | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}` |
 | `PATCH /api/articles/topic`                                                         | only if a subscription exists for the topic | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}`   |
 | `PATCH /api/stories/{storyId}/attach`                                               | only if a subscription exists for the story | `article.notifications` | `{"name": "<story title>", "articleUrl": "<url>", "type": "STORY"}` |

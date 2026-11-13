@@ -1,8 +1,18 @@
 # News Monitor : Complete System Architecture
 
-**News Monitor** is a distributed backend that ingests, classifies and clusters **banking and fintech news** into stories, for an investor-facing app. It started as a generic news monitor and is being transformed step by step (see [`documentation/FINTECH_TRANSFORMATION_PLAN.md`](documentation/FINTECH_TRANSFORMATION_PLAN.md) for the plan and its progress log). The system separates concerns across three independent services : a user-facing manager, a data provider, and a set of Python workers, connected by HTTP and RabbitMQ, each owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
+**News Monitor** is a distributed backend that ingests, classifies, links and clusters **banking and fintech news** into stories and company events, and serves them with market data, chart APIs and ticker alerts to an investor-facing app. It started as a generic news monitor and was transformed in phases (see [`documentation/FINTECH_TRANSFORMATION_PLAN.md`](documentation/FINTECH_TRANSFORMATION_PLAN.md) for the plan and its progress log; all phases are complete). The system has three Spring Boot services (a user-facing **manager**, a data **provider**, and a market **analytics** service) and four Python workers (scraper, classifier, enricher, clusterer), connected by HTTP and RabbitMQ, each service owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
 
-**For detailed API endpoints and schemas, see:** [`PROVIDER_API.md`](documentation/PROVIDER_API.md) and [`MANAGER_API.md`](documentation/MANAGER_API.md).
+**Flow diagrams** (pipeline, events, alerts, read paths, auth): [`SYSTEM_FLOW.md`](documentation/SYSTEM_FLOW.md). **API reference:** [`PROVIDER_API.md`](documentation/PROVIDER_API.md), [`MANAGER_API.md`](documentation/MANAGER_API.md), [`CHARTS_API.md`](documentation/CHARTS_API.md).
+
+```mermaid
+flowchart LR
+    feeds[/27 feeds/] --> scraper[Scraper] -->|article.saved| fan{{fan-out}}
+    fan --> classifier[Classifier<br/>topics] & enricher[Enricher<br/>companies, sentiment] & clusterer[Clusterer<br/>stories]
+    classifier & enricher & clusterer -->|REST| provider[Provider<br/>Neo4j]
+    provider -->|event.upserted| analytics[Analytics<br/>prices, event studies, charts] & manager[Manager<br/>watchlists, alerts]
+    analytics -->|impact| provider
+    app([Investor app]) --> manager & analytics & provider
+```
 
 ### Banking / fintech status
 
@@ -33,7 +43,7 @@ The system began as a single Spring Boot monolith in Java, connected only to Pos
 
 The next iteration realized that scraping, classifying, and clustering were fundamentally different workloads:
 
-- **Three dedicated sraping Java workers** replaced the embedded threads, each in its own process.
+- **Three dedicated scraping Java workers** replaced the embedded threads, each in its own process.
 - **Shallow scraping** (RSS feed only) was still used since Java libraries for web scraping are limited.
 - **REST API python workers** are used for classification and embeddings/clustering.
 
@@ -54,7 +64,18 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 
 **The tradeoff:** No FK constraints across databases. Consistency is maintained at the application layer-each service owns its data and validates foreign references via HTTP before trusting them.
 
-### Why This Arhitecture
+### Phase 4: Banking / Fintech Investor Backend (Current)
+
+The generic monitor was turned into an investor backend ([plan and progress log](documentation/FINTECH_TRANSFORMATION_PLAN.md)):
+
+- **Sources:** 27 validated US/UK/EU banking feeds (trade press, financial news, regulators, central banks); political-orientation data removed.
+- **Classifier:** 13 multi-label banking topics, FinBERT fine-tuned on public data only, plus a rule layer.
+- **Enricher worker (new):** links articles to 356 companies / 345 tickers and scores FinBERT sentiment; the provider derives Story→Company **events** with an impact score and publishes them as `event.upserted`.
+- **Analytics service (new, Spring Boot + Postgres `market`):** event read model, daily prices, market-model event studies, chart APIs.
+- **Manager:** ticker watchlists and event alerts.
+- **Clusterer:** publish-date window, company guard and stricter thresholds, re-validated on real financial news.
+
+### Why This Architecture
 
 1. **User accounts** are central to auth (manager issues all JWTs), so they can't be distributed. PostgreSQL is ideal.
 2. **Articles and stories** form a graph (article => topic, article => story, story => article => source). Neo4j models this naturally, SQL would require many JOINs.
@@ -66,11 +87,12 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 
 ### Architectural Decisions
 
-**1. Three independent datastores, one per role**
+**1. One datastore per owner**
 
-- Manager owns user accounts (Postgres).
-- Provider is system-of-record for articles/stories/topics/sources (Neo4j).
-- Clusterer worker owns story vectors (Qdrant).
+- Manager owns user accounts, subscriptions, watchlists and notifications (Postgres `news_monitor`, schema `users`).
+- Provider is system-of-record for articles/stories/topics/sources/companies/events (Neo4j).
+- Analytics owns prices, the event read model and event studies (Postgres `market`, its own DB user).
+- Clusterer worker owns story vectors (Qdrant) and its decision lock (Redis).
 
 **2. Provider = single read/write gateway for all structured data**
 
@@ -80,8 +102,8 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 
 **3. Async pipeline with RabbitMQ, sync subscription checks**
 
-- **Async:** scraper => classify/cluster/enrich workers (via queues). Scraping never waits for classification.
-- **Sync:** user subscribes => manager calls provider to verify the topic/story exists. If provider is down, the subscription fails immediately with a `502`.
+- **Async:** scraper => classify/cluster/enrich workers (via queues). Scraping never waits for classification. Provider => analytics and manager via `event.upserted`.
+- **Sync:** user subscribes => manager calls provider to verify the topic/story exists. If provider is down, the subscription fails immediately with a `502`. The watchlist reads quotes and latest events from analytics with a 2 s timeout and shows `null` for them if analytics is down.
 
 **4. Qdrant for vectors only**
 
@@ -141,6 +163,9 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 - `/api/articles/*` - search, fetch, save articles; tag with topics; trigger scraping
 - `/api/stories/*` - list story clusters, create new ones, attach articles
 - `/api/topics/*` - list all topics, check topic exists
+- `/api/companies` - the company universe with tickers; `/api/companies/{symbol}/graph` - company ↔ story network
+- `/api/events` - Story→Company events (paged feed for rebuilding read models); `PATCH /api/events/{storyId}/{companyId}/impact` - event-study write-back from analytics
+- `PATCH /api/articles/enrichment` - sentiment and company mentions from the enricher (refreshes the story's events)
 - `/api/subscriptions/story/{id}` or `/topic/{name}` - track that *someone* is interested (not which user-that's manager's job)
 
 **Database (Neo4j):**
@@ -178,114 +203,19 @@ Graph structure (banking/fintech model):
 
 - **Publishes (only):**
   - `scrape.jobs`: triggered by the scheduler (checks every 5 min, queues each enabled source whose own `scrapeIntervalMinutes` has elapsed) or the manual `/api/articles/trigger-scrape` call (all sources).
-  - `article.notifications`: published when a subscribed topic/story gets a new article (triggered by workers calling `PATCH /api/articles/topic` or `PATCH /api/stories/{storyId}/attach`).
+  - `article.notifications`: published when a subscribed topic/story gets a new article (triggered by workers calling `PATCH /api/articles/topic(s)` or `PATCH /api/stories/{storyId}/attach`).
+  - `event.upserted` (on the `news_monitor` exchange, after commit): every created, updated or removed Story→Company event, consumed by analytics (`analytics.events`) and manager (`manager.events`).
 - **Never consumes** - only a producer.
 
 ---
 
+### Analytics Service (Spring Boot + Postgres `market`)
+
+Market data, event studies and chart APIs; consumes `event.upserted`. See [Analytics Service](#analytics-service-spring-boot--postgres-market).
+
 ### Workers (Python)
 
-Four independent processes, each consuming from one RabbitMQ queue, calling the Provider's REST API to fetch/write data. All can be scaled horizontally.
-
-#### Scraper Worker
-
-**Consumes:** `scrape.jobs` (one per source per its `scrapeIntervalMinutes`, 15–60 min)
-
-**Datastores:** Neo4j (via Provider), RabbitMQ
-
-**What it does:**
-
-1. Look up the source's RSS/Atom feed URL.
-2. Fetch and parse the feed; skip articles already ingested.
-3. For each new article: fetch the HTML, extract body text (with multi-strategy fallback: static HTTP => Playwright), save via Provider.
-4. After each save, publish `{"url": "...", "source_name": "..."}` to the `news_monitor` topic exchange with routing key `article.saved`.
-5. On feed-level failure, increment the source's failure counter and re-queue the job (up to 3 attempts). Individual article failures don't fail the whole job.
-
-**Fetch strategy:**
-
-- Try static HTTP (fast).
-- Fall back to browser user-agent if needed (bypasses UA-based blocks).
-- Fall back to Playwright headless Chrome (for JavaScript-heavy sites).
-- Honor `robots.txt` for every article (including a stricter `Crawl-delay`) and rate limits, retry on transient failures.
-- Feeds are parsed with `feedparser` (RSS 0.9x/1.0/2.0, Atom; encodings detected when the server sends no charset).
-
-#### Classifier Worker
-
-**Consumes:** `article.classify` (fanned out from `article.saved`)
-
-**Datastores:** Neo4j (via Provider)
-
-**What it does:**
-
-1. Fetch article title + body from the Provider.
-2. Classify title + the opening of the story into one or more of 13 banking topics (multi-label FinBERT; every topic above its tuned threshold, else the single most likely).
-   A rule layer (`classifier/rules.py`) then corrects what the public-data model misses: enforcement / financial-crime / supervision wording adds `regulation_legal_enforcement`; deal, earnings, analyst-rating, dividend/buyback and leadership phrases add their topics; a central bank's monetary title (rate decision, QT/APF, MPC) adds `monetary_policy_rates`; and for REGULATOR / CENTRAL_BANK sources a model-assigned `monetary_policy_rates` is kept only when the text is about monetary policy (for regulators it becomes regulation, for central banks it is just dropped). Rules only add or raise topics, need a financial-context term outside financial sources, and are logged per article. `training/eval_rules.py` measures their effect on the public test sets (TFNT macro-F1 0.906 → 0.887, Reuters 0.915 → 0.913). Most of the TFNT drop is taxonomy disagreement: TFNT files bank results under "Financials" (mapped to company news in training), so earnings rules count as false positives there; remapping that class and retraining is the proper fix.
-3. Write the scored topics back via `PATCH /api/articles/topics`.
-
-**Model:** `backend/workers/classifier/cls_model_output/` (gitignored; built by `classifier/training/`). Fine-tuned from `ProsusAI/finbert` on public data only (Twitter Financial News Topic + Reuters-21578), with the taxonomy in `training/taxonomy.py` and per-label thresholds in `thresholds.json`. Test scores are in the model's `metrics.json`. Retrain with:
-
-```bash
-cd backend/workers/classifier
-venv/bin/pip install -r training/requirements.txt
-venv/bin/python -m training.prepare_data
-venv/bin/python -m training.train --out cls_model_output
-```
-
-#### Clusterer Worker
-
-**Consumes:** `article.cluster` (fanned out from `article.saved`)
-
-**Datastores:** Neo4j (via Provider), Qdrant (direct connection).
-
-**What it does:**
-
-1. Fetch article title + body from the Provider.
-2. Embed the text with a sentence-transformer model (`all-MiniLM-L6-v2`, 384-dim, cosine distance).
-3. Query Qdrant's `story_centroids` for the 5 nearest stories whose articles were **published** within 3 days of this one.
-4. Attach to the first candidate that passes the rules in `clusterer/decision.py`: similarity ≥ 0.60; two official releases only if from the same publisher and ≥ 0.75; if both name banks/fintechs, at least one in common. Update the centroid as a running average.
-5. **Otherwise:** create a new story and seed its centroid in Qdrant.
-
-**Thresholds:** 0.533 maximised balanced accuracy on 197 SemEval-2022 pairs; 0.60 is nearly the same there (TPR 0.914, TNR 0.815) and removed every thematic false merge on real financial news (see [Clustering Validation Report](#clustering-validation-report)).
-
----
-
-## Authentication
-
-### Three Roles, One Keypair
-
-All three services key off a single RSA keypair (`backend/keys/jwt-private.pem` / `backend/keys/jwt-public.pem`, signed with RS256). Manager holds both `JWT_PRIVATE_KEY_PATH` and `JWT_PUBLIC_KEY_PATH` — it signs tokens and also validates its own incoming requests. Provider holds only `JWT_PUBLIC_KEY_PATH`: it can verify a manager-issued signature but has no way to produce one itself.
-
-| Role            | Who                                     | Issued by                                                      | Token has                                               |
-| --------------- | --------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------- |
-| `ROLE_USER`   | End users                               | Manager`/api/auth/register`                                  | email, user ID, roles claim                             |
-| `ROLE_ADMIN`  | Human admins                            | Manager`/api/auth/login` (email+password) + valid admin code | email, user ID, roles claim                             |
-| `ROLE_SYSTEM` | All services (manager itself + workers) | Manager`/api/auth/login` with `systemCode`                 | no user identity, subject is literal string`"system"` |
-
-**Manager** (only issuer):
-
-- Generates JWTs on demand, signed with the RSA private key.
-- Manager itself gets one `ROLE_SYSTEM` token at boot for outbound calls to provider.
-- Each worker process gets its own `ROLE_SYSTEM` token at startup.
-
-**Provider** (validator only):
-
-- Never issues tokens - never even loads the private key.
-- On every request, verifies the signature against manager's RSA public key.
-- Reads `roles` and `subject` claims straight from the token; no user profile lookup.
-
-**Workers** (pure clients):
-
-- Call manager once at startup: `POST /api/auth/login` with `systemCode`.
-- Cache the token on their `requests.Session`.
-- On any `401` response from provider (token expired), re-authenticate and retry once.
-
-### Failure Mode: Mismatched Keys
-
-If provider's public key doesn't correspond to manager's private key (stale copy, or the pair was regenerated on one side only):
-
-- Manager's own login endpoints (`/api/auth/*`) work fine (only manager validates its own tokens, with its own key).
-- Provider rejects every call from manager or any worker with `401 Unauthorized` (signature verification fails).
-- Silent from the outside - manager looks healthy, but data operations silently fail.
+Four independent processes (scraper, classifier, enricher, clusterer), each consuming one RabbitMQ queue and reading/writing through the Provider's REST API; all scale horizontally. See [Workers: The Python Processing Pipeline](#workers-the-python-processing-pipeline). Authentication for all services is in [Authentication & Authorization Model](#authentication--authorization-model).
 
 ---
 
@@ -316,7 +246,7 @@ RabbitMQ automatically distributes messages among consumers. Scraper instances s
 
 Two related races show up once more than one clusterer instance runs, both because "does a matching story exist" and "update its centroid" are read-modify-write decisions against shared state (Qdrant + Neo4j), not atomic operations:
 
-1. **Centroid drift:** two instances both match the same existing story for two different articles at nearly the same moment, both read the same `articleCount`/vector, and both write. She second upsert silently overwrites the first, losing that article's contribution to the centroid.
+1. **Centroid drift:** two instances both match the same existing story for two different articles at nearly the same moment, both read the same `articleCount`/vector, and both write. The second upsert silently overwrites the first, losing that article's contribution to the centroid.
 2. **Duplicate stories:** two instances both process an article for the same brand-new story at nearly the same moment, both find no existing candidate above `SIMILARITY_THRESHOLD` (because neither has written a centroid yet), and both create a separate Story for what should have been one, permanently splitting it. This one is harder to fix with a per-story lock, since there's no story ID to lock on until one of the racing workers has already created it.
 
 **Fix:** a single global lock, held in `handle()` around the whole "query for a candidate, then attach-or-create" decision (`backend/workers/clusterer/clusterer_worker.py`), backed by Redis:
@@ -355,6 +285,13 @@ flowchart LR
     classifier -->|PATCH /api/articles/topics| provider
     clusterer -->|PATCH /api/stories/attach<br/>POST /api/stories| provider
     enricher -->|GET /api/companies<br/>PATCH /api/articles/enrichment| provider
+
+    provider -->|event.upserted<br/>after commit| topicExchange
+    topicExchange -->|event.upserted| analyticsQ[(analytics.events)]
+    topicExchange -->|event.upserted| managerEventsQ[(manager.events)]
+    analyticsQ --> analytics[Analytics service]
+    managerEventsQ --> manager[Manager service]
+    notifQ --> manager
 ```
 
 `article.notifications` is deliberately **not** attached to the topic exchange - it's isolated so provider's notification messages never accidentally mix with scraper's article-saved events.
@@ -363,7 +300,7 @@ flowchart LR
 
 | Exchange             | Type   | Durable | Purpose                                                                  |
 | -------------------- | ------ | ------- | ------------------------------------------------------------------------ |
-| `news_monitor`     | topic  | yes     | Fan-out hub. Scraper publishes here; classify/cluster/enrich queues bind to it. |
+| `news_monitor`     | topic  | yes     | Fan-out hub. Scraper publishes `article.saved` (classify/cluster/enrich queues); provider publishes `event.upserted` (analytics and manager queues). |
 | `news_monitor.dlx` | fanout | yes     | Dead-letter target for`scrape.jobs` (24h TTL messages land here).      |
 
 | Queue                     | Durable | Binding              | Routing key       | Purpose                                                                                                    |
@@ -389,6 +326,14 @@ flowchart LR
 
 ```json
 { "url": "https://www.bankingdive.com/news/...", "source_name": "banking-dive" }
+```
+
+**`analytics.events` / `manager.events`** - Same `event.upserted` message (provider `EventMessage`, Jackson type header `data.provider.dto.messages.EventMessage`):
+
+```json
+{ "storyId": "…", "companyId": "…", "companyName": "Citigroup", "symbol": "C", "exchange": "XNYS", "currency": "USD",
+  "storyTitle": "…", "firstSeen": "2026-11-13T09:12:00Z", "impactScore": 0.62, "articleCount": 3, "sentiment": -0.41,
+  "topics": ["regulation_legal_enforcement"], "deleted": false, "version": 1794560000000 }
 ```
 
 **`article.notifications`** - Published only when subscription exists:
@@ -419,7 +364,7 @@ or
 
 ## Databases
 
-### Why Three Databases?
+### Why Several Databases?
 
 Originally, everything lived in PostgreSQL. This created three problems:
 
@@ -427,11 +372,11 @@ Originally, everything lived in PostgreSQL. This created three problems:
 2. **Vector similarity search is O(n) in SQL.** Nearest-neighbor queries for story clustering required full table scans. Qdrant's HNSW index makes it O(log n).
 3. **Different consistency guarantees.** User accounts need strong ACID (PostgreSQL). Article classifications can tolerate eventual consistency (RabbitMQ). Vectors don't need relationships at all (Qdrant).
 
-**Solution:** Polyglot persistence. Each service owns a specialized datastore optimized for its job. No FK constraints across databases-consistency lives at the application layer.
+**Solution:** Polyglot persistence. Each service owns a specialized datastore optimized for its job. No FK constraints across databases-consistency lives at the application layer. The analytics service later added a second Postgres database, `market`, on the same server but with its own user, for time series and event studies (see [Analytics Service](#analytics-service-spring-boot--postgres-market)).
 
 ### PostgreSQL: Manager's Relational Data
 
-**Database:** `news_monitor` | **Schema:** `users` | **Managed by:** Flyway migrations (`V1`–`V6`)
+**Database:** `news_monitor` | **Schema:** `users` | **Managed by:** Flyway migrations (`V1`–`V7`; `V7` adds watchlists and alerts)
 
 #### `roles`
 
@@ -559,6 +504,8 @@ No enforced foreign keys; each string agreement is application-level:
 | Topic name     | Neo4j`Topic.name`  | Postgres`subscriptions.target_id`                                                            |
 | Story`id`    | Neo4j`Story.id`    | Postgres`subscriptions.target_id`, Qdrant point ID                                           |
 | Article`url` | Neo4j`Article.url` | Worker messages (`article.classify`/`article.cluster`/`article.enrich` payloads), `article.notifications` |
+| Company `id`, Story `id` | Neo4j `AFFECTS` endpoints | `event.upserted`; Postgres `market.events`, `market.event_impact`; Postgres `ticker_alerts`, `notifications` |
+| Ticker symbol (+ MIC) | Neo4j `Ticker` | Postgres `subscriptions.target_id` (TICKER), `market.prices_daily`, chart URLs |
 
 **Consistency failure is soft:** if a manager subscription points to a deleted story, provider's `existsByStoryId` returns `false` and no notification is published. No database error.
 
@@ -588,6 +535,10 @@ Daily studies cannot separate two stories about the same company on the same day
 **Live verification (2026-11-13, free Twelve Data plan):** the first full ingest loaded 315 US listings, 153,981 daily bars over two years (median 501 bars per listing; shorter histories are recent IPOs such as Klarna and Circle) with no missing trading days or invalid values, using 640 of 800 daily credits across two runs. All 59 US events got an event study (β 0.35–1.15 against KBE); an independent NumPy/SciPy re-implementation matched every α, β, AR, CAR and p-value to within 2·10⁻¹³, and all 59 results were found unchanged on the provider's `AFFECTS` relationships.
 
 **Chart APIs** (`/api/charts/*`, public, cached 60 s with ETags): price, events, overlay, sentiment, news-volume, event impact with its [-5, +5] path, topic volume, sector heatmap, quotes and latest event per symbol (for watchlists). Times are unix seconds so arrays go straight into TradingView Lightweight Charts or ECharts; full reference in [CHARTS_API.md](documentation/CHARTS_API.md). Company names come from a local `companies` table, refreshed from `GET /api/companies` at startup and on every price ingest.
+
+**Tables** (`market`, Flyway `V1`–`V2`): `events` (read model, newest `version` wins) and `event_tombstones`; `prices_daily` and `ingest_state`; `event_impact` (study results); `companies` (names for charts); `job_locks` (scheduled-job leases).
+
+**Calls out to:** provider (`GET /api/events`, `GET /api/companies`, and the impact write-back with a `ROLE_SYSTEM` token it gets from the manager with `SYSTEM_CODE`) and the market-data provider. Called by the manager's watchlist (`/api/charts/quotes`, `/api/charts/latest-events`).
 
 **Admin (ROLE_ADMIN / ROLE_SYSTEM):** `POST /api/admin/events/rebuild`, `POST /api/admin/prices/ingest`, `POST /api/admin/impact/run`, `POST /api/admin/companies/refresh`. Scheduled jobs take a lease in `job_locks`, so only one replica runs each.
 
@@ -682,6 +633,15 @@ Checks: feed reachable and parseable (with feed discovery from the homepage and 
 | --- | --- | --- |
 | Twitter Financial News, macro-F1 | 0.906 | 0.887 |
 | Reuters-21578, macro-F1 | 0.915 | 0.913 |
+
+Retrain (public data only; writes `cls_model_output/`):
+
+```bash
+cd backend/workers/classifier
+venv/bin/pip install -r training/requirements.txt
+venv/bin/python -m training.prepare_data
+venv/bin/python -m training.train --out cls_model_output
+```
 
 ```bash
 classifier/venv/bin/python -m unittest discover -s classifier/tests -t .   # rule tests
@@ -804,17 +764,17 @@ The old rules built topical "mega-stories" (21 sets of minutes in one story; eve
 
 ### Three Roles, One Keypair
 
-All three services key off a single RSA keypair (`backend/keys/jwt-private.pem` / `backend/keys/jwt-public.pem`, RS256). Manager is the sole issuer and holds both keys; provider only validates and holds just the public key.
+All services key off a single RSA keypair (`backend/keys/jwt-private.pem` / `backend/keys/jwt-public.pem`, RS256). Manager is the sole issuer and holds both keys; provider and analytics only validate and hold just the public key. Sequence diagram: [SYSTEM_FLOW.md § Authentication](documentation/SYSTEM_FLOW.md#6-authentication).
 
 | Role            | Who                                    | Issued by                                                      | Contains                                               |
 | --------------- | -------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------ |
 | `ROLE_USER`   | End users                              | Manager`/api/auth/register`                                  | email, user ID, roles claim                            |
 | `ROLE_ADMIN`  | Human admins                           | Manager`/api/auth/login` (email+password + valid admin code) | email, user ID, roles claim                            |
-| `ROLE_SYSTEM` | Services: manager itself + all workers | Manager`/api/auth/login` with `systemCode` (no password)   | no user identity; subject = literal string`"system"` |
+| `ROLE_SYSTEM` | Services: manager itself, analytics, all workers | Manager`/api/auth/login` with `systemCode` (no password)   | no user identity; subject = literal string`"system"` |
 
 **Manager's bootstrap:** On startup, `SystemTokenProvider` generates one `ROLE_SYSTEM` token directly (not via HTTP), signed with the RSA private key loaded from `JWT_PRIVATE_KEY_PATH`. Stamped onto all outbound calls to provider via `RestTemplate` interceptor.
 
-**Each worker's bootstrap:** `ProviderClient` calls manager `/api/auth/login` with `{"systemCode": "..."}`, caches token on `requests.Session`, re-authenticates transparently on `401` response.
+**Each worker's bootstrap:** `ProviderClient` calls manager `/api/auth/login` with `{"systemCode": "..."}`, caches token on `requests.Session`, re-authenticates transparently on `401` response. Analytics' `ProviderClient` does the same, lazily, before its first write to the provider.
 
 ### Endpoint-Level Access Matrix
 
@@ -825,18 +785,24 @@ All three services key off a single RSA keypair (`backend/keys/jwt-private.pem` 
 - `/api/users/{id}/*` - `ROLE_ADMIN` only.
 - `/api/users/me/subscriptions/*` - authenticated.
 - `/api/users/me/notifications/*` - authenticated.
+- `/api/users/me/watchlist/*` - authenticated.
 
 **Provider endpoints:**
 
 - All `GET` - public (no token required).
 - All `POST`/`PUT`/`PATCH`/`DELETE` - `ROLE_ADMIN` or `ROLE_SYSTEM` (varies by endpoint).
 
+**Analytics endpoints:**
+
+- All `GET` (charts) - public.
+- `/api/admin/*` - `ROLE_ADMIN` or `ROLE_SYSTEM`.
+
 ### Failure Mode: Mismatched Keys
 
 If provider's public key (`JWT_PUBLIC_KEY_PATH`) doesn't match manager's private key:
 
 - Manager's own login/register work fine.
-- Every call from manager or worker to provider fails `401 Unauthorized` (signature verification fails).
+- Every call from manager, analytics or a worker to provider fails `401 Unauthorized` (signature verification fails); analytics' admin endpoints reject manager tokens the same way.
 - Silent from outside - manager looks healthy, but data operations fail silently.
 
 ---
@@ -869,10 +835,10 @@ If provider's public key (`JWT_PUBLIC_KEY_PATH`) doesn't match manager's private
 make env   # copies env.example → .env (skipped if .env already exists)
 ```
 
-Generate the JWT signing keypair. manager signs tokens with the private key, provider only ever holds the public key (see [Authentication](#authentication)):
+Generate the JWT signing keypair. manager signs tokens with the private key, provider and analytics only ever hold the public key (see [Authentication & Authorization Model](#authentication--authorization-model)):
 
 ```bash
-mkdir -p keys
+mkdir -p backend/keys
 openssl genpkey -algorithm RSA -out backend/keys/jwt-private.pem -pkeyopt rsa_keygen_bits:2048
 openssl pkey -in backend/keys/jwt-private.pem -pubout -out backend/keys/jwt-public.pem
 ```
@@ -890,14 +856,15 @@ make dev   # env + up (infra only) + migrate + rabbitmq-setup
 This starts only neo4j/rabbitmq/postgres/redis as containers. Run each app yourself in its own terminal, from its own directory (all read the root `.env`):
 
 ```bash
-cd backend/manager  && mvn spring-boot:run    # http://localhost:9000/manager
-cd backend/provider && mvn spring-boot:run    # http://localhost:8080/news-provider
+cd backend/manager   && mvn spring-boot:run   # http://localhost:9000/manager
+cd backend/provider  && mvn spring-boot:run   # http://localhost:8080/news-provider
+cd backend/analytics && mvn spring-boot:run   # http://localhost:8090/analytics
 
 cd backend/workers && make setup              # one-time: builds a venv per worker type
 cd backend/workers && make scrape-worker      # also: classify-worker, cluster-worker, enrich-worker
 ```
 
-**B. Fully containerized** — manager, provider, and several replicas of each worker (3 per worker type, 2 enrichers) also run as containers (all named `news-mm-*`):
+**B. Fully containerized** — manager, provider, analytics, and several replicas of each worker (3 per worker type, 2 enrichers) also run as containers (all named `news-mm-*`). The worker replicas load ML models each, so give Docker well over 5 GB of memory (the 4.8 GB default VM is not enough for the full stack):
 
 ```bash
 make up-full
@@ -905,7 +872,7 @@ make up-full
 
 Both workflows share the same infra containers and `.env`. `make up-full`'s services only start under Compose's `apps` profile, so `make up`/`make dev` never pull them in by accident.
 
-### Accessing Manager & Provider
+### Accessing the Services
 
 | Service  | Base URL                                | Health               | Swagger UI           |
 | -------- | --------------------------------------- | -------------------- | -------------------- |
@@ -930,10 +897,11 @@ Run `make help` for the full, always-current list. The ones you'll reach for mos
 | Target                                    | What it does                                                                                                                     |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `make dev`                              | Bootstrap infra:`.env`, infra containers, migrations, RabbitMQ setup                                                           |
-| `make up` / `make up-full`            | Start infra only / infra + manager + provider + all workers                                                                      |
+| `make up` / `make up-full`            | Start infra only / infra + manager + provider + analytics + all workers                                                          |
 | `make down`                             | Stop everything that's running                                                                                                   |
 | `make ps`                               | Show container status                                                                                                            |
-| `make logs`                             | `SERVICE=<name>` to filter; also `logs-manager`, `logs-provider`, `logs-scraper`, `logs-classifier`, `logs-cluster`, `logs-enricher`  |
+| `make logs`                             | `SERVICE=<name>` to filter; also `logs-manager`, `logs-provider`, `logs-analytics`, `logs-scraper`, `logs-classifier`, `logs-cluster`, `logs-enricher`  |
+| `make test` / `make e2e`                | All unit/integration tests / end-to-end check against running services (see [Testing and Verification](#testing-and-verification)) |
 | `make migrate`                          | Re-apply Neo4j migrations (idempotent — already-applied ones skip)                                                              |
 | `make rabbitmq-setup`                   | Re-run RabbitMQ topology setup (idempotent)                                                                                      |
 | `make neo4j-shell` / `rabbitmq-shell` | Open an interactive shell into that container                                                                                    |
@@ -968,6 +936,24 @@ Neo4j migrations and RabbitMQ topology setup both run automatically the moment t
 - User subscriptions fail (sync call from manager).
 - Nothing works until Neo4j recovers.
 
+### Analytics Down (Charts and Prices Only)
+
+- Chart endpoints are unavailable; the rest of the system keeps working.
+- `event.upserted` messages wait in the durable `analytics.events` queue and are applied on restart (or `POST /api/admin/events/rebuild`).
+- Manager's watchlist still answers: `quote` and `latestEvent` are `null` after a 2 s timeout. Alerts are unaffected (they come from `manager.events`).
+
+### Manager Down (Alerts)
+
+- `manager.events` and `article.notifications` buffer in RabbitMQ; alerts are created on restart. Events first seen more than 72 h earlier no longer alert.
+
+### Market Data Provider Down / Out of Credits
+
+- Price ingest logs a warning per failed listing and picks it up incrementally on its next run; event studies stay pending until prices exist. Charts serve whatever is stored.
+
+### Redis Down (Clustering Only)
+
+- Clusterer can't take the decision lock: messages are nacked and requeued until Redis is back. Other workers are unaffected.
+
 ### Qdrant Down (Clustering Only)
 
 - Clusterer can't query/update centroids => stalls.
@@ -978,6 +964,6 @@ Neo4j migrations and RabbitMQ topology setup both run automatically the moment t
 
 **News Monitor evolved from a monolithic Java process with embedded threads to a distributed, polyglot system.**
 
-The separation forced responsibilities: **manager** handles auth and user state; **provider** is system-of-record for articles/stories/topics; **workers** are pure processing clients. RabbitMQ decouples the pipeline (scraping doesn't block classification). Three specialized datastores (PostgreSQL for relational data, Neo4j for graph structure, Qdrant for vector search) replaced one generalist database, trading cross-database FK constraints for flexibility and performance.
+The separation forced responsibilities: **manager** handles auth, user state, watchlists and alerts; **provider** is system-of-record for articles/stories/topics/companies/events; **analytics** owns market data, event studies and charts; **workers** are pure processing clients. RabbitMQ decouples the pipeline (scraping doesn't block classification) and carries events to their consumers. Specialized datastores (PostgreSQL for relational data and time series, Neo4j for graph structure, Qdrant for vector search) replaced one generalist database, trading cross-database FK constraints for flexibility and performance.
 
-The result: a system that scales each component independently, isolates failures (provider down ≠ clustering down), and optimizes each layer for its job. New articles flow through scraping => classification => clustering as independent asynchronous jobs. Subscribed users are notified the moment an article matches their interests. Adding new sources, tweaking the classifier, or tuning the embedding threshold requires no full-system redeploy-each worker type is independent and can restart in isolation.
+The result: a system that scales each component independently, isolates failures (provider down ≠ clustering down), and optimizes each layer for its job. New articles flow through scraping => classification / enrichment / clustering as independent asynchronous jobs, become Story→Company events, and reach investors as chart markers and watchlist alerts. Subscribed users are notified the moment an article or event matches their interests. Adding new sources, tweaking the classifier, or tuning the embedding threshold requires no full-system redeploy-each worker type is independent and can restart in isolation.
