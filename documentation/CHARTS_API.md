@@ -33,7 +33,7 @@ Under `/analytics/api/admin`, `ROLE_ADMIN` or `ROLE_SYSTEM` token required (issu
 
 | Endpoint | Does |
 | --- | --- |
-| `POST /events/rebuild[?since=]` | Replays the provider's `GET /api/events` into the event read model (idempotent) |
+| `POST /events/rebuild[?since=]` | Replays the provider's `GET /api/events` into the event read model (idempotent). Without `since`, also removes stored events missing from the provider's feed (older than the rebuild, never on an empty feed) |
 | `POST /prices/ingest` | Runs the incremental daily-price ingest now |
 | `POST /impact/run` | Runs pending event studies now and writes results back to the provider |
 | `POST /companies/refresh` | Reloads company names from the provider |

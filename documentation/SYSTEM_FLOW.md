@@ -142,7 +142,7 @@ flowchart TD
     topics["PATCH /api/articles/topics<br/>(classifier)"] --> refresh
 
     refresh["EventService: refresh the story's events<br/>one transaction, story lock first,<br/>retried on deadlock (Neo4jWrites)"]
-    refresh --> calc["Per company mentioned in the story:<br/>impactScore = 0.25 breadth + 0.15 coverage<br/>+ 0.20 salience + 0.25 topic weight<br/>+ 0.15 abs(sentiment) + 0.10 official source"]
+    refresh --> calc["Per company mentioned in the story<br/>(not regulators or central banks):<br/>impactScore = 0.25 breadth + 0.15 coverage<br/>+ 0.20 salience + 0.25 topic weight<br/>+ 0.15 abs(sentiment) + 0.10 official source"]
     calc --> write[("Neo4j AFFECTS<br/>created / updated / removed")]
     write --> commit{committed?}
     commit -->|yes| pub["Publish event.upserted per changed event<br/>EventMessage + deleted flag + version (epoch ms)"]
@@ -197,7 +197,7 @@ sequenceDiagram
     A->>P: PATCH /api/events/{storyId}/{companyId}/impact (does not re-publish)
 ```
 
-Recovery: `POST /analytics/api/admin/events/rebuild` replays the provider's `GET /api/events` into the read model; messages for a stopped manager or analytics wait in their durable queues.
+Recovery: `POST /analytics/api/admin/events/rebuild` replays the provider's `GET /api/events` into the read model (without `since` it also removes events that disappeared upstream); messages for a stopped manager or analytics wait in their durable queues.
 
 ---
 
