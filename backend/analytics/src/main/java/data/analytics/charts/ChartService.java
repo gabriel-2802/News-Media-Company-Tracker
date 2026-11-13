@@ -232,6 +232,26 @@ public class ChartService {
         return out;
     }
 
+    /** Latest event per symbol (any exchange), for watchlists. Symbols without events are left out. */
+    public List<LatestEvent> latestEvents(final List<String> symbols) {
+        final String[] upper = symbols.stream().map(x -> x.trim().toUpperCase(java.util.Locale.ROOT))
+                .filter(x -> !x.isEmpty()).distinct().toArray(String[]::new);
+        if (upper.length == 0) {
+            return List.of();
+        }
+        return jdbc.sql("""
+                SELECT DISTINCT ON (symbol) symbol, exchange, story_id, company_id, story_title, first_seen,
+                       impact_score, sentiment, article_count, topics
+                FROM events WHERE symbol = ANY(?) AND first_seen IS NOT NULL
+                ORDER BY symbol, first_seen DESC, impact_score DESC NULLS LAST
+                """).param(upper)
+                .query((rs, i) -> new LatestEvent(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
+                        rs.getString(5), rs.getObject(6, java.time.OffsetDateTime.class).toEpochSecond(),
+                        (Double) rs.getObject(7), (Double) rs.getObject(8), (Integer) rs.getObject(9),
+                        List.of((String[]) rs.getArray(10).getArray())))
+                .list();
+    }
+
     // ---------------------------------------------------------------- event impact detail
 
     public EventImpact impact(final String storyId, final String companyId) {

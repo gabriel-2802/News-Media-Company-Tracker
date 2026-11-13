@@ -24,6 +24,7 @@ Read-only JSON for investor charts, served by the analytics service under `http:
 | `GET /events/{storyId}/{companyId}/impact` | | `{storyId, companyId, title, listing, benchmark, eventDay, alpha, beta, ar0, car1, car5, pValue, estimationDays, complete, path: [{offset, time, stockReturn, benchmarkReturn, ar, car}]}`; `path` covers trading days −5..+5 as far as prices exist, `car` cumulated from −5 |
 | `GET /topics/volume` | `from`, `to`, `bucket` (default `week`), `topics` | `[{time, topics: {name: count}}]`; an event counts under each of its topics |
 | `GET /sector/heatmap` | `window` (`1d`/`7d`/`30d`, default `7d`), `to` (default latest price day) | `{window, from, to, rows: [{listing, returnPct, avgSentiment, events, topEventTitle, topEventImpact}]}`; one row per listing with prices, most-covered first |
+| `GET /latest-events` | `symbols` (1–50, comma list) | `[{symbol, exchange, storyId, companyId, title, firstSeen, impactScore, sentiment, articleCount, topics}]`; most recent event per symbol (any exchange); symbols without events are left out. Used by the manager's watchlist |
 | `GET /quotes` | `symbols` (1–50, comma list) | `[{listing, time, last, previousClose, change, changePct}]`; unknown, ambiguous or unpriced symbols are left out |
 
 The provider serves the company graph (a Neo4j traversal): `GET /news-provider/api/companies/{symbol}/graph?days=30&limit=50` → `{nodes: [{id, type (company/story), label, kind, symbol, firstSeen, articleCount}], edges: [{source, target, impactScore, sentiment, car1}]}`. See [PROVIDER_API.md](PROVIDER_API.md#companies).
@@ -38,4 +39,4 @@ curl 'http://localhost:8090/analytics/api/charts/quotes?symbols=JPM,GS,C'
 
 ## Verification (2026-11-13, real data)
 
-Every endpoint was called for real listings (JPM, GS, C, COIN …): 20–350 ms per call (heatmap of 313 listings 343 ms), 304 on ETag replay. All 59 markers that have an event study sit exactly on the study's day 0 with the same CAR. Automated: `ChartApiIntegrationTests` (8, against the market database through HTTP) and `CompanyGraphIntegrationTests` (3, provider).
+Every endpoint was called for real listings (JPM, GS, C, COIN …): 20–350 ms per call (heatmap of 313 listings 343 ms), 304 on ETag replay. All 59 markers that have an event study sit exactly on the study's day 0 with the same CAR. Automated: `ChartApiIntegrationTests` (9, against the market database through HTTP) and `CompanyGraphIntegrationTests` (3, provider).

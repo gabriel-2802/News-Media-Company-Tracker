@@ -71,7 +71,9 @@ Tag: Notifications. `@SecurityRequirement(bearerAuth)`. Self-service only, scope
 | PATCH  | `/api/users/me/notifications/seen`   | Authenticated | Marks the given notification IDs (body:`NotificationIdsRequest`) as seen. IDs not owned by the caller are silently ignored — not a `403`/`404`. |
 | DELETE | `/api/users/me/notifications`        | Authenticated | Deletes the given notification IDs. Same silent-ignore rule for IDs not owned by the caller.                                                           |
 
-Notifications are never created via HTTP — they are produced exclusively by the RabbitMQ consumer described below (`ArticleNotificationListener` → `NotificationService.createForUsers`).
+Notifications are never created via HTTP. They come from the two RabbitMQ consumers described below: `ArticleNotificationListener` (type `ARTICLE`) and `EventAlertListener` (type `TICKER_ALERT`).
+
+Response fields: `id`, `type` (`ARTICLE` or `TICKER_ALERT`), `message`, `seen`, `createdAt`, and for alerts `symbol`, `storyId`, `companyId`, `impactScore`, `sentiment` (null for article notifications).
 
 ---
 
@@ -85,7 +87,28 @@ Tag: Subscriptions. `@SecurityRequirement(bearerAuth)`. Self-service only, scope
 | POST   | `/api/users/me/subscriptions`      | Authenticated | Subscribes the caller to a topic or story (body:`CreateSubscriptionRequest` — `type` + `targetId`). Before creating the row, `SubscriptionService` synchronously calls the external **news-provider** service (`POST /api/subscriptions/topic/{targetId}` or `/story/{targetId}`, base URL `app.news-provider.base-url`) to verify the target exists. `404` if provider says the target doesn't exist (provider `400` is remapped to `404`), `502`/`ExternalServiceException` if provider is unreachable, `409` if already subscribed. |
 | DELETE | `/api/users/me/subscriptions/{id}` | Authenticated | Removes one of the caller's own subscriptions. Also calls the news-provider service (`DELETE .../topic\|story/{targetId}`) to unregister interest. `404` if the subscription doesn't belong to the caller.                                                                                                                                                                                                                                                                                                                                                           |
 
+`type` can also be `TICKER` (`targetId` = symbol): this creates a watchlist entry with the default alert settings (see WatchlistController), validated against the provider's companies instead of the provider's subscription endpoints; deleting a TICKER subscription makes no provider call. Responses carry `minImpact` and `topics` for TICKER rows.
+
 Note: subscribe/unsubscribe talk to news-provider over plain HTTP (`RestTemplate`), **not** RabbitMQ — the queue traffic only flows the other direction (provider/workers → manager) once an article actually matches, described below.
+
+---
+
+## WatchlistController — `/api/users/me/watchlist`
+
+Tag: Watchlist. `@SecurityRequirement(bearerAuth)`. A watchlist entry is a `TICKER` subscription with alert settings. At most 50 tickers per user.
+
+| Method | Path | Permission | Description |
+| ------ | ---- | ---------- | ----------- |
+| GET | `/api/users/me/watchlist` | Authenticated | Watched tickers, oldest first: `{subscriptionId, symbol, name, minImpact, topics, createdAt, quote, latestEvent}`. `quote` = `{exchange, currency, time, last, previousClose, change, changePct}` and `latestEvent` = `{storyId, companyId, title, firstSeen, impactScore, sentiment, articleCount, topics}` (times in unix seconds) come from one batched call each to analytics (`/api/charts/quotes`, `/api/charts/latest-events`, 2 s timeout). If analytics is down or has no data for a symbol, those fields are `null`; the list is still returned. |
+| PUT | `/api/users/me/watchlist/{symbol}` | Authenticated | Adds the symbol (`201`) or updates its settings (`200`). Optional body `{minImpact: 0..1, topics: [..]}`; omitted fields keep their value; new entries get `minImpact` 0.5 (`app.alerts.default-min-impact`) and no topic filter. Symbols are case-insensitive and checked against the provider's `GET /api/companies` (cached 10 min): `404` unknown symbol, `400` malformed symbol / threshold / topic, `409` more than 50 tickers, `502` provider unreachable with no cached copy. |
+| DELETE | `/api/users/me/watchlist/{symbol}` | Authenticated | Stops watching. `404` if not on the watchlist. |
+
+**Alerts.** The manager consumes `event.upserted` (the provider's Story→Company events, the same messages analytics reads) from its own queue `manager.events`. For an event with a listed symbol, each user watching that symbol gets **one** `TICKER_ALERT` notification per event (story + company) when:
+
+- the event's `impactScore` ≥ the user's `minImpact`, and
+- the user has no topic filter, or the event has one of the filtered topics.
+
+The provider re-publishes an event whenever articles join its story, so an event that starts below the threshold alerts once it crosses it; later re-publishes are ignored (table `ticker_alerts`, primary key `(user_id, story_id, company_id)`). Deleted events, unlisted companies and events first seen more than 72 h ago (`app.alerts.max-event-age-hours`; backfills and re-enrichment) never alert. Message format: `JPM: <story title> (impact 0.80, negative, regulation_legal_enforcement)`.
 
 ---
 
@@ -98,11 +121,16 @@ rabbitmq:
   url: amqp://admin:secret@localhost:5672/news_monitor
   scrape-jobs-queue: scrape.jobs
   article-notifications-queue: article.notifications
+  news-exchange: news_monitor
+  event-upserted-routing-key: event.upserted
+  event-alerts-queue: manager.events
+  listeners-auto-startup: true   # false in tests
 ```
 
 - Connection: single `CachingConnectionFactory` built from `rabbitmq.url`.
 - Serialization: `Jackson2JsonMessageConverter` is wired into both the `RabbitTemplate` (send side) and the `SimpleRabbitListenerContainerFactory` (receive side), so message bodies are JSON, mapped straight to/from Java records.
-- The manager module declares and binds to exactly one durable queue: `articleNotificationsQueue` (name from `rabbitmq.article-notifications-queue`, default `article.notifications`).
+- The manager declares two durable queues: `article.notifications` (unbound; the provider publishes to it by name) and `manager.events`, bound to the `news_monitor` topic exchange with `event.upserted` (also created by `rabbitmq/setup.sh`).
+- A message whose handling throws is logged and dropped (`defaultRequeueRejected = false`) instead of being redelivered forever.
 - `scrape-jobs-queue` is present in configuration but **not consumed or published by this module** — it belongs to the provider/worker side of the system (out of scope for this directory).
 - A `RabbitTemplate` bean exists but this module currently only **consumes**; it does not publish any messages itself.
 
@@ -130,6 +158,10 @@ public void onArticleNotification(ArticleNotificationMessage message)
   3. Otherwise formats a message (`"New article for %s '%s': %s"` with `type`, `name`, `articleUrl`) and calls `NotificationService.createForUsers(userIds, text)`, which inserts one `Notification` row per subscribed user.
 - This is the **only** way `Notification` rows are created — there is no HTTP endpoint to create notifications directly; clients only read/mark-seen/delete via `NotificationController` above.
 - No permission model applies here — this is not an HTTP-facing concern. Trust boundary is implicit: any producer with access to the `article.notifications` queue on the shared broker can trigger notifications for any subscriber. There's no message-level authentication/signature check in the listener itself.
+
+### Consumer: `EventAlertListener`
+
+`@RabbitListener(queues = "${rabbitmq.event-alerts-queue}")` → `TickerAlertService.handle(EventMessage)`. Payload: the provider's `EventMessage` (`storyId, companyId, companyName, symbol, exchange, currency, storyTitle, firstSeen, impactScore, articleCount, sentiment, topics, deleted, version`). Rules as in *Alerts* above; the dedup insert (`INSERT … ON CONFLICT DO NOTHING`) and the notification rows are written in one transaction.
 
 ---
 

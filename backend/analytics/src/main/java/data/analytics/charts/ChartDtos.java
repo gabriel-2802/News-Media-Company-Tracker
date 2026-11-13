@@ -65,4 +65,9 @@ public final class ChartDtos {
 
     @Schema(description = "Latest close and change versus the previous close.")
     public record Quote(Listing listing, long time, double last, Double previousClose, Double change, Double changePct) {}
+
+    @Schema(description = "Most recent event of a symbol (by first-seen time).")
+    public record LatestEvent(String symbol, String exchange, String storyId, String companyId, String title,
+                              long firstSeen, Double impactScore, Double sentiment, Integer articleCount,
+                              List<String> topics) {}
 }

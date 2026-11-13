@@ -48,11 +48,14 @@ public class SubscriptionService {
     private final UserRepository         userRepository;
     private final RestTemplate           restTemplate;
     private final String                 newsProviderBaseUrl;
+    private final WatchlistService       watchlistService;
 
     public SubscriptionService(SubscriptionRepository subscriptionRepository,
                                UserRepository userRepository,
                                RestTemplate restTemplate,
-                               @Value(PROP_NEWS_PROVIDER_BASE_URL) String newsProviderBaseUrl) {
+                               @Value(PROP_NEWS_PROVIDER_BASE_URL) String newsProviderBaseUrl,
+                               WatchlistService watchlistService) {
+        this.watchlistService       = watchlistService;
         this.subscriptionRepository = subscriptionRepository;
         this.userRepository         = userRepository;
         this.restTemplate           = restTemplate;
@@ -69,6 +72,16 @@ public class SubscriptionService {
     @Transactional
     public SubscriptionResponse subscribe(String email, CreateSubscriptionRequest request) {
         Long userId = resolveUserId(email);
+
+        if (request.type() == SubscriptionType.TICKER) {
+            // Watchlist entry with default alert settings; no provider registration needed.
+            String symbol = CompanyDirectory.normalize(request.targetId());
+            if (subscriptionRepository.existsByUserIdAndTypeAndTargetId(userId, SubscriptionType.TICKER, symbol)) {
+                throw new DuplicateSubscriptionException();
+            }
+            String id = watchlistService.put(email, symbol, null).item().subscriptionId();
+            return SubscriptionResponse.from(subscriptionRepository.findById(id).orElseThrow());
+        }
 
         if (subscriptionRepository.existsByUserIdAndTypeAndTargetId(userId, request.type(), request.targetId())) {
             throw new DuplicateSubscriptionException();
@@ -94,7 +107,9 @@ public class SubscriptionService {
                 .orElseThrow(() -> new ResourceNotFoundException("Subscription not found: " + subscriptionId));
 
         subscriptionRepository.delete(subscription);
-        providerUnsubscribe(subscription.getType(), subscription.getTargetId());
+        if (subscription.getType() != SubscriptionType.TICKER) {
+            providerUnsubscribe(subscription.getType(), subscription.getTargetId());
+        }
         log.info(LOG_UNSUBSCRIBED, userId, subscription.getType(), subscription.getTargetId());
     }
 

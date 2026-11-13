@@ -11,6 +11,7 @@
 | Sources | 27 validated US/UK/EU feeds: trade press, financial news, regulators, central banks ([report](data/source_validation/report.md)). Political-orientation data removed. |
 | Topics | 13 banking topics, multi-label with scores: FinBERT fine-tuned on public data + a rule layer for regulator/enforcement content |
 | Entities and sentiment | 356 companies (banks, fintechs, regulators, central banks) and 345 tickers. The enricher worker links articles to them, scores FinBERT sentiment per article and per company, and the provider derives Story→Company events with an impact score |
+| Watchlists and alerts | Users watch up to 50 tickers with an impact threshold and optional topic filter; the manager turns `event.upserted` into one alert per event and user. The watchlist shows each ticker's latest quote and event from analytics ([MANAGER_API.md](documentation/MANAGER_API.md#watchlistcontroller--apiusersmewatchlist)) |
 | Market data and event studies | Spring Boot `analytics` service with its own `market` database: event read model fed by RabbitMQ, daily prices behind a pluggable provider (needs an API key), market-model event studies written back to the provider. Chart APIs: price, event markers, overlay, sentiment, news and topic volume, event-impact paths, sector heatmap, quotes ([CHARTS_API.md](documentation/CHARTS_API.md)); company graph on the provider |
 
 ---
@@ -102,7 +103,8 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 - `/api/users/me/*` - account management (read/write own profile, change password)
 - `/api/users/{id}/*` - admin operations (list, create, modify, delete users; grant/revoke roles)
 - `/api/users/me/subscriptions/*` - subscribe/unsubscribe to topics or stories (manager-side rows; synced with provider)
-- `/api/users/me/notifications/*` - list, mark-seen, delete personal notifications
+- `/api/users/me/notifications/*` - list, mark-seen, delete personal notifications (article notifications and ticker alerts)
+- `/api/users/me/watchlist/*` - watched tickers with alert settings, latest quote and latest event
 
 **Database (PostgreSQL):**
 
@@ -110,14 +112,17 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 | ----------------- | ----------------------------------------------------------------------------------------------------------- |
 | `users`         | email, password (BCrypt), name, enabled flag                                                                |
 | `user_roles`    | join table linking users to`ROLE_USER` / `ROLE_ADMIN` / `ROLE_SYSTEM`                                 |
-| `subscriptions` | per-user subscriptions to topics/stories (cross-service references by ID/name)                              |
-| `notifications` | per-user notifications when a subscribed topic/story gets a new article (only written by RabbitMQ consumer) |
+| `subscriptions` | per-user subscriptions to topics/stories, and watched tickers (`TICKER`, with `min_impact` and `topics`) |
+| `notifications` | per-user notifications: new articles for subscribed topics/stories, and ticker alerts (only written by RabbitMQ consumers) |
+| `ticker_alerts` | one row per (user, story, company) already alerted, so a growing story alerts once                          |
 | `roles`         | seed rows for the three role types                                                                          |
 
 **RabbitMQ:**
 
-- **Consumes:** `article.notifications` queue only. When the provider publishes that an article matched a subscribed topic/story, this service inserts `Notification` rows for all interested users.
+- **Consumes:** `article.notifications` (an article matched a subscribed topic/story → `Notification` rows for all interested users) and `manager.events` (`event.upserted` → ticker alerts for users whose threshold and topic filter match).
 - **Never publishes** to the worker queues.
+
+**Tests:** `cd backend/manager && mvn test` (9, against the `users` schema of the local Postgres with the provider and analytics mocked; set `SPRING_DATASOURCE_PASSWORD`, `DB_USERNAME`, `DB_NAME` from `.env`): watchlist add/update/remove, quotes and latest event, analytics-down fallback, validation codes, the 50-ticker limit, TICKER through the generic subscriptions endpoint; alerts on threshold crossing, once per event, per-user thresholds and topic filters, deleted/old/unlisted/unwatched events, Neo4j timestamp formats, cascade on user delete.
 
 **Authentication Model:**
 
@@ -370,6 +375,7 @@ flowchart LR
 | `article.enrich`        | yes     | `news_monitor`     | `article.saved` | Enricher worker consumes; scraper produces. |
 | `article.notifications` | yes     | (none)               | n/a               | Provider produces; manager consumes.**Not bound to topic exchange** (isolated from scraper fan-out). |
 | `analytics.events`      | yes     | `news_monitor`     | `event.upserted`  | Analytics consumes; provider produces when a story-company event changes (after commit). |
+| `manager.events`        | yes     | `news_monitor`     | `event.upserted`  | Manager consumes the same events for watchlist alerts. |
 
 ### Message Shapes
 
@@ -407,6 +413,7 @@ or
 | `article.enrich`        | Scraper (fan-out via topic exchange)                                    | Enricher worker                           | Always, after article saved                     |
 | `article.notifications` | Provider (`ArticleService`, `StoryService`)                         | Manager (`ArticleNotificationListener`) | Only if subscription exists for the story/topic |
 | `analytics.events`      | Provider (`EventService`, after commit)                                | Analytics (`EventListener`)               | Whenever an event is created, updated or removed |
+| `manager.events`        | Provider (same messages)                                               | Manager (`EventAlertListener`)            | Alert only if impact ≥ the watcher's threshold, topic filter matches, first seen ≤ 72 h ago, not alerted before |
 
 ---
 
@@ -454,8 +461,10 @@ Join table: `(user_id, role_id)` composite PK, both FKs cascade on delete.
 | -------------- | -------------- | ---------------------------------------------- |
 | `id`         | VARCHAR(36) PK | UUID                                           |
 | `user_id`    | BIGINT FK      | CASCADE on delete                              |
-| `type`       | VARCHAR(20)    | `TOPIC` or `STORY`                         |
-| `target_id`  | VARCHAR(255)   | Topic name or Story ID (no FK-stored in Neo4j) |
+| `type`       | VARCHAR(20)    | `TOPIC`, `STORY` or `TICKER`              |
+| `target_id`  | VARCHAR(255)   | Topic name, Story ID or ticker symbol (no FK: stored in Neo4j) |
+| `min_impact` | DOUBLE         | TICKER only: alert threshold (0-1), default 0.5 |
+| `topics`     | VARCHAR(1000)  | TICKER only: comma-separated topic filter; null = any topic |
 | `created_at` | TIMESTAMPTZ    |                                                |
 
 Unique constraint on `(user_id, type, target_id)` - enforces "can't subscribe twice to the same thing."
@@ -468,9 +477,15 @@ Unique constraint on `(user_id, type, target_id)` - enforces "can't subscribe tw
 | `user_id`    | BIGINT FK             | CASCADE on delete                                  |
 | `message`    | VARCHAR(1000)         | e.g.,`"New article for TOPIC 'regulation_legal_enforcement': <url>"` |
 | `seen`       | BOOLEAN DEFAULT FALSE |                                                    |
+| `type`       | VARCHAR(20)           | `ARTICLE` or `TICKER_ALERT`                         |
+| `symbol`, `story_id`, `company_id`, `impact_score`, `sentiment` | | Set for `TICKER_ALERT` only |
 | `created_at` | TIMESTAMPTZ           |                                                    |
 
-Index on `(user_id, seen)` for unseen-notification queries. Only written by `ArticleNotificationListener` - never via HTTP.
+Index on `(user_id, seen)` for unseen-notification queries. Only written by the RabbitMQ consumers (`ArticleNotificationListener`, `EventAlertListener`) - never via HTTP.
+
+#### `ticker_alerts`
+
+Primary key `(user_id, story_id, company_id)`, plus `symbol`, `impact_score`, `created_at`; cascades with the user. Dedup record: an event that keeps being re-published as articles join its story alerts each watcher only once.
 
 ### Neo4j: Provider's Graph Data
 
@@ -572,7 +587,7 @@ Daily studies cannot separate two stories about the same company on the same day
 
 **Live verification (2026-11-13, free Twelve Data plan):** the first full ingest loaded 315 US listings, 153,981 daily bars over two years (median 501 bars per listing; shorter histories are recent IPOs such as Klarna and Circle) with no missing trading days or invalid values, using 640 of 800 daily credits across two runs. All 59 US events got an event study (β 0.35–1.15 against KBE); an independent NumPy/SciPy re-implementation matched every α, β, AR, CAR and p-value to within 2·10⁻¹³, and all 59 results were found unchanged on the provider's `AFFECTS` relationships.
 
-**Chart APIs** (`/api/charts/*`, public, cached 60 s with ETags): price, events, overlay, sentiment, news-volume, event impact with its [-5, +5] path, topic volume, sector heatmap and quotes. Times are unix seconds so arrays go straight into TradingView Lightweight Charts or ECharts; full reference in [CHARTS_API.md](documentation/CHARTS_API.md). Company names come from a local `companies` table, refreshed from `GET /api/companies` at startup and on every price ingest.
+**Chart APIs** (`/api/charts/*`, public, cached 60 s with ETags): price, events, overlay, sentiment, news-volume, event impact with its [-5, +5] path, topic volume, sector heatmap, quotes and latest event per symbol (for watchlists). Times are unix seconds so arrays go straight into TradingView Lightweight Charts or ECharts; full reference in [CHARTS_API.md](documentation/CHARTS_API.md). Company names come from a local `companies` table, refreshed from `GET /api/companies` at startup and on every price ingest.
 
 **Admin (ROLE_ADMIN / ROLE_SYSTEM):** `POST /api/admin/events/rebuild`, `POST /api/admin/prices/ingest`, `POST /api/admin/impact/run`, `POST /api/admin/companies/refresh`. Scheduled jobs take a lease in `job_locks`, so only one replica runs each.
 
@@ -582,7 +597,7 @@ Daily studies cannot separate two stories about the same company on the same day
 docker compose exec postgres psql -U postgres -c "CREATE USER analytics WITH PASSWORD '<MARKET_DB_PASSWORD>';" -c "CREATE DATABASE market OWNER analytics;" -c "REVOKE CONNECT ON DATABASE news_monitor FROM PUBLIC;"
 ```
 
-**Tests:** `cd backend/analytics && mvn test` (23): chart endpoints through HTTP against the market database (shapes, marker placement and style, downsampling, weighted sentiment, heatmap values, quotes, error codes, ETag 304); the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database.
+**Tests:** `cd backend/analytics && mvn test` (24): chart endpoints through HTTP against the market database (shapes, marker placement and style, downsampling, weighted sentiment, heatmap values, quotes, error codes, ETag 304); the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database.
 
 ---
 

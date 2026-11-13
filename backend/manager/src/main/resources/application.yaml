@@ -30,6 +30,9 @@ rabbitmq:
   url: ${RABBITMQ_URL:amqp://admin:secret@localhost:5672/news_monitor}
   scrape-jobs-queue: ${SCRAPE_JOBS_QUEUE:scrape.jobs}
   article-notifications-queue: ${ARTICLE_NOTIFICATIONS_QUEUE:article.notifications}
+  news-exchange: ${NEWS_EXCHANGE:news_monitor}
+  event-upserted-routing-key: ${EVENT_UPSERTED_ROUTING_KEY:event.upserted}
+  event-alerts-queue: ${EVENT_ALERTS_QUEUE:manager.events}
 
 app:
   admin:
@@ -41,3 +44,11 @@ app:
     code: ${APP_SYSTEM_CODE:devsystemcode123}
   news-provider:
     base-url: ${APP_NEWS_PROVIDER_BASE_URL:http://localhost:8080/news-provider}
+  analytics:
+    base-url: ${APP_ANALYTICS_BASE_URL:http://localhost:8090/analytics}
+    timeout-ms: ${APP_ANALYTICS_TIMEOUT_MS:2000}
+  alerts:
+    # Default impact threshold (0-1) of a new watchlist entry.
+    default-min-impact: ${APP_ALERTS_DEFAULT_MIN_IMPACT:0.5}
+    # Events first seen longer ago than this never alert (backfills, re-enrichment).
+    max-event-age-hours: ${APP_ALERTS_MAX_EVENT_AGE_HOURS:72}

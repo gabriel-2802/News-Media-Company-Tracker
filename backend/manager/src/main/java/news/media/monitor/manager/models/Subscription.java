@@ -8,6 +8,7 @@ import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UuidGenerator;
 
 import java.time.Instant;
+import java.util.List;
 
 @Entity
 @Table(name = "subscriptions")
@@ -32,6 +33,15 @@ public class Subscription {
 
     @Column(name = "target_id", nullable = false, length = 255)
     private String targetId;
+
+    /** TICKER only: minimum event impact score (0-1) that triggers an alert. */
+    @Column(name = "min_impact")
+    private Double minImpact;
+
+    /** TICKER only: alert only for events with one of these topics; empty = any topic. */
+    @Convert(converter = StringListConverter.class)
+    @Column(length = 1000)
+    private List<String> topics = new java.util.ArrayList<>();
 
     @CreationTimestamp
     @Column(nullable = false, updatable = false)

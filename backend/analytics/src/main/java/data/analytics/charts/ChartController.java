@@ -174,4 +174,10 @@ public class ChartController {
     public ResponseEntity<List<Quote>> quotes(@RequestParam @Size(min = 1, max = 50) final List<String> symbols) {
         return ok(charts.quotes(symbols));
     }
+
+    @GetMapping("/latest-events")
+    @Operation(summary = "Most recent event per symbol", description = "For watchlists; symbols without events are left out.")
+    public ResponseEntity<List<LatestEvent>> latestEvents(@RequestParam @Size(min = 1, max = 50) final List<String> symbols) {
+        return ok(charts.latestEvents(symbols));
+    }
 }

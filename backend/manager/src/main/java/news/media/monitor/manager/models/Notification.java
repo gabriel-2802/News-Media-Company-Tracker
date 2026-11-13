@@ -32,6 +32,24 @@ public class Notification {
     @Column(nullable = false)
     private boolean seen = false;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private NotificationType type = NotificationType.ARTICLE;
+
+    @Column(length = 20)
+    private String symbol;
+
+    @Column(name = "story_id", length = 64)
+    private String storyId;
+
+    @Column(name = "company_id", length = 64)
+    private String companyId;
+
+    @Column(name = "impact_score")
+    private Double impactScore;
+
+    private Double sentiment;
+
     @CreationTimestamp
     @Column(nullable = false, updatable = false)
     private Instant createdAt;

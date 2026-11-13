@@ -21,4 +21,14 @@ public interface SubscriptionRepository extends JpaRepository<Subscription, Stri
 
     @Query("select s.user.id from Subscription s where s.targetId = :targetId and s.type = :type")
     List<Long> findUserIdsByTargetIdAndType(@Param("targetId") String targetId, @Param("type") SubscriptionType type);
+
+    Optional<Subscription> findByUserIdAndTypeAndTargetId(Long userId, SubscriptionType type, String targetId);
+
+    List<Subscription> findByUserIdAndTypeOrderByCreatedAtAsc(Long userId, SubscriptionType type);
+
+    long countByUserIdAndType(Long userId, SubscriptionType type);
+
+    /** Watchers of a symbol, with the user id loaded (alerts need only the id and the settings). */
+    @Query("select s from Subscription s join fetch s.user where s.type = :type and s.targetId = :targetId")
+    List<Subscription> findWatchers(@Param("type") SubscriptionType type, @Param("targetId") String targetId);
 }

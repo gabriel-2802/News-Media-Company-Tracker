@@ -78,6 +78,12 @@ public class GlobalExceptionHandler {
         return problem(HttpStatus.CONFLICT, ex.getMessage(), SLUG_DUPLICATE_SUBSCRIPTION);
     }
 
+    @ExceptionHandler(WatchlistLimitException.class)
+    public ProblemDetail handleWatchlistLimit(WatchlistLimitException ex) {
+        log.warn("Watchlist limit: {}", ex.getMessage());
+        return problem(HttpStatus.CONFLICT, ex.getMessage(), "watchlist-limit");
+    }
+
     @ExceptionHandler(ExternalServiceException.class)
     public ProblemDetail handleExternalService(ExternalServiceException ex) {
         log.error(LOG_EXTERNAL_SERVICE, ex.getMessage(), ex);
@@ -108,6 +114,26 @@ public class GlobalExceptionHandler {
         ProblemDetail pd = problem(HttpStatus.BAD_REQUEST, MSG_VALIDATION_FAILED, SLUG_VALIDATION_FAILED);
         pd.setProperty(KEY_ERRORS, errors);
         return pd;
+    }
+
+    /** Constraints on path variables / parameters (and on bodies of such methods), e.g. a malformed ticker symbol. */
+    @ExceptionHandler(org.springframework.web.method.annotation.HandlerMethodValidationException.class)
+    public ProblemDetail handleMethodValidation(org.springframework.web.method.annotation.HandlerMethodValidationException ex) {
+        List<Map<String, String>> errors = ex.getParameterValidationResults().stream()
+                .flatMap(r -> r.getResolvableErrors().stream().map(err -> Map.of(
+                        KEY_FIELD,   Objects.requireNonNullElse(r.getMethodParameter().getParameterName(), "argument"),
+                        KEY_MESSAGE, Objects.requireNonNullElse(err.getDefaultMessage(), MSG_INVALID_DEFAULT))))
+                .toList();
+        log.warn(LOG_VALIDATION_FAILED, errors);
+        ProblemDetail pd = problem(HttpStatus.BAD_REQUEST, MSG_VALIDATION_FAILED, SLUG_VALIDATION_FAILED);
+        pd.setProperty(KEY_ERRORS, errors);
+        return pd;
+    }
+
+    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+    public ProblemDetail handleUnreadable(org.springframework.http.converter.HttpMessageNotReadableException ex) {
+        log.warn(LOG_VALIDATION_FAILED, ex.getMessage());
+        return problem(HttpStatus.BAD_REQUEST, "Malformed request body", SLUG_VALIDATION_FAILED);
     }
 
     @ExceptionHandler(Exception.class)

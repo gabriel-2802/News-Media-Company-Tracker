@@ -116,6 +116,18 @@ curl -s -u "${AUTH}" -X POST "${BASE}/bindings/news_monitor/e/news_monitor/q/ana
 -d '{"routing_key":"event.upserted","arguments":{}}'
 echo ""
 
+echo "[setup] Creating queue: manager.events"
+curl -s -u "${AUTH}" -X PUT "${BASE}/queues/news_monitor/manager.events" \
+-H "Content-Type: application/json" \
+-d '{"durable":true,"auto_delete":false,"arguments":{}}'
+echo ""
+
+echo "[setup] Binding manager.events -> news_monitor (routing_key: event.upserted)"
+curl -s -u "${AUTH}" -X POST "${BASE}/bindings/news_monitor/e/news_monitor/q/manager.events" \
+-H "Content-Type: application/json" \
+-d '{"routing_key":"event.upserted","arguments":{}}'
+echo ""
+
 # Provider-only queue: the Provider publishes directly to it by name via the
 # default exchange (routing key == queue name), so it must NOT be bound to
 # the news_monitor topic exchange — binding it to article.saved (or any

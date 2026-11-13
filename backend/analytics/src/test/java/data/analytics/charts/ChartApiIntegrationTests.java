@@ -199,6 +199,17 @@ class ChartApiIntegrationTests {
     }
 
     @Test
+    void latestEventPerSymbol() throws Exception {
+        String json = body("/api/charts/latest-events?symbols=itbank,NOSUCHSYMBOL");
+        assertThat(JsonPath.<Integer>read(json, "$.length()")).isEqualTo(1);
+        assertThat(JsonPath.<String>read(json, "$[0].symbol")).isEqualTo("ITBANK");
+        assertThat(JsonPath.<String>read(json, "$[0].storyId")).isEqualTo("e-neu");          // newest first_seen
+        assertThat(JsonPath.<Number>read(json, "$[0].firstSeen").longValue())
+                .isEqualTo(java.time.Instant.parse("2026-06-11T12:00:00Z").getEpochSecond());
+        assertThat(JsonPath.<List<String>>read(json, "$[0].topics")).containsExactly("earnings_results", "m_and_a_investments");
+    }
+
+    @Test
     void errorsAndCaching() throws Exception {
         mvc.perform(get("/api/charts/companies/NOSUCHSYMBOL/price")).andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("NOSUCHSYMBOL")));
