@@ -68,6 +68,7 @@ from scraper.news_scraper import (
 from env_config import require_env, require_int
 from log_config import configure_logging
 from provider_client import ProviderClient, ProviderError, SourceInfo
+from amqp_keepalive import ThreadSafeChannel, start_job
 from retry import call_with_retry
 
 # ---------------------------------------------------------------------------
@@ -265,7 +266,8 @@ class Worker:
         channel    = connection.channel()
         channel.basic_qos(prefetch_count=1)
 
-        handler = JobHandler(channel, provider)
+        # Jobs run on a worker thread so heartbeats keep flowing (see amqp_keepalive).
+        handler = JobHandler(ThreadSafeChannel(connection, channel), provider)
 
         def _safe_nack(ch: pika.channel.Channel, delivery_tag: int) -> None:
             """Best-effort nack. If the connection itself is already gone
@@ -286,17 +288,18 @@ class Worker:
             _props: pika.spec.BasicProperties,
             body: bytes,
         ) -> None:
-            try:
-                call_with_retry(lambda: handler.handle(method, body), connection.sleep)
-            except ProviderError as exc:
-                log.error(
-                    "Provider still unreachable — nacking for requeue and shutting down: %s", exc
-                )
-                _safe_nack(ch, method.delivery_tag)
-                ch.stop_consuming()
-            except Exception as exc:
-                log.exception("Unhandled crash processing message — nacking for requeue: %s", exc)
-                _safe_nack(ch, method.delivery_tag)
+            # Returns at once: the job runs on a worker thread while start_consuming()
+            # keeps the connection's heartbeats and the job's channel calls flowing.
+            def _on_error(exc: BaseException) -> None:          # runs on the connection thread
+                if isinstance(exc, ProviderError):
+                    log.error("Provider still unreachable — nacking for requeue and shutting down: %s", exc)
+                    _safe_nack(ch, method.delivery_tag)
+                    ch.stop_consuming()
+                else:
+                    log.error("Unhandled crash processing message — nacking for requeue: %r", exc, exc_info=exc)
+                    _safe_nack(ch, method.delivery_tag)
+
+            start_job(connection, lambda: call_with_retry(lambda: handler.handle(method, body), time.sleep), _on_error)
 
         channel.basic_consume(queue=SCRAPE_JOBS_QUEUE, on_message_callback=_callback)
         log.info("Listening on '%s'. Ctrl-C to stop.", SCRAPE_JOBS_QUEUE)

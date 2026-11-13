@@ -32,7 +32,7 @@ USER appuser
 WORKDIR /app/workers
 RUN python -m playwright install chromium
 
-COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py ./
+COPY --chown=appuser:appuser env_config.py log_config.py provider_client.py retry.py amqp_keepalive.py ./
 COPY --chown=appuser:appuser scraper/ ./scraper/
 
 CMD ["python", "-m", "scraper.scraper_worker"]
