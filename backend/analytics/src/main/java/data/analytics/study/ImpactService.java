@@ -65,6 +65,16 @@ public class ImpactService {
         }
     }
 
+    /** Same result as already stored (e.g. no new bars since the last run). */
+    private boolean unchanged(final Pending p, final String benchmark, final EventStudy.Result r) {
+        return jdbc.sql("""
+                SELECT count(*) FROM event_impact
+                WHERE story_id = ? AND company_id = ? AND benchmark = ? AND event_day = ? AND complete = ?
+                  AND beta = ? AND ar0 = ? AND car1 IS NOT DISTINCT FROM ? AND car5 IS NOT DISTINCT FROM ?
+                """).params(p.storyId(), p.companyId(), benchmark, r.eventDay(), r.complete(),
+                r.beta(), r.ar0(), r.car1(), r.car5()).query(Long.class).single() > 0;
+    }
+
     private Summary compute() {
         final List<Pending> pending = jdbc.sql("""
                 SELECT e.story_id, e.company_id, e.symbol, e.exchange, e.first_seen
@@ -92,6 +102,9 @@ public class ImpactService {
                 continue;
             }
             final EventStudy.Result r = result.get();
+            if (unchanged(p, b.getKey(), r)) {
+                continue;                       // incomplete window without new prices: nothing to write
+            }
             jdbc.sql("""
                     INSERT INTO event_impact (story_id, company_id, symbol, exchange, event_day, benchmark, alpha, beta,
                                               ar0, car1, car5, p_value, estimation_days, complete, computed_at)

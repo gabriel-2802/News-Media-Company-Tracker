@@ -562,11 +562,15 @@ A separate microservice for market data and, from Phase 7, chart APIs. It owns t
 | `MARKET_DATA_PROVIDER` | Behaviour |
 | --- | --- |
 | `none` (default) | Runs, fetches nothing; event studies stay pending |
-| `twelvedata` | Twelve Data `time_series` with `TWELVEDATA_API_KEY`; covers the exchanges in `TWELVEDATA_EXCHANGES` (free plan: US). Requests are spaced by `MARKET_REQUEST_DELAY_MS` (8 s for 8/min) |
+| `twelvedata` | Twelve Data `time_series` with `TWELVEDATA_API_KEY`; covers the exchanges in `TWELVEDATA_EXCHANGES` (free plan: US). Requests are spaced by `MARKET_REQUEST_DELAY_MS` (8 s for 8/min). US listings are looked up by symbol + `country=United States` (Twelve Data files Nasdaq stocks under tier MICs XNGS/XNMS/XNCM and rejects XNAS, and disagrees with the SEC on some banks' exchange, e.g. FITB); other listings by MIC. Errors arrive as HTTP 4xx with a JSON body; "no data for these dates" counts as empty |
 
 Stooq's free CSV endpoint now sits behind a JavaScript bot check, so there is no keyless source; a free Twelve Data key is enough for US listings.
 
 **Event studies.** For events on listed companies whose exchange has a benchmark (`analytics.benchmarks`, default KBE for NYSE/Nasdaq), `ImpactService` runs a market-model event study every 30 min: OLS of the stock's daily log returns on the benchmark's over trading days [-250, -30] (at least 60), abnormal return on day 0 (first trading day on/after the event), CAR[-1,+1] with a t-test, and CAR[-5,+5] once five trading days have passed. Results go to `event_impact` and to the provider (`PATCH /api/events/{storyId}/{companyId}/impact`, ROLE_SYSTEM).
+
+Daily studies cannot separate two stories about the same company on the same day: both get the same abnormal return. An unfinished study is recomputed every run but only stored and written back when its result changes.
+
+**Live verification (2026-11-13, free Twelve Data plan):** the first full ingest loaded 315 US listings, 153,981 daily bars over two years (median 501 bars per listing; shorter histories are recent IPOs such as Klarna and Circle) with no missing trading days or invalid values, using 640 of 800 daily credits across two runs. All 59 US events got an event study (β 0.35–1.15 against KBE); an independent NumPy/SciPy re-implementation matched every α, β, AR, CAR and p-value to within 2·10⁻¹³, and all 59 results were found unchanged on the provider's `AFFECTS` relationships.
 
 **Admin (ROLE_ADMIN / ROLE_SYSTEM):** `POST /api/admin/events/rebuild`, `POST /api/admin/prices/ingest`, `POST /api/admin/impact/run`. Scheduled jobs take a lease in `job_locks`, so only one replica runs each.
 
@@ -576,7 +580,7 @@ Stooq's free CSV endpoint now sits behind a JavaScript bot check, so there is no
 docker compose exec postgres psql -U postgres -c "CREATE USER analytics WITH PASSWORD '<MARKET_DB_PASSWORD>';" -c "CREATE DATABASE market OWNER analytics;" -c "REVOKE CONNECT ON DATABASE news_monitor FROM PUBLIC;"
 ```
 
-**Tests:** `cd backend/analytics && mvn test`: the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against its documented response shapes; the read model's version guards and tombstones run against the `market` database.
+**Tests:** `cd backend/analytics && mvn test` (15): the event study recovers a known beta and planted abnormal returns from synthetic data; the Twelve Data adapter is checked against the response shapes observed live (including HTTP 4xx error bodies and US-by-country lookup); the read model's version guards and tombstones, and the full impact job (prices → study → write-back → no repeat write → completion), run against the `market` database.
 
 ---
 
