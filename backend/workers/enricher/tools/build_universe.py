@@ -58,7 +58,8 @@ KEEP_UPPER = {"USA", "US", "NA", "N.A.", "BNY", "FNB", "BOK", "PNC", "M&T", "MVB
 
 
 def http() -> requests.Session:
-    ua = os.environ.get("USER_AGENT")
+    from env_config import _unquote          # `make` passes .env quotes through literally
+    ua = _unquote(os.environ.get("USER_AGENT", ""))
     if not ua:
         sys.exit("USER_AGENT missing from .env (SEC requires an identifying User-Agent)")
     s = requests.Session()

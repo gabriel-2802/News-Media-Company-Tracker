@@ -17,8 +17,24 @@ from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parent.parent.parent / ".env")
 
 
+def _unquote(value: str) -> str:
+    """Drop one pair of matching surrounding quotes.
+
+    The shell and docker compose strip quotes from `.env` values, but the root
+    Makefile's `include .env` + `export` passes them through literally, and
+    load_dotenv never overrides a variable that is already set. A quoted
+    USER_AGENT then went out as `"NewsMonitorBot/0.1 (...)"` and CDNs answered
+    403 (seen as `make check-sources` failing 11 sources)."""
+    if len(value) >= 2 and value[0] == value[-1] and value[0] in ("'", '"'):
+        return value[1:-1]
+    return value
+
+
 def require_env(name: str) -> str:
     value = os.getenv(name)
+    if not value:
+        raise RuntimeError(f"Missing required environment variable: {name}")
+    value = _unquote(value)
     if not value:
         raise RuntimeError(f"Missing required environment variable: {name}")
     return value
