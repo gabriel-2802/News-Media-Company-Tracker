@@ -107,10 +107,12 @@ enrich-worker: ## Run an enricher worker locally (company linking + sentiment)
 .PHONY: test test-java test-workers validate-sources check-sources e2e
 test: test-java test-workers ## Run every test suite (needs `make up`)
 
+# `clean` first: on an iCloud-synced folder, sync conflicts leave copies such as
+# "TestUsers 4.class" in target/, which break compilation or surefire.
 test-java: ## Provider, analytics and manager tests (JDK 21)
-	cd backend/provider && mvn -q test
-	cd backend/analytics && mvn -q test
-	cd backend/manager && SPRING_DATASOURCE_PASSWORD=$(POSTGRES_PASSWORD) DB_USERNAME=$(POSTGRES_USER) DB_NAME=$(POSTGRES_DB) mvn -q test
+	cd backend/provider && mvn -q clean test
+	cd backend/analytics && mvn -q clean test
+	cd backend/manager && SPRING_DATASOURCE_PASSWORD=$(POSTGRES_PASSWORD) DB_USERNAME=$(POSTGRES_USER) DB_NAME=$(POSTGRES_DB) mvn -q clean test
 
 test-workers: ## Worker unit tests (scraper fixtures and keepalive, linker golden set and sentiment rules, classifier smoke)
 	$(MAKE) -C backend/workers test
