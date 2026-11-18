@@ -21,8 +21,11 @@ ENV PATH="/opt/venv/bin:$PATH" \
 
 COPY --from=build /opt/venv /opt/venv
 
-# OS libraries Chromium needs at runtime — root-only step (apt).
-RUN python -m playwright install-deps chromium \
+# OS libraries Chromium needs at runtime — root-only step (apt). Playwright's
+# bundled Node driver needs libatomic1, which newer python:3.11-slim bases no
+# longer ship; without it `playwright install-deps` fails with exit 127.
+RUN apt-get update && apt-get install -y --no-install-recommends libatomic1 \
+    && python -m playwright install-deps chromium \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --system --create-home --shell /usr/sbin/nologin appuser
 
