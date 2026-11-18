@@ -31,8 +31,16 @@ import static org.mockito.Mockito.when;
  * (on a private test exchange with its own benchmark) -> event study ->
  * event_impact row -> PATCH to the provider (mocked) -> no repeat PATCH
  * when nothing changed -> CAR[-5,+5] once enough days exist.
+ *
+ * The job processes every pending event in the shared market database. Real
+ * events (US listings) get a benchmark with no prices here, so they stay
+ * pending and untouched: otherwise their studies would be stored and
+ * "written back" to the mock, and never reach the real provider.
  */
-@SpringBootTest(properties = "analytics.benchmarks.XTST=ITBENCH@XTST")
+@SpringBootTest(properties = {
+        "analytics.benchmarks.XTST=ITBENCH@XTST",
+        "analytics.benchmarks.XNYS=ITNOBENCH@XNONE",
+        "analytics.benchmarks.XNAS=ITNOBENCH@XNONE"})
 class ImpactServiceIntegrationTests {
 
     private static final LocalDate EVENT = LocalDate.of(2026, 6, 10);
@@ -106,6 +114,28 @@ class ImpactServiceIntegrationTests {
         impact.run();
         assertThat(jdbc.sql("SELECT complete FROM event_impact WHERE story_id = 'it-story'").query(Boolean.class).single()).isTrue();
         verify(provider, times(1)).patchImpact(eq("it-story"), eq("it-co"), any());
+    }
+
+    @Test
+    void failedWriteBackStoresNothingAndIsRetriedNextRun() {
+        when(provider.patchImpact(eq("it-story"), eq("it-co"), any())).thenThrow(new IllegalStateException("provider down"));
+        ImpactService.Summary s = impact.run();
+        assertThat(s.failed()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM event_impact WHERE story_id = 'it-story'").query(Long.class).single()).isZero();
+
+        when(provider.patchImpact(eq("it-story"), eq("it-co"), any())).thenReturn(true);
+        impact.run();
+        verify(provider, times(2)).patchImpact(eq("it-story"), eq("it-co"), any());
+        assertThat(jdbc.sql("SELECT count(*) FROM event_impact WHERE story_id = 'it-story'").query(Long.class).single()).isEqualTo(1L);
+    }
+
+    @Test
+    void realEventsAreLeftAlone() {
+        long realStudiesBefore = jdbc.sql("SELECT count(*) FROM event_impact WHERE story_id NOT LIKE 'it-%'").query(Long.class).single();
+        impact.run();
+        verify(provider, never()).patchImpact(org.mockito.ArgumentMatchers.argThat(id -> !id.startsWith("it-")), anyString(), any());
+        assertThat(jdbc.sql("SELECT count(*) FROM event_impact WHERE story_id NOT LIKE 'it-%'").query(Long.class).single())
+                .isEqualTo(realStudiesBefore);
     }
 
     @Test

@@ -170,8 +170,8 @@ sequenceDiagram
     A->>TD: daily bars after the US close (MARKET_INGEST_CRON)
     A->>MK: prices_daily
     A->>A: event study every 30 min: market model vs KBE, AR day 0, CAR[-1,+1], CAR[-5,+5]
-    A->>MK: event_impact
     A->>P: PATCH /api/events/{storyId}/{companyId}/impact (does not re-publish)
+    A->>MK: event_impact (only after the write-back succeeded, else retried next run)
 ```
 
 Recovery: `POST /analytics/api/admin/events/rebuild` replays the provider's `GET /api/events` into the read model (without `since` it also removes events that disappeared upstream); messages for a stopped manager or analytics wait in their durable queues.

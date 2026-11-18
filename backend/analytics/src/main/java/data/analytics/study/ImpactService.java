@@ -20,14 +20,19 @@ import java.util.Map;
 
 /**
  * Runs the event study for events on listed companies whose exchange has a
- * benchmark, stores it in event_impact and writes it back to the provider.
- * Events are revisited until the [-5, +5] window is complete.
+ * benchmark, writes it back to the provider and then stores it in
+ * event_impact. Events are revisited until the [-5, +5] window is complete.
+ *
+ * Order matters: a stored row (complete, or unchanged) is never sent again,
+ * so the result is stored only after the provider accepted it. If the
+ * write-back fails (provider down), nothing is stored and the next run
+ * retries that event.
  */
 @Service
 @Slf4j
 public class ImpactService {
 
-    public record Summary(int candidates, int computed, int pending, int noBenchmark) {}
+    public record Summary(int candidates, int computed, int pending, int noBenchmark, int failed) {}
 
     private record Pending(String storyId, String companyId, String symbol, String exchange, OffsetDateTime firstSeen) {}
 
@@ -56,7 +61,7 @@ public class ImpactService {
 
     public Summary run() {
         if (!lock.tryAcquire("event-impact", Duration.ofMinutes(30))) {
-            return new Summary(0, 0, 0, 0);
+            return new Summary(0, 0, 0, 0, 0);
         }
         try {
             return compute();
@@ -83,7 +88,7 @@ public class ImpactService {
                 ORDER BY e.first_seen
                 """).query((rs, n) -> new Pending(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4),
                         rs.getObject(5, OffsetDateTime.class))).list();
-        int computed = 0, waiting = 0, noBenchmark = 0;
+        int computed = 0, waiting = 0, noBenchmark = 0, failed = 0;
         for (Pending p : pending) {
             final String bench = props.benchmarks().get(p.exchange());
             if (bench == null) {
@@ -105,6 +110,23 @@ public class ImpactService {
             if (unchanged(p, b.getKey(), r)) {
                 continue;                       // incomplete window without new prices: nothing to write
             }
+            final Map<String, Object> body = new HashMap<>();
+            body.put("benchmark", b.getKey());
+            body.put("abnormalReturn", r.ar0());
+            body.put("car1", r.car1());
+            body.put("car5", r.car5());
+            body.put("beta", r.beta());
+            body.put("pValue", r.pValue());
+            body.put("estimationDays", r.estimationDays());
+            try {
+                // false = the provider no longer has the event (it will leave the read model); store anyway so
+                // it is not recomputed every run.
+                provider.patchImpact(p.storyId(), p.companyId(), body);
+            } catch (RuntimeException e) {
+                log.warn("Impact write-back failed for {}/{}; retrying next run: {}", p.storyId(), p.companyId(), e.getMessage());
+                failed++;
+                continue;
+            }
             jdbc.sql("""
                     INSERT INTO event_impact (story_id, company_id, symbol, exchange, event_day, benchmark, alpha, beta,
                                               ar0, car1, car5, p_value, estimation_days, complete, computed_at)
@@ -116,19 +138,9 @@ public class ImpactService {
                         complete = EXCLUDED.complete, computed_at = now()
                     """).params(p.storyId(), p.companyId(), p.symbol(), p.exchange(), r.eventDay(), b.getKey(),
                     r.alpha(), r.beta(), r.ar0(), r.car1(), r.car5(), r.pValue(), r.estimationDays(), r.complete()).update();
-
-            final Map<String, Object> body = new HashMap<>();
-            body.put("benchmark", b.getKey());
-            body.put("abnormalReturn", r.ar0());
-            body.put("car1", r.car1());
-            body.put("car5", r.car5());
-            body.put("beta", r.beta());
-            body.put("pValue", r.pValue());
-            body.put("estimationDays", r.estimationDays());
-            provider.patchImpact(p.storyId(), p.companyId(), body);
             computed++;
         }
-        final Summary s = new Summary(pending.size(), computed, waiting, noBenchmark);
+        final Summary s = new Summary(pending.size(), computed, waiting, noBenchmark, failed);
         log.info("Event impact: {}", s);
         return s;
     }
