@@ -24,7 +24,7 @@ import static news.media.monitor.manager.utils.Constants.DEFAULT_PAGE_SIZE;
 @RestController
 @RequestMapping("/api/users/me/subscriptions")
 @RequiredArgsConstructor
-@Tag(name = "Subscriptions", description = "Endpoints for the currently authenticated user's own topic and story subscriptions")
+@Tag(name = "Subscriptions", description = "Endpoints for the currently authenticated user's own topic and ticker subscriptions")
 @SecurityRequirement(name = "bearerAuth")
 public class SubscriptionController {
 
@@ -33,7 +33,7 @@ public class SubscriptionController {
     @GetMapping
     @Operation(
             summary = "List current user's subscriptions",
-            description = "Returns a paginated list of the currently authenticated user's topic and story subscriptions, "
+            description = "Returns a paginated list of the currently authenticated user's topic and ticker subscriptions, "
                     + "sorted by creation date descending.",
             responses = {
                     @ApiResponse(responseCode = "200", description = "Paginated subscription list returned"),
@@ -51,15 +51,15 @@ public class SubscriptionController {
 
     @PostMapping
     @Operation(
-            summary = "Subscribe to a topic or story",
-            description = "Subscribes the currently authenticated user to a topic or story defined in the news-provider "
+            summary = "Subscribe to a topic or ticker",
+            description = "Subscribes the currently authenticated user to a topic (or ticker) defined in the news-provider "
                     + "service. The target is verified to exist in that service before the subscription is created.",
             responses = {
                     @ApiResponse(responseCode = "201", description = "Subscription created successfully"),
                     @ApiResponse(responseCode = "400", description = "Invalid request body"),
                     @ApiResponse(responseCode = "401", description = "Missing or invalid Bearer token"),
-                    @ApiResponse(responseCode = "404", description = "The referenced topic or story does not exist"),
-                    @ApiResponse(responseCode = "409", description = "Already subscribed to this topic or story"),
+                    @ApiResponse(responseCode = "404", description = "The referenced topic does not exist"),
+                    @ApiResponse(responseCode = "409", description = "Already subscribed to this topic or ticker"),
                     @ApiResponse(responseCode = "502", description = "The news-provider service is unavailable")
             }
     )

@@ -66,12 +66,12 @@ public class ArticleController {
     }
 
     @GetMapping(Constants.ARTICLES_BY_STORY_PATH)
-    @Operation(summary = "List articles in a story", description = "Returns a paginated list of all articles that belong to the given story cluster.")
+    @Operation(summary = "List articles in a story", description = "Returns a paginated list of the articles of the given story (one, since every article is its own story; older stories from the clustering era can have several).")
     @ApiResponse(responseCode = "200", description = "Articles retrieved successfully",
             content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE,
                     schema = @Schema(implementation = PageDto.class)))
     public ResponseEntity<PageDto<ArticleDto>> getAllArticlesInStory(
-            @Parameter(description = "ID of the story cluster.", required = true)
+            @Parameter(description = "ID of the story.", required = true)
             @PathVariable final String storyId,
             @Parameter(description = "Zero-based page index.", example = "0")
             @RequestParam(defaultValue = Constants.DEFAULT_PAGE) final int page,

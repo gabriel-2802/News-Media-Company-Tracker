@@ -31,10 +31,7 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`GET /api/articles/search`](#get-apiarticlessearch)
 - [Stories](#stories)
   - [`GET /api/stories`](#get-apistories)
-  - [`GET /api/stories/recent`](#get-apistoriesrecent)
-  - [`POST /api/stories`](#post-apistories)
   - [`GET /api/stories/by-article`](#get-apistoriesby-article)
-  - [`PATCH /api/stories/{storyId}/attach`](#patch-apistoriesstoryidattach)
   - [`GET /api/stories/exists`](#get-apistoriesexists)
   - [`GET /api/stories/search`](#get-apistoriessearch)
 - [Topics](#topics)
@@ -47,8 +44,6 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`GET /api/events`](#get-apievents)
   - [`PATCH /api/events/{storyId}/{companyId}/impact`](#patch-apieventsstoryidcompanyidimpact)
 - [Subscriptions](#subscriptions)
-  - [`POST /api/subscriptions/story/{storyId}`](#post-apisubscriptionsstorystoryid)
-  - [`DELETE /api/subscriptions/story/{storyId}`](#delete-apisubscriptionsstorystoryid)
   - [`POST /api/subscriptions/topic/{topicName}`](#post-apisubscriptionstopictopicname)
   - [`DELETE /api/subscriptions/topic/{topicName}`](#delete-apisubscriptionstopictopicname)
 - [RabbitMQ side effects](#rabbitmq-side-effects)
@@ -62,7 +57,6 @@ REST API for registering news sources and ingesting/querying scraped articles, s
   - [`EnrichmentRequest`](#enrichmentrequest)
   - [`CompanyDto`](#companydto)
   - [`StoryDto`](#storydto)
-  - [`AttachArticleRequest`](#attacharticlerequest)
   - [`TopicDto`](#topicdto)
   - [`SubscriptionDto`](#subscriptiondto)
   - [`ErrorResponse`](#errorresponse)
@@ -96,10 +90,6 @@ The Provider does not issue tokens itself — it only **validates** JWTs (RS256)
 | `PATCH /api/articles/topics`                   | ROLE_ADMIN, ROLE_SYSTEM |
 | `PATCH /api/articles/enrichment`               | ROLE_ADMIN, ROLE_SYSTEM |
 | `POST /api/articles/trigger-scrape`            | ROLE_ADMIN              |
-| `POST /api/stories`                            | ROLE_SYSTEM             |
-| `PATCH /api/stories/{storyId}/attach`          | ROLE_SYSTEM             |
-| `POST /api/subscriptions/story/{storyId}`      | ROLE_ADMIN, ROLE_SYSTEM |
-| `DELETE /api/subscriptions/story/{storyId}`    | ROLE_ADMIN, ROLE_SYSTEM |
 | `POST /api/subscriptions/topic/{topicName}`    | ROLE_ADMIN, ROLE_SYSTEM |
 | `DELETE /api/subscriptions/topic/{topicName}`  | ROLE_ADMIN, ROLE_SYSTEM |
 | Every`GET` endpoint (all controllers)          | none — public          |
@@ -305,13 +295,13 @@ List articles published by a specific news source, paginated.
 
 ### `GET /api/articles/story/{storyId}`
 
-List articles that belong to a given story cluster, paginated.
+List the articles of a given story, paginated (one article for stories created since clustering was removed; clustering-era stories can have several).
 
 **Path parameters**
 
 | Name    | Type   | Description             |
 | ------- | ------ | ----------------------- |
-| storyId | string | ID of the story cluster |
+| storyId | string | ID of the story |
 
 **Query parameters**
 
@@ -362,6 +352,8 @@ Persist a scraped article. Validated before saving:
 1. Fails if an article with the same `url` already exists.
 2. Fails if `sourceName` does not reference a registered news source.
 3. Fails if `url` does not belong to the referenced source's `baseUrl`.
+
+In the same transaction the article gets its own `Story` (title = article title, `articleCount` and `sourceCount` 1); there is no clustering step, and events, chart markers and alerts key on that story.
 
 **Request body:** [`ArticleRequest`](#articlerequest)
 
@@ -469,7 +461,7 @@ Stores the enricher worker's output for one article: sets `sentimentLabel` / `se
 | 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication)    |
 | 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_ADMIN`/`ROLE_SYSTEM`                       |
 
-**Events derived from enrichment** (`AFFECTS` properties): `firstSeen` (earliest article of the story mentioning the company), `articleCount`, `sentiment` (mean company sentiment) and `impactScore` in [0, 1] = 0.25 × min(sourceCount / 5, 1) + 0.15 × min(mentioning articles / 3, 1) + 0.20 × strongest salience + 0.25 × max(topic weight × topic score) + 0.15 × |sentiment| + 0.10 if a regulator or central bank published part of the story, capped at 1. Topic weights: enforcement and M&A 1.0, earnings 0.8, monetary policy / leadership / debt 0.6, dividends / analyst / company news 0.5, markets 0.4, FX / macro 0.3, other 0.2. Also recomputed when an article joins a story (`PATCH /api/stories/{storyId}/attach`) or gets new topics. Companies of kind `REGULATOR` or `CENTRAL_BANK` get no events (their `MENTIONS` are kept); a refresh removes any such event left from before this rule.
+**Events derived from enrichment** (`AFFECTS` properties): `firstSeen` (earliest article of the story mentioning the company), `articleCount`, `sentiment` (mean company sentiment) and `impactScore` in [0, 1] = 0.25 × min(sourceCount / 5, 1) + 0.15 × min(mentioning articles / 3, 1) + 0.20 × strongest salience + 0.25 × max(topic weight × topic score) + 0.15 × |sentiment| + 0.10 if a regulator or central bank published part of the story, capped at 1. Topic weights: enforcement and M&A 1.0, earnings 0.8, monetary policy / leadership / debt 0.6, dividends / analyst / company news 0.5, markets 0.4, FX / macro 0.3, other 0.2. Also recomputed when an article gets new topics. Companies of kind `REGULATOR` or `CENTRAL_BANK` get no events (their `MENTIONS` are kept); a refresh removes any such event left from before this rule.
 
 ---
 
@@ -515,7 +507,7 @@ Base path: `/api/stories`
 
 ### `GET /api/stories`
 
-List all story clusters, paginated, ordered by most recently updated. Each story is hydrated with (up to 100) of its articles.
+List all stories, paginated, ordered by most recently updated. Each story is hydrated with (up to 100) of its articles.
 
 **Query parameters**
 
@@ -532,50 +524,9 @@ List all story clusters, paginated, ordered by most recently updated. Each story
 
 ---
 
-### `GET /api/stories/recent`
-
-List stories that had activity within the last N days. Used to identify live clustering candidates.
-
-**Query parameters**
-
-| Name | Type | Default | Description              |
-| ---- | ---- | ------- | ------------------------ |
-| days | int  | `7`   | Look-back window in days |
-
-**Responses**
-
-| Status | Body                       | Description                           |
-| ------ | -------------------------- | ------------------------------------- |
-| 200    | [`StoryDto[]`](#storydto) | Recent stories retrieved successfully |
-
----
-
-### `POST /api/stories`
-
-**Requires:** `ROLE_SYSTEM`
-
-Creates a new, empty story cluster with the given title.
-
-**Query parameters**
-
-| Name  | Type   | Description                                                            |
-| ----- | ------ | ---------------------------------------------------------------------- |
-| title | string | Title for the new story cluster, e.g.`Regional lender agrees to acquire rival in $2.1B deal` |
-
-**Responses**
-
-| Status | Body                               | Description                                                  |
-| ------ | ---------------------------------- | ------------------------------------------------------------ |
-| 201    | [`StoryDto`](#storydto)           | Story created successfully                                   |
-| 400    | [`ErrorResponse`](#errorresponse) | Title is blank                                               |
-| 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication) |
-| 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_SYSTEM`                                   |
-
----
-
 ### `GET /api/stories/by-article`
 
-Returns the story cluster that the article at the given URL is attached to.
+Returns the story of the article at the given URL.
 
 **Query parameters**
 
@@ -588,32 +539,7 @@ Returns the story cluster that the article at the given URL is attached to.
 | Status | Body                               | Description                                             |
 | ------ | ---------------------------------- | ------------------------------------------------------- |
 | 200    | [`StoryDto`](#storydto)           | Story retrieved successfully                            |
-| 400    | [`ErrorResponse`](#errorresponse) | Article does not exist, or is not attached to any story |
-
----
-
-### `PATCH /api/stories/{storyId}/attach`
-
-**Requires:** `ROLE_SYSTEM`
-
-Creates a `BELONGS_TO` edge from the article to the story. Increments `articleCount` unconditionally, and `sourceCount` only if the article's source hasn't previously contributed to this story. Idempotent — re-attaching the same article has no effect. If a [subscription](#subscriptions) exists for the story, publishes a notification message — see [RabbitMQ side effects](#rabbitmq-side-effects).
-
-**Path parameters**
-
-| Name    | Type   | Description            |
-| ------- | ------ | ---------------------- |
-| storyId | string | ID of the target story |
-
-**Request body:** [`AttachArticleRequest`](#attacharticlerequest)
-
-**Responses**
-
-| Status | Body                               | Description                                                  |
-| ------ | ---------------------------------- | ------------------------------------------------------------ |
-| 200    | [`StoryDto`](#storydto)           | Article attached successfully                                |
-| 400    | [`ErrorResponse`](#errorresponse) | Story or article does not exist                              |
-| 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication) |
-| 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_SYSTEM`                                   |
+| 400    | [`ErrorResponse`](#errorresponse) | Article does not exist, or has no story |
 
 ---
 
@@ -707,7 +633,7 @@ Empty `nodes`/`edges` when the company has no stories in the window; 400 if no c
 
 ### `GET /api/companies`
 
-Public. Returns the whole company universe (a few hundred entries: banks, fintechs, regulators, central banks) with aliases and listings, sorted by name. Seeded by the `V5__seed_company_universe` migration. Used by the enricher and clusterer for entity linking, by the analytics service as its ticker universe, and by the manager to validate watchlist symbols.
+Public. Returns the whole company universe (a few hundred entries: banks, fintechs, regulators, central banks) with aliases and listings, sorted by name. Seeded by the `V5__seed_company_universe` migration. Used by the enricher for entity linking, by the analytics service as its ticker universe, and by the manager to validate watchlist symbols.
 
 **Query parameters**
 
@@ -756,55 +682,9 @@ Stored on the `AFFECTS` relationship as `benchmark`, `abnormalReturn`, `car1`, `
 
 Base path: `/api/subscriptions`
 
-A subscription tracks interest in a story or a topic via a `count` — each subscribe call creates it at `count = 1` or increments an existing one; each unsubscribe call decrements it, deleting the subscription once `count` reaches `0`. Modeled as a `Subscription` node with a `SUBSCRIBES_TO` relationship to either a `Story` or a `Topic` node.
+A subscription tracks interest in a topic via a `count` — each subscribe call creates it at `count = 1` or increments an existing one; each unsubscribe call decrements it, deleting the subscription once `count` reaches `0`. Modeled as a `Subscription` node with a `SUBSCRIBES_TO` relationship to either a `Story` or a `Topic` node.
 
 Every endpoint in this controller requires `ROLE_ADMIN` or `ROLE_SYSTEM`.
-
-### `POST /api/subscriptions/story/{storyId}`
-
-**Requires:** `ROLE_ADMIN` or `ROLE_SYSTEM`
-
-Creates a subscription to the given story with `count = 1`, or increments the count if one already exists.
-
-**Path parameters**
-
-| Name    | Type   | Description                     |
-| ------- | ------ | ------------------------------- |
-| storyId | string | ID of the story to subscribe to |
-
-**Responses**
-
-| Status | Body                                   | Description                                                  |
-| ------ | -------------------------------------- | ------------------------------------------------------------ |
-| 200    | [`SubscriptionDto`](#subscriptiondto) | Subscribed successfully                                      |
-| 400    | [`ErrorResponse`](#errorresponse)     | Story does not exist                                         |
-| 401    | [`ErrorResponse`](#errorresponse)     | Missing/invalid token — see[Authentication](#authentication) |
-| 403    | [`ErrorResponse`](#errorresponse)     | Token lacks`ROLE_ADMIN`/`ROLE_SYSTEM`                    |
-
----
-
-### `DELETE /api/subscriptions/story/{storyId}`
-
-**Requires:** `ROLE_ADMIN` or `ROLE_SYSTEM`
-
-Decrements the subscription count for the given story. The subscription is deleted once the count reaches `0`.
-
-**Path parameters**
-
-| Name    | Type   | Description                         |
-| ------- | ------ | ----------------------------------- |
-| storyId | string | ID of the story to unsubscribe from |
-
-**Responses**
-
-| Status | Body                               | Description                                                  |
-| ------ | ---------------------------------- | ------------------------------------------------------------ |
-| 204    | —                                 | Unsubscribed successfully                                    |
-| 400    | [`ErrorResponse`](#errorresponse) | No subscription exists for this story                        |
-| 401    | [`ErrorResponse`](#errorresponse) | Missing/invalid token — see[Authentication](#authentication) |
-| 403    | [`ErrorResponse`](#errorresponse) | Token lacks`ROLE_ADMIN`/`ROLE_SYSTEM`                    |
-
----
 
 ### `POST /api/subscriptions/topic/{topicName}`
 
@@ -860,10 +740,9 @@ The Provider is a RabbitMQ producer only — it never consumes. Full topology, q
 | ------------------------------------------------------------------------------------- | ------------------------------------------- | ------------------------- | --------------------------------------------------------------------- |
 | `POST /api/articles/trigger-scrape` | always, once per registered news source     | `scrape.jobs`           | `{"name": "<sourceName>", "retry_count": 0}`                        |
 | `ScrapeScheduler` (every 5 min, internal) | once per enabled source whose `scrapeIntervalMinutes` has elapsed | `scrape.jobs` | `{"name": "<sourceName>", "retry_count": 0}` |
-| Event refresh (enrichment, story attach, topic writes) | after commit, once per created/updated/removed event | `news_monitor` exchange, key `event.upserted` → `analytics.events` (analytics) and `manager.events` (ticker alerts) | `EventMessage`: event fields + `deleted` + `version` |
+| Event refresh (enrichment, topic writes) | after commit, once per created/updated/removed event | `news_monitor` exchange, key `event.upserted` → `analytics.events` (analytics) and `manager.events` (ticker alerts) | `EventMessage`: event fields + `deleted` + `version` |
 | `PATCH /api/articles/topics` | once per topic in the request that has a subscription | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}` |
 | `PATCH /api/articles/topic`                                                         | only if a subscription exists for the topic | `article.notifications` | `{"name": "<topicName>", "articleUrl": "<url>", "type": "TOPIC"}`   |
-| `PATCH /api/stories/{storyId}/attach`                                               | only if a subscription exists for the story | `article.notifications` | `{"name": "<story title>", "articleUrl": "<url>", "type": "STORY"}` |
 
 ---
 
@@ -1088,18 +967,18 @@ Request body for storing an article's enrichment.
 
 ### `StoryDto`
 
-Response shape for a story cluster.
+Response shape for a story (one per article since clustering was removed).
 
 | Field         | Type                           | Description                                                                        |
 | ------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
 | id            | string                         | Unique identifier of the story                                                     |
-| title         | string                         | Title derived from the first attached article                                      |
+| title         | string                         | Title of the story's (first) article                                               |
 | createdAt     | datetime                       | When the story was first created                                                   |
-| lastUpdated   | datetime                       | When the last article was attached                                                 |
-| articleCount  | int                            | Total number of articles attached to this story                                    |
+| lastUpdated   | datetime                       | Last membership change (creation, for one-article stories)                         |
+| articleCount  | int                            | Number of articles in this story                                                   |
 | sourceCount   | int                            | Number of distinct sources that contributed                                        |
 | trendingScore | double                         | Precomputed trending score (recency + velocity + source diversity)                 |
-| articles      | [`ArticleDto[]`](#articledto) | Attached articles; empty unless explicitly populated (e.g. by`GET /api/stories`) |
+| articles      | [`ArticleDto[]`](#articledto) | The story's articles; empty unless explicitly populated (e.g. by`GET /api/stories`) |
 
 ```json
 {
@@ -1111,20 +990,6 @@ Response shape for a story cluster.
   "sourceCount": 5,
   "trendingScore": 3.14,
   "articles": []
-}
-```
-
-### `AttachArticleRequest`
-
-Request body for attaching an article to a story.
-
-| Field      | Type   | Required | Constraints                             |
-| ---------- | ------ | -------- | --------------------------------------- |
-| articleUrl | string | yes      | not null, not empty; article must exist |
-
-```json
-{
-  "articleUrl": "https://www.bankingdive.com/news/regional-lender-acquires-rival/"
 }
 ```
 
@@ -1151,14 +1016,12 @@ Response shape for a subscription. Exactly one of `storyId`/`topicName` is popul
 | Field     | Type   | Description                                                                  |
 | --------- | ------ | ---------------------------------------------------------------------------- |
 | id        | string | Subscription ID                                                              |
-| storyId   | string | ID of the subscribed story, if this is a story subscription (else`null`)   |
-| topicName | string | Name of the subscribed topic, if this is a topic subscription (else`null`) |
+| topicName | string | Name of the subscribed topic |
 | count     | int    | Number of active subscriptions                                               |
 
 ```json
 {
   "id": "3f1b2c3d-4e5f-6789-0abc-def123456789",
-  "storyId": null,
   "topicName": "regulation_legal_enforcement",
   "count": 1
 }

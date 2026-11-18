@@ -1,14 +1,15 @@
 # News Monitor : Complete System Architecture
 
-**News Monitor** is a distributed backend that ingests, classifies, links and clusters **banking and fintech news** into stories and company events, and serves them with market data, chart APIs and ticker alerts to an investor-facing app. It started as a generic news monitor and was transformed in phases (see [`documentation/FINTECH_TRANSFORMATION_PLAN.md`](documentation/FINTECH_TRANSFORMATION_PLAN.md) for the plan and its progress log; all phases are complete). The system has three Spring Boot services (a user-facing **manager**, a data **provider**, and a market **analytics** service) and four Python workers (scraper, classifier, enricher, clusterer), connected by HTTP and RabbitMQ, each service owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
+**News Monitor** is a distributed backend that ingests, classifies and links **banking and fintech news** to companies, turns it into stories and company events, and serves them with market data, chart APIs and ticker alerts to an investor-facing app. It started as a generic news monitor and was transformed in phases (see [`documentation/FINTECH_TRANSFORMATION_PLAN.md`](documentation/FINTECH_TRANSFORMATION_PLAN.md) for the plan and its progress log; all phases are complete). The system has three Spring Boot services (a user-facing **manager**, a data **provider**, and a market **analytics** service) and three Python workers (scraper, classifier, enricher), connected by HTTP and RabbitMQ, each service owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
 
 **Flow diagrams** (pipeline, events, alerts, read paths, auth): [`SYSTEM_FLOW.md`](documentation/SYSTEM_FLOW.md). **API reference:** [`PROVIDER_API.md`](documentation/PROVIDER_API.md), [`MANAGER_API.md`](documentation/MANAGER_API.md), [`CHARTS_API.md`](documentation/CHARTS_API.md).
 
 ```mermaid
 flowchart LR
     feeds[/27 feeds/] --> scraper[Scraper] -->|article.saved| fan{{fan-out}}
-    fan --> classifier[Classifier<br/>topics] & enricher[Enricher<br/>companies, sentiment] & clusterer[Clusterer<br/>stories]
-    classifier & enricher & clusterer -->|REST| provider[Provider<br/>Neo4j]
+    fan --> classifier[Classifier<br/>topics] & enricher[Enricher<br/>companies, sentiment]
+    scraper -->|POST article<br/>= its own story| provider
+    classifier & enricher -->|REST| provider[Provider<br/>Neo4j]
     provider -->|event.upserted| analytics[Analytics<br/>prices, event studies, charts] & manager[Manager<br/>watchlists, alerts]
     analytics -->|impact| provider
     app([Investor app]) --> manager & analytics & provider
@@ -64,6 +65,8 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 
 **The tradeoff:** No FK constraints across databases. Consistency is maintained at the application layer-each service owns its data and validates foreign references via HTTP before trusting them.
 
+*Later removed:* the clusterer worker, Qdrant and its Redis lock (see Phase 4). On the specialised banking sources 92% of the clusterer's stories held a single article, so every article is now its own story and the vector store is gone.
+
 ### Phase 4: Banking / Fintech Investor Backend (Current)
 
 The generic monitor was turned into an investor backend ([plan and progress log](documentation/FINTECH_TRANSFORMATION_PLAN.md)):
@@ -73,13 +76,13 @@ The generic monitor was turned into an investor backend ([plan and progress log]
 - **Enricher worker (new):** links articles to 356 companies / 345 tickers and scores FinBERT sentiment; the provider derives Story→Company **events** with an impact score and publishes them as `event.upserted`.
 - **Analytics service (new, Spring Boot + Postgres `market`):** event read model, daily prices, market-model event studies, chart APIs.
 - **Manager:** ticker watchlists and event alerts.
-- **Clusterer:** publish-date window, company guard and stricter thresholds, re-validated on real financial news.
+- **Clustering removed:** with specialised sources almost every story held one article (240 of 262), so the clusterer worker, Qdrant and the Redis lock were removed. The provider gives every saved article its own story, which events, chart markers and alerts still key on (see [Stories](#stories-one-per-article)).
 
 ### Why This Architecture
 
 1. **User accounts** are central to auth (manager issues all JWTs), so they can't be distributed. PostgreSQL is ideal.
 2. **Articles and stories** form a graph (article => topic, article => story, story => article => source). Neo4j models this naturally, SQL would require many JOINs.
-3. **Vector similarity search** is the only reason clustering works at all. Qdrant exists because Neo4j's full-text indexes can't do cosine-similarity nearest-neighbor efficiently.
+3. **Market time series** (daily prices, event studies) are tabular and range-scanned, so analytics keeps them in its own Postgres database.
 
 ---
 
@@ -92,24 +95,17 @@ The generic monitor was turned into an investor backend ([plan and progress log]
 - Manager owns user accounts, subscriptions, watchlists and notifications (Postgres `news_monitor`, schema `users`).
 - Provider is system-of-record for articles/stories/topics/sources/companies/events (Neo4j).
 - Analytics owns prices, the event read model and event studies (Postgres `market`, its own DB user).
-- Clusterer worker owns story vectors (Qdrant) and its decision lock (Redis).
 
 **2. Provider = single read/write gateway for all structured data**
 
-- Scraper, classifier, clusterer workers never touch Neo4j directly.
+- Scraper, classifier and enricher workers never touch Neo4j directly.
 - All write operations go through the Provider's REST API, enforcing consistency.
 - This is why the Provider is "the news broker".
 
 **3. Async pipeline with RabbitMQ, sync subscription checks**
 
-- **Async:** scraper => classify/cluster/enrich workers (via queues). Scraping never waits for classification. Provider => analytics and manager via `event.upserted`.
-- **Sync:** user subscribes => manager calls provider to verify the topic/story exists. If provider is down, the subscription fails immediately with a `502`. The watchlist reads quotes and latest events from analytics with a 2 s timeout and shows `null` for them if analytics is down.
-
-**4. Qdrant for vectors only**
-
-- Neo4j has no concept of similarity-based nearest-neighbor search.
-- Qdrant's ANN index is the entire reason clustering works: "find the story most similar to this article" is O(log n).
-- No text/metadata in Qdrant-just vectors, point IDs, and lightweight payloads. Neo4j is the source of truth for everything else.
+- **Async:** scraper => classify/enrich workers (via queues). Scraping never waits for classification. Provider => analytics and manager via `event.upserted`.
+- **Sync:** user subscribes => manager calls provider to verify the topic exists. If provider is down, the subscription fails immediately with a `502`. The watchlist reads quotes and latest events from analytics with a 2 s timeout and shows `null` for them if analytics is down.
 
 ---
 
@@ -124,7 +120,7 @@ The generic monitor was turned into an investor backend ([plan and progress log]
 - `/api/auth/*` - register, login (email+password for users; `systemCode` for services)
 - `/api/users/me/*` - account management (read/write own profile, change password)
 - `/api/users/{id}/*` - admin operations (list, create, modify, delete users; grant/revoke roles)
-- `/api/users/me/subscriptions/*` - subscribe/unsubscribe to topics or stories (manager-side rows; synced with provider)
+- `/api/users/me/subscriptions/*` - subscribe/unsubscribe to topics (manager-side rows; synced with provider) or tickers
 - `/api/users/me/notifications/*` - list, mark-seen, delete personal notifications (article notifications and ticker alerts)
 - `/api/users/me/watchlist/*` - watched tickers with alert settings, latest quote and latest event
 
@@ -141,7 +137,7 @@ The generic monitor was turned into an investor backend ([plan and progress log]
 
 **RabbitMQ:**
 
-- **Consumes:** `article.notifications` (an article matched a subscribed topic/story → `Notification` rows for all interested users) and `manager.events` (`event.upserted` → ticker alerts for users whose threshold and topic filter match).
+- **Consumes:** `article.notifications` (an article matched a subscribed topic → `Notification` rows for all interested users) and `manager.events` (`event.upserted` → ticker alerts for users whose threshold and topic filter match).
 - **Never publishes** to the worker queues.
 
 **Tests:** `cd backend/manager && mvn test` (9, against the `users` schema of the local Postgres with the provider and analytics mocked; set `SPRING_DATASOURCE_PASSWORD`, `DB_USERNAME`, `DB_NAME` from `.env`): watchlist add/update/remove, quotes and latest event, analytics-down fallback, validation codes, the 50-ticker limit, TICKER through the generic subscriptions endpoint; alerts on threshold crossing, once per event, per-user thresholds and topic filters, deleted/old/unlisted/unwatched events, Neo4j timestamp formats, cascade on user delete.
@@ -161,7 +157,7 @@ The generic monitor was turned into an investor backend ([plan and progress log]
 
 - `/api/news-sources/*` - CRUD news sources
 - `/api/articles/*` - search, fetch, save articles; tag with topics; trigger scraping
-- `/api/stories/*` - list story clusters, create new ones, attach articles
+- `/api/stories/*` - read stories (one per article, created when the article is saved)
 - `/api/topics/*` - list all topics, check topic exists
 - `/api/companies` - the company universe with tickers; `/api/companies/{symbol}/graph` - company ↔ story network
 - `/api/events` - Story→Company events (paged feed for rebuilding read models); `PATCH /api/events/{storyId}/{companyId}/impact` - event-study write-back from analytics
@@ -181,7 +177,7 @@ Graph structure (banking/fintech model):
 | `Company`    | name, lei (unique), country, kind (BANK/FINTECH/REGULATOR/CENTRAL_BANK/OTHER), aliases | Seed migration (company universe) |
 | `Ticker`     | symbol, exchange ((symbol, exchange) unique), currency | Seed migration |
 | `Topic`      | name (unique)                                                           | Classifier worker                                                |
-| `Story`      | title, createdAt, lastUpdated, articleCount, sourceCount, trendingScore | Clusterer worker                                                 |
+| `Story`      | title, createdAt, lastUpdated, articleCount, sourceCount, trendingScore | Provider, when the article is saved (one story per article)      |
 
 | Relationship                                  | Meaning                                                                     |
 | --------------------------------------------- | --------------------------------------------------------------------------- |
@@ -190,8 +186,8 @@ Graph structure (banking/fintech model):
 | `Article-[MENTIONS {count, salience, inTitle, sentiment}]->Company` | Enricher linked a company mention (Cypher-managed) |
 | `Story-[AFFECTS {firstSeen, impactScore}]->Company` | Event: a story about a company (Cypher-managed) |
 | `Company-[LISTED_AS {primary}]->Ticker`     | Listing used for price charts                                               |
-| `Article-[BELONGS_TO]->Story`               | Clusterer attached this article to this story                               |
-| `Subscription-[SUBSCRIBES_TO]->Story\|Topic` | Count of active subscriptions to this story/topic (for notification gating) |
+| `Article-[BELONGS_TO]->Story`               | The article's story (created with it)                                       |
+| `Subscription-[SUBSCRIBES_TO]->Topic` | Count of active subscriptions to this topic (for notification gating) |
 
 **Authentication:**
 
@@ -203,7 +199,7 @@ Graph structure (banking/fintech model):
 
 - **Publishes (only):**
   - `scrape.jobs`: triggered by the scheduler (checks every 5 min, queues each enabled source whose own `scrapeIntervalMinutes` has elapsed) or the manual `/api/articles/trigger-scrape` call (all sources).
-  - `article.notifications`: published when a subscribed topic/story gets a new article (triggered by workers calling `PATCH /api/articles/topic(s)` or `PATCH /api/stories/{storyId}/attach`).
+  - `article.notifications`: published when a subscribed topic gets a new article (triggered by the classifier calling `PATCH /api/articles/topic(s)`).
   - `event.upserted` (on the `news_monitor` exchange, after commit): every created, updated or removed Story→Company event, consumed by analytics (`analytics.events`) and manager (`manager.events`).
 - **Never consumes** - only a producer.
 
@@ -215,7 +211,7 @@ Market data, event studies and chart APIs; consumes `event.upserted`. See [Analy
 
 ### Workers (Python)
 
-Four independent processes (scraper, classifier, enricher, clusterer), each consuming one RabbitMQ queue and reading/writing through the Provider's REST API; all scale horizontally. See [Workers: The Python Processing Pipeline](#workers-the-python-processing-pipeline). Authentication for all services is in [Authentication & Authorization Model](#authentication--authorization-model).
+Three independent processes (scraper, classifier, enricher), each consuming one RabbitMQ queue and reading/writing through the Provider's REST API; all scale horizontally. See [Workers: The Python Processing Pipeline](#workers-the-python-processing-pipeline). Authentication for all services is in [Authentication & Authorization Model](#authentication--authorization-model).
 
 ---
 
@@ -235,28 +231,12 @@ make scrape-worker &
 make classify-worker &
 make classify-worker &
 
-# Run multiple clusterer instances (safe — see "Clusterer Locking" below)
-make cluster-worker &
-make cluster-worker &
+# Run 2 enricher instances
+make enrich-worker &
+make enrich-worker &
 ```
 
-RabbitMQ automatically distributes messages among consumers. Scraper instances share the load of all `scrape.jobs`. Classifier instances handle `article.classify` in parallel.
-
-### Clusterer Locking (Redis)
-
-Two related races show up once more than one clusterer instance runs, both because "does a matching story exist" and "update its centroid" are read-modify-write decisions against shared state (Qdrant + Neo4j), not atomic operations:
-
-1. **Centroid drift:** two instances both match the same existing story for two different articles at nearly the same moment, both read the same `articleCount`/vector, and both write. The second upsert silently overwrites the first, losing that article's contribution to the centroid.
-2. **Duplicate stories:** two instances both process an article for the same brand-new story at nearly the same moment, both find no existing candidate above `SIMILARITY_THRESHOLD` (because neither has written a centroid yet), and both create a separate Story for what should have been one, permanently splitting it. This one is harder to fix with a per-story lock, since there's no story ID to lock on until one of the racing workers has already created it.
-
-**Fix:** a single global lock, held in `handle()` around the whole "query for a candidate, then attach-or-create" decision (`backend/workers/clusterer/clusterer_worker.py`), backed by Redis:
-
-- Keyed by one fixed name, `clusterer:decision-lock` (not per-story, the point is to serialize the *decision* itself, including the "no candidate exists" case), acquired via `redis-py`'s built-in `Redis.lock(...)` (a `SET NX PX`-based mutex with safe, token-checked release — a worker can never release a lock it doesn't hold).
-- `CLUSTER_LOCK_TIMEOUT_SECONDS` (default 30) : the lock's own TTL, so a clusterer that crashes mid-decision doesn't leave every future clustering decision permanently blocked; it self-expires and the next attempt can acquire it.
-- `CLUSTER_LOCK_BLOCKING_TIMEOUT_SECONDS` (default 15) : how long a waiting instance blocks trying to acquire before giving up; on timeout the handler raises, the message is nacked and requeued (same path as any other processing failure), and whichever instance is free next picks it up.
-- The embedding step (the CPU/GPU-bound cost that's the actual reason to run more than one instance) happens *before* the lock is acquired, so it stays fully parallel : only the comparatively cheap "find candidate + attach-or-create" step is serialized across all instances.
-
-Why Redis and not something already in the stack (e.g. Neo4j): a real mutex needs an atomic acquire-or-fail primitive with expiry, which is exactly what Redis's `SET NX PX` gives for free. Emulating it in Neo4j means abusing transactional side effects as a lock and hand-rolling the TTL/crash-recovery logic Redis provides natively — more moving parts for a less obvious guarantee.
+RabbitMQ automatically distributes messages among consumers. Scraper instances share the load of all `scrape.jobs`. Classifier and enricher instances handle `article.classify` and `article.enrich` in parallel; writes to one story are serialized by the provider (story lock + retried transactions).
 
 ## Message Queue Topology: RabbitMQ
 
@@ -269,21 +249,19 @@ flowchart LR
 
     scraper -->|article.saved| topicExchange{{news_monitor<br/>topic exchange}}
     topicExchange -->|article.saved| classifyQ[(article.classify)]
-    topicExchange -->|article.saved| clusterQ[(article.cluster)]
     topicExchange -->|article.saved| enrichQ[(article.enrich)]
 
     classifyQ --> classifier[classifier worker]
-    clusterQ --> clusterer[clusterer worker]
     enrichQ --> enricher[enricher worker]
 
-    provider[Provider service] -.->|PATCH /api/articles/topic<br/>PATCH /api/stories/attach| provider
+    provider[Provider service] -.->|PATCH /api/articles/topic| provider
     provider -->|default exchange,<br/>routing key = queue name| notifQ[(article.notifications)]
 
     scrapeJobs -.->|expired / dead-lettered| dlx{{news_monitor.dlx<br/>fanout exchange}}
     dlx --> deadQ[(scrape.jobs.dead)]
 
     classifier -->|PATCH /api/articles/topics| provider
-    clusterer -->|PATCH /api/stories/attach<br/>POST /api/stories| provider
+    scraper -->|POST /api/articles<br/>creates the article's story| provider
     enricher -->|GET /api/companies<br/>PATCH /api/articles/enrichment| provider
 
     provider -->|event.upserted<br/>after commit| topicExchange
@@ -300,7 +278,7 @@ flowchart LR
 
 | Exchange             | Type   | Durable | Purpose                                                                  |
 | -------------------- | ------ | ------- | ------------------------------------------------------------------------ |
-| `news_monitor`     | topic  | yes     | Fan-out hub. Scraper publishes `article.saved` (classify/cluster/enrich queues); provider publishes `event.upserted` (analytics and manager queues). |
+| `news_monitor`     | topic  | yes     | Fan-out hub. Scraper publishes `article.saved` (classify/enrich queues); provider publishes `event.upserted` (analytics and manager queues). |
 | `news_monitor.dlx` | fanout | yes     | Dead-letter target for`scrape.jobs` (24h TTL messages land here).      |
 
 | Queue                     | Durable | Binding              | Routing key       | Purpose                                                                                                    |
@@ -308,7 +286,6 @@ flowchart LR
 | `scrape.jobs`           | yes     | `news_monitor`     | `scrape.job`    | Scraper worker consumes; provider/scraper produce. TTL 24h, dead-letters to`news_monitor.dlx`.           |
 | `scrape.jobs.dead`      | yes     | `news_monitor.dlx` | `#`             | Dead-lettered messages (inspection/replay only).                                                           |
 | `article.classify`      | yes     | `news_monitor`     | `article.saved` | Classifier worker consumes; scraper produces.                                                              |
-| `article.cluster`       | yes     | `news_monitor`     | `article.saved` | Clusterer worker consumes; scraper produces.                                                               |
 | `article.enrich`        | yes     | `news_monitor`     | `article.saved` | Enricher worker consumes; scraper produces. |
 | `article.notifications` | yes     | (none)               | n/a               | Provider produces; manager consumes.**Not bound to topic exchange** (isolated from scraper fan-out). |
 | `analytics.events`      | yes     | `news_monitor`     | `event.upserted`  | Analytics consumes; provider produces when a story-company event changes (after commit). |
@@ -322,7 +299,7 @@ flowchart LR
 { "name": "banking-dive", "retry_count": 0 }
 ```
 
-**`article.classify` / `article.cluster` / `article.enrich`** - Same message, fanned out from `article.saved`:
+**`article.classify` / `article.enrich`** - Same message, fanned out from `article.saved`:
 
 ```json
 { "url": "https://www.bankingdive.com/news/...", "source_name": "banking-dive" }
@@ -354,7 +331,6 @@ or
 | ------------------------- | ----------------------------------------------------------------------- | ----------------------------------------- | ----------------------------------------------- |
 | `scrape.jobs`           | Provider (5-min due-source scheduler + manual trigger), Scraper (re-queue on failure) | Scraper worker                            | Always                                          |
 | `article.classify`      | Scraper (fan-out via topic exchange)                                    | Classifier worker                         | Always, after article saved                     |
-| `article.cluster`       | Scraper (fan-out via topic exchange)                                    | Clusterer worker                          | Always, after article saved                     |
 | `article.enrich`        | Scraper (fan-out via topic exchange)                                    | Enricher worker                           | Always, after article saved                     |
 | `article.notifications` | Provider (`ArticleService`, `StoryService`)                         | Manager (`ArticleNotificationListener`) | Only if subscription exists for the story/topic |
 | `analytics.events`      | Provider (`EventService`, after commit)                                | Analytics (`EventListener`)               | Whenever an event is created, updated or removed |
@@ -369,14 +345,14 @@ or
 Originally, everything lived in PostgreSQL. This created three problems:
 
 1. **Relational model can't efficiently express graphs.** Storing "article => topic" and "article => story" requires multiple tables and JOINs. Neo4j's graph model maps directly.
-2. **Vector similarity search is O(n) in SQL.** Nearest-neighbor queries for story clustering required full table scans. Qdrant's HNSW index makes it O(log n).
-3. **Different consistency guarantees.** User accounts need strong ACID (PostgreSQL). Article classifications can tolerate eventual consistency (RabbitMQ). Vectors don't need relationships at all (Qdrant).
+2. **Vector similarity search is O(n) in SQL.** Nearest-neighbor queries for story clustering required full table scans; Qdrant's HNSW index made them O(log n). (Clustering and Qdrant were later removed: see [Stories](#stories-one-per-article).)
+3. **Different consistency guarantees.** User accounts need strong ACID (PostgreSQL). Article classifications can tolerate eventual consistency (RabbitMQ). Market time series need range scans (analytics' Postgres `market`).
 
 **Solution:** Polyglot persistence. Each service owns a specialized datastore optimized for its job. No FK constraints across databases-consistency lives at the application layer. The analytics service later added a second Postgres database, `market`, on the same server but with its own user, for time series and event studies (see [Analytics Service](#analytics-service-spring-boot--postgres-market)).
 
 ### PostgreSQL: Manager's Relational Data
 
-**Database:** `news_monitor` | **Schema:** `users` | **Managed by:** Flyway migrations (`V1`–`V7`; `V7` adds watchlists and alerts)
+**Database:** `news_monitor` | **Schema:** `users` | **Managed by:** Flyway migrations (`V1`–`V8`; `V7` adds watchlists and alerts, `V8` drops the removed `STORY` subscriptions)
 
 #### `roles`
 
@@ -406,8 +382,8 @@ Join table: `(user_id, role_id)` composite PK, both FKs cascade on delete.
 | -------------- | -------------- | ---------------------------------------------- |
 | `id`         | VARCHAR(36) PK | UUID                                           |
 | `user_id`    | BIGINT FK      | CASCADE on delete                              |
-| `type`       | VARCHAR(20)    | `TOPIC`, `STORY` or `TICKER`              |
-| `target_id`  | VARCHAR(255)   | Topic name, Story ID or ticker symbol (no FK: stored in Neo4j) |
+| `type`       | VARCHAR(20)    | `TOPIC` or `TICKER`                       |
+| `target_id`  | VARCHAR(255)   | Topic name or ticker symbol (no FK: stored in Neo4j) |
 | `min_impact` | DOUBLE         | TICKER only: alert threshold (0-1), default 0.5 |
 | `topics`     | VARCHAR(1000)  | TICKER only: comma-separated topic filter; null = any topic |
 | `created_at` | TIMESTAMPTZ    |                                                |
@@ -444,6 +420,7 @@ Primary key `(user_id, story_id, company_id)`, plus `symbol`, `impact_score`, `c
 | `V4__seed_banking_topics` | The 13 banking topics (must match `classifier/training/taxonomy.py`) |
 | `V5__seed_company_universe` | 356 companies and 345 tickers (generated by `enricher/tools/build_universe.py`) |
 | `V6__drop_issuer_entities` | Removes SEC filers that are subsidiaries/note issuers of curated companies (seeded by an earlier V5 build; no-op on fresh databases) |
+| `V7__one_story_per_article` | Clustering removed: drops story subscriptions and gives any article without a story its own |
 
 #### Nodes
 
@@ -468,32 +445,10 @@ Primary key `(user_id, story_id, company_id)`, plus `symbol`, `impact_score`, `c
 (:Article)-[:MENTIONS {count, salience, inTitle, sentiment}]->(:Company)   // Cypher-managed
 (:Story)-[:AFFECTS {firstSeen, impactScore}]->(:Company)                   // Cypher-managed
 (:Company)-[:LISTED_AS {primary}]->(:Ticker)
-(:Subscription)-[:SUBSCRIBES_TO]->(:Story | :Topic)
+(:Subscription)-[:SUBSCRIBES_TO]->(:Topic)
 ```
 
 A `Subscription` node tracks "someone is interested in this"-it has no link to *which* user, only a `count`. Per-user identity lives in manager's Postgres `subscriptions` table. Provider only needs to know whether to publish a notification (boolean).
-
-### Qdrant: Clusterer Worker's Vector Store
-
-**Single collection:** `story_centroids` | **Access:** Clusterer worker only | **Vector model:** `sentence-transformers/all-MiniLM-L6-v2` (384-dim, cosine distance, normalized)
-
-#### Collection Schema
-
-| Field                    | What                                                       |
-| ------------------------ | ---------------------------------------------------------- |
-| Point ID                 | Same UUID string as the Story's`id` in Neo4j             |
-| Vector                   | 384-dim, unit-normalized (cosine similarity = dot product) |
-| Payload:`storyId`      | Redundant copy of point ID (for convenience)               |
-| Payload:`articleCount` | Weights the running-average centroid update                |
-| Payload:`lastUpdated`  | Datetime of the last attach (indexed; informational)       |
-| Payload:`firstPublishedAt` / `lastPublishedAt` | Publish-date span of the story's articles (indexed; powers the date window) |
-| Payload:`sources` / `officialOnly` | Publishers so far / whether all are regulators or central banks |
-| Payload:`companies` | Bank/fintech company ids linked in the story's articles (company guard) |
-
-#### Usage Pattern
-
-1. **Attach to existing story:** Query `story_centroids` for the nearest centroids whose `firstPublishedAt`/`lastPublishedAt` span is within `STORY_WINDOW_DAYS` of the article's publish date; accept the first that passes `clusterer/decision.py`. Update centroid as running average.
-2. **Create new story:** No candidates found-create story in Neo4j first (to get ID), then seed centroid point in Qdrant with that ID.
 
 ### Cross-Database References (By Convention)
 
@@ -502,8 +457,8 @@ No enforced foreign keys; each string agreement is application-level:
 | Value          | Source               | Referenced in                                                                                  |
 | -------------- | -------------------- | ---------------------------------------------------------------------------------------------- |
 | Topic name     | Neo4j`Topic.name`  | Postgres`subscriptions.target_id`                                                            |
-| Story`id`    | Neo4j`Story.id`    | Postgres`subscriptions.target_id`, Qdrant point ID                                           |
-| Article`url` | Neo4j`Article.url` | Worker messages (`article.classify`/`article.cluster`/`article.enrich` payloads), `article.notifications` |
+| Story`id`    | Neo4j`Story.id`    | `event.upserted`, Postgres `market.events`, `ticker_alerts`                                  |
+| Article`url` | Neo4j`Article.url` | Worker messages (`article.classify`/`article.enrich` payloads), `article.notifications` |
 | Company `id`, Story `id` | Neo4j `AFFECTS` endpoints | `event.upserted`; Postgres `market.events`, `market.event_impact`; Postgres `ticker_alerts`, `notifications` |
 | Ticker symbol (+ MIC) | Neo4j `Ticker` | Postgres `subscriptions.target_id` (TICKER), `market.prices_daily`, chart URLs |
 
@@ -556,7 +511,7 @@ docker compose exec postgres psql -U postgres -c "CREATE USER analytics WITH PAS
 
 **Location:** `backend/workers/` | **Shared modules:** `provider_client.py` (HTTP client), `retry.py` (backoff), `env_config.py` (env vars), `log_config.py` (logging)
 
-Four independent RabbitMQ consumers (scraper, classifier, clusterer, enricher), each in its own Python venv with its own `requirements.txt`.
+Three independent RabbitMQ consumers (scraper, classifier, enricher), each in its own Python venv with its own `requirements.txt`.
 
 ### Provider-Outage Handling
 
@@ -656,7 +611,7 @@ classifier/venv/bin/python -m classifier.training.eval_rules               # rul
 **What it does:**
 
 1. Load the company universe from `GET /api/companies` at startup; reload every `UNIVERSE_REFRESH_MINUTES` (60), or at once if the provider rejects a company id.
-2. Fetch the article; link company mentions with the shared `entity_linker.py` (also used by the clusterer) (dictionary of names + aliases, no NER model):
+2. Fetch the article; link company mentions with `entity_linker.py` (dictionary of names + aliases, no NER model):
    - acronyms and camel-case brands (SEC, ING, BofA) match case-sensitively;
    - brands that are ordinary words or places (Chase, Block, Affirm, Wise, Halifax) match case-sensitively and only with financial context;
    - names shared by two companies, and names made only of generic words ("Bancorp, Inc."), are skipped;
@@ -665,7 +620,7 @@ classifier/venv/bin/python -m classifier.training.eval_rules               # rul
 3. FinBERT sentiment (`ProsusAI/finbert`, sentence level): article = 0.5 × title + 0.5 × mean of the first lead sentences; company = weighted mean of the sentences naming it (title counts double); label = FinBERT's most likely class. A rule (`sentiment.apply_rules`) corrects one known misreading: a sentence saying an enforcement action, consent order, cease-and-desist or written agreement was terminated or lifted scores +0.5 / positive (FinBERT reads "termination of enforcement action" as negative).
 4. `PATCH /api/articles/enrichment` with sentiment and mentions. The provider replaces the article's `MENTIONS` and refreshes the events of its story.
 
-**Concurrent writes:** story attach, topic writes and enrichment all touch a story's events. The provider runs each as one transaction via `Neo4jWrites` (retry outside, transaction inside, retried on Neo4j transient errors such as deadlocks) and takes the story's lock first, writing companies and topics in sorted order, so concurrent writers queue instead of deadlocking. If retries are exhausted the API answers 503 (retry later) instead of 500.
+**Concurrent writes:** topic writes and enrichment both touch a story's events, and many stories share a company. The provider runs each as one transaction via `Neo4jWrites` (retry outside, transaction inside, retried on Neo4j transient errors such as deadlocks) and takes the story's lock first, writing companies and topics in sorted order, so concurrent writers queue instead of deadlocking. If retries are exhausted the API answers 503 (retry later) instead of 500.
 
 **Events** (`(:Story)-[:AFFECTS]->(:Company)`): derived by the provider (`EventService`) whenever an article is enriched, joins a story, or gets new topics, so the order in which the workers finish does not matter. Regulators and central banks get no events (they keep their `MENTIONS`): they are the actors in most official releases, not investor-relevant subjects, and their releases already raise the impact of the companies they name. Properties: `firstSeen` (earliest article), `articleCount`, `sentiment`, and `impactScore` in [0, 1] = 0.25 × breadth (sources / 5) + 0.15 × coverage (mentioning articles / 3) + 0.20 × strongest salience + 0.25 × topic weight (enforcement and M&A 1.0, earnings 0.8, FX 0.3, ...) + 0.15 × |sentiment| + 0.10 if a regulator or central bank published part of the story; capped at 1.
 
@@ -690,74 +645,15 @@ cd backend/workers && enricher/venv/bin/python -m enricher.tools.build_universe
 
 Writes `data/company_universe.json`, the generated `V5__seed_company_universe.cypher` and `data/company_universe_report.md` (items to review).
 
-### Clusterer Worker
+### Stories (one per article)
 
-**Consumes:** `article.cluster` (fanned out from `article.saved`) | **Datastores:** Neo4j (via Provider), Qdrant (direct) | **Run:** `make cluster-worker`
+There is no clustering step. `POST /api/articles` saves the article and, in the same transaction, creates its own `Story` (title = article title, `articleCount` and `sourceCount` 1), so the enricher, which runs after `article.saved` is published, always finds a story to derive events on. Stories stay the unit that events (`AFFECTS`), chart markers, event studies and alert de-duplication key on.
 
-**What it does:**
+**Why clustering was removed:** the clusterer embedded every article (MiniLM), searched Qdrant for a similar story within 3 days and attached or created one under a Redis lock. On the 27 specialised banking sources (regulators, central banks, trade press) outlets rarely cover the same item: 240 of 262 stories held one article and only 9 combined different outlets, while the clusterer needed Qdrant Cloud, Redis, an embedding model, a worker and threshold tuning. The cost of removing it: when two outlets do cover the same news, it now produces two stories, so two events, two chart markers and up to two alerts per watcher.
 
-1. Fetch article title + body from Provider. Drop if not found.
-2. Embed `"{title}\n\n{body_text}"` (truncated to `MAX_EMBED_CHARS` = 4000 to avoid quadratic attention memory) with `ArticleEmbedder` singleton (`sentence-transformers/all-MiniLM-L6-v2`, 384-dim, normalized).
-3. Link bank/fintech mentions with the shared `entity_linker.py` (same linker as the enricher; company universe from `GET /api/companies`) and look up whether the source is a regulator/central bank.
-4. Query Qdrant `story_centroids` for the `CLUSTER_CANDIDATES` (5) nearest stories whose publish-date span is within `STORY_WINDOW_DAYS` (3) of the article.
-5. Take the first candidate `clusterer/decision.py` accepts, in similarity order:
-   - **date window:** the article's publish date is within 3 days of the story's first/last article;
-   - **threshold:** similarity ≥ `SIMILARITY_THRESHOLD` (0.60); if article and story are both official releases, the same publisher and ≥ `OFFICIAL_SIMILARITY_THRESHOLD` (0.75);
-   - **company guard:** if both name banks/fintechs, at least one in common.
+**Earlier data:** the 22 multi-article stories from the clustering era are kept as they are (valid groupings); their events still aggregate all their articles. Story subscriptions (notify when a story gains an article) were removed along with clustering, since a story no longer gains articles. Neo4j migration `V7__one_story_per_article` removes provider-side story subscriptions and gives any story-less article its own story; manager `V8` deletes `STORY` subscription rows.
 
-   Rejected candidates are logged with the reason. Attach via Provider and update the centroid as a running average (weighted by `articleCount`); Qdrant first (idempotent upsert-by-ID).
-6. **Otherwise:** create new story via Provider first (server-generated ID), then seed centroid in Qdrant.
-
-`ensure_collection()` runs on startup - idempotent, creates `story_centroids` and its datetime payload indexes (`lastUpdated`, `firstPublishedAt`, `lastPublishedAt`) if needed.
-
-```bash
-clusterer/venv/bin/python -m unittest discover -s clusterer/tests -t .   # decision rules (cases from real articles)
-```
-
-**Rebuilding stories** after changing the rules: with the provider and a cluster worker running, `make recluster` deletes all stories and events plus the Qdrant centroids and re-queues every article oldest first (`clusterer/tools/requeue.py`). Articles, topics, mentions and sentiment are kept; events are rebuilt as articles rejoin stories.
-
-**Key env vars:**
-
-- `QDRANT_URL` / `QDRANT_API_KEY` - Qdrant connection.
-- `EMBEDDING_MODEL_NAME` / `EMBEDDING_DIM` - model choice and vector size.
-- `SIMILARITY_THRESHOLD` - base attach cutoff (0.60).
-- `OFFICIAL_SIMILARITY_THRESHOLD` - cutoff for two official releases, same publisher required (0.75).
-- `STORY_WINDOW_DAYS` - publish-date window around a story's articles (3).
-- `CLUSTER_CANDIDATES` - nearest stories considered (5).
-- `MAX_EMBED_CHARS` - input truncation (4000 chars).
-- `CENTROID_COLLECTION` - collection name (`story_centroids`).
-- `REDIS_URL` - global clustering decision lock backend (see "Clusterer Locking" under Scaling Considerations).
-- `CLUSTER_LOCK_TIMEOUT_SECONDS` / `CLUSTER_LOCK_BLOCKING_TIMEOUT_SECONDS` - lock TTL and acquire-wait timeout.
-
-### Clustering Validation Report
-
-**Data:** SemEval-2022 Task 8 (Multilingual News Article Similarity), English-English pairs only. 197 usable pairs after Internet Archive fetch failures (116 same-story, 81 different-story).
-
-**Models tested:**
-
-| Model                                      | Params | Balanced accuracy | TPR (same-story) | TNR (different-story) |
-| ------------------------------------------ | ------ | ----------------- | ---------------- | --------------------- |
-| `Qwen/Qwen3-Embedding-0.6B`              | 0.6B   | **90.8%**   | 94.0%            | **87.7%**       |
-| `sentence-transformers/all-MiniLM-L6-v2` | 22M    | 88.0%             | **95.7%**  | 80.2%                 |
-
-**Threshold selection:** Balanced accuracy maximized at **0.533** (for MiniLM). Tradeoff: MiniLM is ~27x smaller (faster per-article embedding) but ~3 points less accurate. Qwen3 is better at rejecting unrelated pairs (TNR 87.7% vs 80.2%), which is preferable if false merges are costly.
-
-**Caveats:**
-
-- Text truncated at 4000 chars before embedding (original model max is 32768 tokens). Loss of signal for stories diverging deep in long articles.
-- Extraction noise: trafilatura sometimes pulled boilerplate instead of article body (worth broader spot-check before trusting threshold as final).
-- Dataset: 2020-era COVID news, English-only.
-
-**Re-validation on financial news** (140 real articles from the first live run; full notes in [`CLUSTERING_VALIDATION.md`](documentation/CLUSTERING_VALIDATION.md)):
-
-| | Old rules (5-day processing window, 0.533) | Guards + 0.533 | Guards + 0.60 (current) |
-| --- | --- | --- | --- |
-| Stories | 48 | 120 | 129 |
-| Biggest story | 21 articles | 7 | 6 |
-| Stories spanning > 3 days | 12 (max 111 days) | 0 | 0 |
-| Thematic false merges in multi-article stories | most | 6 (0.534–0.584) | 0 found |
-
-The old rules built topical "mega-stories" (21 sets of minutes in one story; every Fed/BoE/ECB monetary release in another), which inflated events: Citigroup's top event came from an ECB speech story (0.695; now 0.534), HSBC's from a minutes story (0.682; now 0.367).
+**If overlap grows** (e.g. wire services or general financial news are added), duplicates can be merged cheaply without vectors: same company, same day, similar title.
 
 ---
 
@@ -813,8 +709,8 @@ If provider's public key (`JWT_PUBLIC_KEY_PATH`) doesn't match manager's private
 | Command | What it runs |
 | --- | --- |
 | `make test` | Every suite below (needs `make up`; Java on JDK 21) |
-| `make test-java` | Provider (21), analytics (30), manager (9) integration tests against the local Neo4j / Postgres. Every test cleans up what it creates, and none publishes to the shared broker (`RabbitTemplate` is mocked in the provider tests). |
-| `make test-workers` | Scraper (26: feed fixtures reproducing live quirks such as the Fed's BOM without a charset, ESMA's date-only-in-`<time>` feed, Atom/RDF, tracking params, retries/Retry-After, robots.txt, extraction, source-health threshold, and the AMQP keepalive against the local RabbitMQ with a 2 s heartbeat), enricher (20, including a 50-headline entity-linking golden set and the sentiment rule), classifier (35: rules + model smoke test that is skipped without the trained model), clusterer (12) |
+| `make test-java` | Provider (22), analytics (30), manager (9) integration tests against the local Neo4j / Postgres. Every test cleans up what it creates, and none publishes to the shared broker (`RabbitTemplate` is mocked in the provider tests). |
+| `make test-workers` | Scraper (26: feed fixtures reproducing live quirks such as the Fed's BOM without a charset, ESMA's date-only-in-`<time>` feed, Atom/RDF, tracking params, retries/Retry-After, robots.txt, extraction, source-health threshold, and the AMQP keepalive against the local RabbitMQ with a 2 s heartbeat), enricher (20, including a 50-headline entity-linking golden set and the sentiment rule), classifier (35: rules + model smoke test that is skipped without the trained model) |
 | `make e2e` | `backend/e2e/e2e_check.py` against running services and workers: triggers a scrape, waits until new articles have topics, sentiment and a story, checks new events and a ticker alert (test users watch every listed ticker), `/overlay` bars + markers for 5 banks, then deletes its users. Configure with `MANAGER_URL`, `PROVIDER_URL`, `ANALYTICS_URL`, `E2E_TIMEOUT_MINUTES` |
 | `make check-sources` | Re-validates the seeded sources; exits 1 when more than 20 % are not PASS. Runs nightly in `.github/workflows/source-health.yml` (needs a `SCRAPER_USER_AGENT` repository variable) |
 | `make validate-sources` | Validates all candidates and rewrites `data/source_validation/report.*` |
@@ -854,7 +750,7 @@ Both files are gitignored (`backend/keys/.gitignore`) — generate your own per 
 make dev   # env + up (infra only) + migrate + rabbitmq-setup
 ```
 
-This starts only neo4j/rabbitmq/postgres/redis as containers. Run each app yourself in its own terminal, from its own directory (all read the root `.env`):
+This starts only neo4j/rabbitmq/postgres as containers. Run each app yourself in its own terminal, from its own directory (all read the root `.env`):
 
 ```bash
 cd backend/manager   && mvn spring-boot:run   # http://localhost:9000/manager
@@ -862,7 +758,7 @@ cd backend/provider  && mvn spring-boot:run   # http://localhost:8080/news-provi
 cd backend/analytics && mvn spring-boot:run   # http://localhost:8090/analytics
 
 cd backend/workers && make setup              # one-time: builds a venv per worker type
-cd backend/workers && make scrape-worker      # also: classify-worker, cluster-worker, enrich-worker
+cd backend/workers && make scrape-worker      # also: classify-worker, enrich-worker
 ```
 
 **B. Fully containerized** — manager, provider, analytics, and several replicas of each worker (3 per worker type, 2 enrichers) also run as containers (all named `news-mm-*`). The worker replicas load ML models each, so give Docker well over 5 GB of memory (the 4.8 GB default VM is not enough for the full stack):
@@ -901,13 +797,13 @@ Run `make help` for the full, always-current list. The ones you'll reach for mos
 | `make up` / `make up-full`            | Start infra only / infra + manager + provider + analytics + all workers                                                          |
 | `make down`                             | Stop everything that's running                                                                                                   |
 | `make ps`                               | Show container status                                                                                                            |
-| `make logs`                             | `SERVICE=<name>` to filter; also `logs-manager`, `logs-provider`, `logs-analytics`, `logs-scraper`, `logs-classifier`, `logs-cluster`, `logs-enricher`  |
+| `make logs`                             | `SERVICE=<name>` to filter; also `logs-manager`, `logs-provider`, `logs-analytics`, `logs-scraper`, `logs-classifier`, `logs-enricher`  |
 | `make test` / `make e2e`                | All unit/integration tests / end-to-end check against running services (see [Testing and Verification](#testing-and-verification)) |
 | `make migrate`                          | Re-apply Neo4j migrations (idempotent — already-applied ones skip)                                                              |
 | `make rabbitmq-setup`                   | Re-run RabbitMQ topology setup (idempotent)                                                                                      |
 | `make neo4j-shell` / `rabbitmq-shell` | Open an interactive shell into that container                                                                                    |
 | `make clean`                            | Stop everything and delete all volumes —**destructive**                                                                   |
-| `make *-purge`                          | Wipe a specific datastore's data (`neo4j-purge`, `postgres-purge`, `qdrant-purge`, `purge-dbs`) — **destructive** |
+| `make *-purge`                          | Wipe a specific datastore's data (`neo4j-purge`, `postgres-purge`, `purge-dbs` = Neo4j) — **destructive** |
 
 Neo4j migrations and RabbitMQ topology setup both run automatically the moment their container starts (see `backend/neo4j/entrypoint-wrapper.sh` and `backend/rabbitmq/entrypoint-wrapper.sh`) — the `make migrate`/`make rabbitmq-setup` targets above are for re-running them by hand (e.g. a new migration file appeared) without restarting the container.
 
@@ -917,7 +813,7 @@ Neo4j migrations and RabbitMQ topology setup both run automatically the moment t
 
 - **Workers:** Retry 5 times with backoff (60s, 120s, 180s, 240s). On 5th failure: nack message, shut down.
 - **Manager=>Provider calls:** Surface as `502 ExternalServiceException` to client.
-- **Effect:** Scraping, classification, clustering all queue up but stall. Once provider recovers, RabbitMQ redelivers and pipeline resumes.
+- **Effect:** Scraping, classification and enrichment all queue up but stall. Once provider recovers, RabbitMQ redelivers and pipeline resumes.
 
 ### Manager Down (Auth Unavailable)
 
@@ -927,7 +823,7 @@ Neo4j migrations and RabbitMQ topology setup both run automatically the moment t
 
 ### RabbitMQ Down (Pipeline Stops)
 
-- **Scraper:** Can't publish `article.saved` => articles saved to Neo4j but not classified/clustered.
+- **Scraper:** Can't publish `article.saved` => articles saved to Neo4j (with their stories) but not classified or enriched.
 - **Workers:** Can't consume => articles sit in queue.
 - **Notifications:** Can't reach manager => no user notifications.
 
@@ -951,20 +847,10 @@ Neo4j migrations and RabbitMQ topology setup both run automatically the moment t
 
 - Price ingest logs a warning per failed listing and picks it up incrementally on its next run; event studies stay pending until prices exist. Charts serve whatever is stored.
 
-### Redis Down (Clustering Only)
-
-- Clusterer can't take the decision lock: messages are nacked and requeued until Redis is back. Other workers are unaffected.
-
-### Qdrant Down (Clustering Only)
-
-- Clusterer can't query/update centroids => stalls.
-- Scraper and classifier keep working (don't touch Qdrant).
-- Pipeline partially degraded: articles scraped/classified but not clustered.
-
 ## Summary
 
 **News Monitor evolved from a monolithic Java process with embedded threads to a distributed, polyglot system.**
 
-The separation forced responsibilities: **manager** handles auth, user state, watchlists and alerts; **provider** is system-of-record for articles/stories/topics/companies/events; **analytics** owns market data, event studies and charts; **workers** are pure processing clients. RabbitMQ decouples the pipeline (scraping doesn't block classification) and carries events to their consumers. Specialized datastores (PostgreSQL for relational data and time series, Neo4j for graph structure, Qdrant for vector search) replaced one generalist database, trading cross-database FK constraints for flexibility and performance.
+The separation forced responsibilities: **manager** handles auth, user state, watchlists and alerts; **provider** is system-of-record for articles/stories/topics/companies/events; **analytics** owns market data, event studies and charts; **workers** are pure processing clients. RabbitMQ decouples the pipeline (scraping doesn't block classification) and carries events to their consumers. Specialized datastores (PostgreSQL for relational data and time series, Neo4j for graph structure) replaced one generalist database, trading cross-database FK constraints for flexibility and performance.
 
-The result: a system that scales each component independently, isolates failures (provider down ≠ clustering down), and optimizes each layer for its job. New articles flow through scraping => classification / enrichment / clustering as independent asynchronous jobs, become Story→Company events, and reach investors as chart markers and watchlist alerts. Subscribed users are notified the moment an article or event matches their interests. Adding new sources, tweaking the classifier, or tuning the embedding threshold requires no full-system redeploy-each worker type is independent and can restart in isolation.
+The result: a system that scales each component independently, isolates failures (analytics down ≠ alerts down), and optimizes each layer for its job. New articles flow through scraping => classification and enrichment as independent asynchronous jobs, become Story→Company events, and reach investors as chart markers and watchlist alerts. Subscribed users are notified the moment an article or event matches their interests. Adding new sources or tweaking the classifier or enricher requires no full-system redeploy-each worker type is independent and can restart in isolation.

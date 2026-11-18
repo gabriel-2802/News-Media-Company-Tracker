@@ -13,10 +13,10 @@ disabled flag) from the Provider, scrapes it, and:
     until an operator (or a lucky attempt here) resets it.
   - If the source is enabled, a failed attempt increments its failure count
     via the Provider and the job is re-queued, up to MAX_ATTEMPTS total.
-  - Every article saved through the Provider has its URL published (fanned
-    out via the `article.saved` routing key) to both the `article.classify`
-    and `article.cluster` queues, for the downstream classifier and
-    clustering workers respectively.
+  - Every article saved through the Provider (which also gives it its own
+    story) has its URL published (fanned out via the `article.saved` routing
+    key) to the `article.classify` and `article.enrich` queues, for the
+    downstream classifier and enricher workers.
 
 Scrape job message format (JSON):
     {
@@ -229,7 +229,7 @@ class JobHandler:
 
             self._publish(ARTICLE_SAVED_ROUTING_KEY, {"url": article.url, "source_name": article.source})
             saved += 1
-            log.info("[%s] Saved + queued for clustering: %s", source.name, article.title[:80])
+            log.info("[%s] Saved + queued for classification and enrichment: %s", source.name, article.title[:80])
             time.sleep(rate)
 
         log.info("[%s] Done — saved=%d skipped=%d failed=%d", source.name, saved, skipped, failed)

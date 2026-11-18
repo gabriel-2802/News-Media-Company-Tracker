@@ -1,12 +1,12 @@
 """
 End-to-end check of the running system (Phase 10).
 
-Against running manager, provider and analytics services plus the four workers it:
+Against running manager, provider and analytics services plus the three workers it:
   1. checks the three services are healthy;
   2. creates throwaway users who together watch every listed ticker (50 per user, minImpact 0),
      so any new article about a listed company must produce an alert;
   3. triggers a scrape of every source (as the seeded admin);
-  4. waits until new articles are scraped and every one has topics, sentiment and a story,
+  4. waits until new articles are scraped and every one has topics, sentiment and its story,
      new Story->Company events exist, and a watcher received a TICKER_ALERT;
   5. checks /overlay returns price bars and event markers for at least 5 banks;
   6. deletes the throwaway users.

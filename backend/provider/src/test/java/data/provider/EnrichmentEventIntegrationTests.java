@@ -45,7 +45,7 @@ class EnrichmentEventIntegrationTests {
     private final String run = "it-" + UUID.randomUUID();
     private final String a1 = "https://example.test/" + run + "/a1";
     private final String a2 = "https://example.test/" + run + "/a2";
-    private final String loose = "https://example.test/" + run + "/unclustered";
+    private final String loose = "https://example.test/" + run + "/storyless";
     private final String c1 = run + "-c1";
     private final String c2 = run + "-c2";
     private final String reg = run + "-reg-co";
@@ -60,7 +60,7 @@ class EnrichmentEventIntegrationTests {
                 CREATE (s:Story {id: $run, title: 'story', sourceCount: 2, articleCount: 2})
                 CREATE (x1:Article {id: randomUUID(), url: $a1, title: 'Regulator fines Bank One', publishedAt: localdatetime('2026-11-10T12:00:00')})
                 CREATE (x2:Article {id: randomUUID(), url: $a2, title: 'Bank One under scrutiny', publishedAt: localdatetime('2026-11-09T08:00:00')})
-                CREATE (x3:Article {id: randomUUID(), url: $loose, title: 'Not clustered yet', publishedAt: localdatetime()})
+                CREATE (x3:Article {id: randomUUID(), url: $loose, title: 'No story yet', publishedAt: localdatetime()})
                 CREATE (reg)-[:PUBLISHED]->(x1), (trade)-[:PUBLISHED]->(x2), (trade)-[:PUBLISHED]->(x3)
                 CREATE (x1)-[:BELONGS_TO]->(s), (x2)-[:BELONGS_TO]->(s)
                 MERGE (t:Topic {name: 'regulation_legal_enforcement'}) ON CREATE SET t.id = randomUUID()
@@ -162,7 +162,7 @@ class EnrichmentEventIntegrationTests {
     }
 
     @Test
-    void unclusteredArticleGetsMentionsButNoEventUntilItJoinsAStory() {
+    void articleWithoutStoryGetsMentionsButNoEventUntilItHasOne() {
         enrich(loose, 0.5, new Mention(c2, 2, 0.8, true, 0.5));
         assertThat(event(c2)).isEmpty();
 

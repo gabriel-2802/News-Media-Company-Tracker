@@ -1,7 +1,6 @@
 **/venv/
 **/__pycache__/
 **/.mypy_cache/
-clusterer/data/
 *.pem
 .DS_Store
 # Classifier training data, caches and checkpoints are not needed at runtime.

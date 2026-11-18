@@ -80,16 +80,11 @@ curl -s -u "${AUTH}" -X POST "${BASE}/bindings/news_monitor/e/news_monitor/q/art
 -d '{"routing_key":"article.saved","arguments":{}}'
 echo ""
 
-echo "[setup] Creating queue: article.cluster"
-curl -s -u "${AUTH}" -X PUT "${BASE}/queues/news_monitor/article.cluster" \
--H "Content-Type: application/json" \
--d '{"durable":true,"auto_delete":false,"arguments":{}}'
-echo ""
-
-echo "[setup] Binding article.cluster -> news_monitor (routing_key: article.saved)"
-curl -s -u "${AUTH}" -X POST "${BASE}/bindings/news_monitor/e/news_monitor/q/article.cluster" \
--H "Content-Type: application/json" \
--d '{"routing_key":"article.saved","arguments":{}}'
+# Clustering was removed. On a broker set up before that, article.cluster is
+# still bound to article.saved and, with no consumer, would keep a copy of
+# every scraped article; delete it (404 on a fresh broker is fine).
+echo "[setup] Deleting legacy queue: article.cluster"
+curl -s -o /dev/null -u "${AUTH}" -X DELETE "${BASE}/queues/news_monitor/article.cluster"
 echo ""
 
 echo "[setup] Creating queue: article.enrich"
@@ -131,7 +126,7 @@ echo ""
 # Provider-only queue: the Provider publishes directly to it by name via the
 # default exchange (routing key == queue name), so it must NOT be bound to
 # the news_monitor topic exchange — binding it to article.saved (or any
-# other routing key shared with the classify/cluster fan-out) would leak
+# other routing key shared with the classify/enrich fan-out) would leak
 # every scraped article into this queue alongside the real subscription
 # notifications.
 echo "[setup] Creating queue: article.notifications"

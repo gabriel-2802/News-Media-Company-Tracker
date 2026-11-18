@@ -33,6 +33,7 @@
 | 8. Watchlists and alerts | Done | `994c6e8` | Manager `V7`: TICKER subscriptions with `min_impact` / topic filter, `ticker_alerts` dedup, structured alert notifications. `PUT/DELETE/GET /api/users/me/watchlist` (symbols validated against provider companies; quotes + latest event from analytics, degrading to null when analytics is down). Manager consumes `event.upserted` (`manager.events`) and alerts once per (user, story, company). 9 manager tests (first in the module) + 1 analytics; live: real watchlist with quotes in 0.21 s, duplicate delivery → one alert, real provider re-publish of the AXP enforcement event → one topic-filtered alert. |
 | 10. Testing and verification | Done | `a6a0147` | `make test` (55 Java + 86 worker tests), `make e2e`, `make check-sources` + nightly workflow. New: provider event-version ordering; analytics rebuild paging/idempotency and a broker test with the provider's message shape; scraper feed/fetch/robots/extraction fixtures; 50-headline linker golden set; classifier smoke test. Found and fixed: Atom `urn:` ids taken as article URLs; "New York Community Bancorp" linked to an unrelated "Community Bancorp"; "The Fed" missed at a sentence start; watchlist rejected `NDA FI`; provider tests leaked `event.upserted` test events into analytics (18 rows removed). Live: E2E all checks passed in 112 s (4 new articles fully processed, alert received, overlay for JPM/MS/C/GS/BAC); 27/27 seeded sources PASS; analytics and manager images build. |
 | Tooling | Done | `fc7b69c` | Worker venvs on Python 3.11 (CLT Python 3.9 crashed Playwright helpers). |
+| Post-plan: clustering removed | Done | `remove-clustering` branch | 240 of 262 stories held one article (9 cross-outlet merges), so the clusterer worker, Qdrant and its Redis lock were removed. The provider creates a one-article story when it saves an article; events, markers and alerts still key on stories. Story subscriptions removed (provider V7, manager V8); clustering-era multi-article stories kept. Supersedes Phase 9. |
 
 ### Deviations from the original plan
 
@@ -306,6 +307,8 @@ Story timeline and event markers come from the local `events` read model. Articl
 ---
 
 ## Phase 9: Clusterer re-validation
+
+> **Superseded:** clustering was removed after the plan was completed (see the progress log); kept here as a record.
 
 `all-MiniLM-L6-v2` and the 0.533 threshold were tuned on general news (SemEval-2022). Financial headlines are formulaic ("X beats Q3 estimates"), so false merges across different banks are likely.
 - Add an entity guard: only attach to a story if the primary company overlaps (or both are company-less, e.g. macro).

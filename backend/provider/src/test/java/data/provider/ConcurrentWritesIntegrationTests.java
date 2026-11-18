@@ -1,10 +1,12 @@
 package data.provider;
 
-import data.provider.dto.requests.AttachArticleRequest;
+import data.provider.dto.requests.ArticleRequest;
 import data.provider.dto.requests.EnrichmentRequest;
 import data.provider.dto.requests.EnrichmentRequest.Mention;
+import data.provider.dto.requests.TopicsSetRequest;
+import data.provider.dto.requests.TopicsSetRequest.TopicScore;
+import data.provider.services.ArticleService;
 import data.provider.services.CompanyService;
-import data.provider.services.StoryService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.data.neo4j.core.Neo4jClient;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -27,11 +30,11 @@ import java.util.stream.IntStream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Reproduces the live-run failure: the clusterer attaching articles to a story
- * while the enricher enriches the same articles. Both write the story and its
- * AFFECTS events, which deadlocked in Neo4j and surfaced as HTTP 500. Every
- * write must now succeed (transient errors are retried in a fresh
- * transaction) and the story counters must not be double-counted by retries.
+ * Every saved article gets its own story, and the enricher and classifier then
+ * write that story's AFFECTS events in parallel, many stories at once naming
+ * the same company. Every write must succeed (transient Neo4j errors such as
+ * deadlocks are retried in a fresh transaction) and each article must end up
+ * with exactly one story carrying one event.
  */
 @SpringBootTest
 // Never publish to the shared broker: event.upserted from test fixtures would reach analytics/manager.
@@ -41,7 +44,7 @@ class ConcurrentWritesIntegrationTests {
     private static final int ARTICLES = 24;
 
     @Autowired private Neo4jClient neo4j;
-    @Autowired private StoryService storyService;
+    @Autowired private ArticleService articleService;
     @Autowired private CompanyService companyService;
 
     private final String run = "it-" + UUID.randomUUID();
@@ -54,34 +57,47 @@ class ConcurrentWritesIntegrationTests {
     @BeforeEach
     void seed() {
         neo4j.query("""
-                CREATE (src:NewsSource {id: randomUUID(), name: $run, category: 'TRADE_PRESS',
-                                        baseUrl: 'https://example.test', rssUrl: 'https://example.test/' + $run})
-                CREATE (:Story {id: $run, title: 'story', articleCount: 0, sourceCount: 0, trendingScore: 0.0,
-                                createdAt: datetime(), lastUpdated: datetime()})
+                CREATE (:NewsSource {id: randomUUID(), name: $run, category: 'TRADE_PRESS',
+                                     baseUrl: 'https://example.test', rssUrl: 'https://example.test/' + $run})
                 CREATE (:Company {id: $company, name: $run + ' Bank', kind: 'BANK'})
-                WITH src
-                UNWIND range(0, $n - 1) AS i
-                CREATE (src)-[:PUBLISHED]->(:Article {id: randomUUID(), url: 'https://example.test/' + $run + '/' + i,
-                                                     title: 'Bank news ' + i, publishedAt: localdatetime()})
-                """).bindAll(Map.of("run", run, "company", company, "n", ARTICLES)).run();
+                MERGE (t:Topic {name: 'regulation_legal_enforcement'}) ON CREATE SET t.id = randomUUID()
+                """).bindAll(Map.of("run", run, "company", company)).run();
     }
 
     @AfterEach
     void cleanUp() {
         neo4j.query("""
-                MATCH (n) WHERE n.name STARTS WITH $run OR n.url STARTS WITH 'https://example.test/' + $run
-                       OR n.id IN [$run, $company]
-                DETACH DELETE n
-                """).bindAll(Map.of("run", run, "company", company)).run();
+                MATCH (a:Article) WHERE a.url STARTS WITH 'https://example.test/' + $run
+                OPTIONAL MATCH (a)-[:BELONGS_TO]->(s:Story)
+                DETACH DELETE a, s
+                """).bind(run).to("run").run();
+        neo4j.query("MATCH (n) WHERE n.name STARTS WITH $run OR n.id = $company DETACH DELETE n")
+                .bindAll(Map.of("run", run, "company", company)).run();
     }
 
     @Test
-    void concurrentAttachAndEnrichmentOnOneStoryAllSucceedWithoutDoubleCounting() throws Exception {
+    void savingGivesEachArticleItsOwnStory() {
+        articleService.saveArticle(new ArticleRequest("a", "Bank news", url(0), "body", LocalDateTime.now(), run));
+
+        Map<String, Object> story = neo4j.query("""
+                MATCH (a:Article {url: $url})-[:BELONGS_TO]->(s:Story)
+                RETURN count(s) AS stories, s.title AS title, s.articleCount AS articles, s.sourceCount AS sources
+                """).bind(url(0)).to("url").fetch().one().orElseThrow();
+        assertThat(story).containsEntry("stories", 1L).containsEntry("title", "Bank news")
+                .containsEntry("articles", 1L).containsEntry("sources", 1L);
+    }
+
+    @Test
+    void concurrentEnrichmentAndTopicWritesAllSucceed() throws Exception {
+        IntStream.range(0, ARTICLES).forEach(i -> articleService.saveArticle(
+                new ArticleRequest("a", "Bank news " + i, url(i), "body", LocalDateTime.now(), run)));
+
         List<Callable<Object>> tasks = new ArrayList<>();
         IntStream.range(0, ARTICLES).forEach(i -> {
-            tasks.add(() -> storyService.attachArticle(run, new AttachArticleRequest(url(i))));
             tasks.add(() -> companyService.setEnrichment(new EnrichmentRequest(url(i), "negative", -0.5,
                     List.of(new Mention(company, 1, 0.8, true, -0.5)))));
+            tasks.add(() -> articleService.setTopics(new TopicsSetRequest(url(i),
+                    List.of(new TopicScore("regulation_legal_enforcement", 0.9)))));
         });
 
         ExecutorService pool = Executors.newFixedThreadPool(8);
@@ -94,14 +110,16 @@ class ConcurrentWritesIntegrationTests {
         }
 
         Map<String, Object> state = neo4j.query("""
-                MATCH (s:Story {id: $run})
+                MATCH (a:Article) WHERE a.url STARTS WITH 'https://example.test/' + $run
+                OPTIONAL MATCH (a)-[:BELONGS_TO]->(s:Story)
                 OPTIONAL MATCH (s)-[r:AFFECTS]->(:Company {id: $company})
-                RETURN s.articleCount AS articleCount, size([(s)<-[:BELONGS_TO]-(a:Article) | a]) AS members,
-                       r.articleCount AS mentioning
+                RETURN count(DISTINCT a) AS articles, count(DISTINCT s) AS stories, count(r) AS events,
+                       min(r.articleCount) AS minMentioning, max(r.articleCount) AS maxMentioning
                 """).bindAll(Map.of("run", run, "company", company)).fetch().one().orElseThrow();
 
-        assertThat(state).containsEntry("members", (long) ARTICLES);
-        assertThat(state).containsEntry("articleCount", (long) ARTICLES);   // no double counting from retries
-        assertThat(state).containsEntry("mentioning", (long) ARTICLES);     // event reflects every enriched member
+        assertThat(state).containsEntry("articles", (long) ARTICLES)
+                .containsEntry("stories", (long) ARTICLES)          // one story per article
+                .containsEntry("events", (long) ARTICLES)           // one event per story
+                .containsEntry("minMentioning", 1L).containsEntry("maxMentioning", 1L);
     }
 }

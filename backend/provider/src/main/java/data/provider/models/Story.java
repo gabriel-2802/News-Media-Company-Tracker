@@ -22,43 +22,28 @@ public class Story {
     private String id;
 
     /**
-     * Title of the story is the title of first article attached to it.
+     * A story groups the articles about one piece of news; events, chart
+     * markers and alerts are keyed on it. Since clustering was removed every
+     * article gets its own story when it is saved (StoryRepository
+     * .createForArticle); older stories can hold several articles.
+     *
+     * Title of the story is the title of its (first) article.
      */
     private String title;
 
-    /**
-     * When this Story was first created (i.e. when its first article was
-     * clustered). Used for the recency-window filter when searching for
-     * candidate stories in the clustering worker.
-     */
+    /** When this Story was created (when its article was saved). */
     private Instant createdAt;
 
-    /**
-     * Bumped every time a new article is attached. Drives both the
-     * recency-window filter and the trending score.
-     */
+    /** Last change to the story's membership; orders the story list. */
     private Instant lastUpdated;
 
-    /**
-     * Denormalized count, kept in sync on every attach — avoids a
-     * relationship count query on every feed read.
-     */
+    /** Denormalized article count (1 for stories created since clustering was removed). */
     private int articleCount = 0;
 
-    /**
-     * Distinct source count. Only incremented when an attached article's
-     * source hasn't contributed to this Story before — this is what lets
-     * the feed distinguish "5 reports from 5 outlets" from "5 reprints of
-     * one wire story."
-     */
+    /** Distinct source count; feeds the "breadth" term of event impact. */
     private int sourceCount = 0;
 
-    /**
-     * Precomputed ranking signal for the feed (recency + article velocity +
-     * source diversity — see architecture plan §10/§13 for the formula).
-     * Recomputed on every attach rather than at read time, since feed reads
-     * happen far more often than attaches.
-     */
+    /** Ranking signal reserved for a feed; not computed (0). */
     private double trendingScore = 0.0;
 
     /**

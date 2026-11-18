@@ -20,36 +20,10 @@ import org.springframework.web.bind.annotation.*;
 @Slf4j
 @RequiredArgsConstructor
 @RequestMapping(Constants.SUBSCRIPTIONS_BASE_PATH)
-@Tag(name = "Subscriptions", description = "Subscribing to and unsubscribing from stories and topics.")
+@Tag(name = "Subscriptions", description = "Subscribing to and unsubscribing from topics.")
 public class SubscriptionController {
 
     private final SubscriptionService subscriptionService;
-
-    @PostMapping(Constants.SUBSCRIPTIONS_STORY_PATH)
-    @Operation(summary = "Subscribe to a story", description = "Creates a subscription to the given story with count 1, or increments the "
-            + "count if one already exists.")
-    @ApiResponse(responseCode = "200", description = "Subscribed successfully",
-            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = SubscriptionDto.class)))
-    @ApiResponse(responseCode = "400", description = "Story does not exist",
-            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
-    public ResponseEntity<SubscriptionDto> subscribeToStory(
-            @Parameter(description = "ID of the story to subscribe to.", required = true)
-            @PathVariable final String storyId) {
-        return ResponseEntity.ok(subscriptionService.subscribeToStory(storyId));
-    }
-
-    @DeleteMapping(Constants.SUBSCRIPTIONS_STORY_PATH)
-    @Operation(summary = "Unsubscribe from a story", description = "Decrements the subscription count for the given story. The subscription "
-            + "is deleted once the count reaches 0.")
-    @ApiResponse(responseCode = "204", description = "Unsubscribed successfully")
-    @ApiResponse(responseCode = "400", description = "No subscription exists for this story",
-            content = @Content(mediaType = MediaType.APPLICATION_JSON_VALUE, schema = @Schema(implementation = ErrorResponse.class)))
-    public ResponseEntity<Void> unsubscribeFromStory(
-            @Parameter(description = "ID of the story to unsubscribe from.", required = true)
-            @PathVariable final String storyId) {
-        subscriptionService.unsubscribeFromStory(storyId);
-        return ResponseEntity.noContent().build();
-    }
 
     @PostMapping(Constants.SUBSCRIPTIONS_TOPIC_PATH)
     @Operation(summary = "Subscribe to a topic", description = "Creates a subscription to the given topic with count 1, or increments the "

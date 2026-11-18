@@ -14,6 +14,7 @@ import data.provider.models.NewsSource;
 import data.provider.models.Topic;
 import data.provider.repositories.ArticleRepository;
 import data.provider.repositories.NewsSourceRepository;
+import data.provider.repositories.StoryRepository;
 import data.provider.repositories.SubscriptionRepository;
 import data.provider.repositories.TopicRepository;
 import data.provider.util.Constants;
@@ -26,6 +27,7 @@ import org.springframework.data.domain.PageRequest;
 import data.provider.config.Neo4jWrites;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,6 +39,7 @@ public class ArticleService {
 
     private final ArticleRepository articleRepository;
     private final NewsSourceRepository newsSourceRepository;
+    private final StoryRepository storyRepository;
     private final TopicRepository topicRepository;
     private final EventService eventService;
     private final Neo4jWrites writes;
@@ -61,7 +64,16 @@ public class ArticleService {
         return PageDto.of(articleRepository.findByTopicNameWithName(topicName, PageRequest.of(page, count)), ArticleDto::new);
     }
 
+    /**
+     * Saves the article and gives it its own story in one transaction, so the
+     * enricher (which runs after the scraper publishes article.saved) always
+     * finds a story to derive events on.
+     */
     public ArticleDto saveArticle(final ArticleRequest articleRequest) {
+        return writes.write("saveArticle", () -> saveArticleWithStory(articleRequest));
+    }
+
+    private ArticleDto saveArticleWithStory(final ArticleRequest articleRequest) {
         if (articleRepository.existsByUrl(articleRequest.url())) {
             throw new BusinessException(Constants.ARTICLE_EXISTS_ERROR, articleRequest.url());
         }
@@ -83,6 +95,7 @@ public class ArticleService {
                 .build();
 
         articleRepository.save(article);
+        storyRepository.createForArticle(article.getUrl(), Instant.now());
         return new ArticleDto(article);
     }
 

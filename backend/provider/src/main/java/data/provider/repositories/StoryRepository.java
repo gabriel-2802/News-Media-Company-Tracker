@@ -8,7 +8,6 @@ import org.springframework.data.neo4j.repository.Neo4jRepository;
 import org.springframework.data.neo4j.repository.query.Query;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 
 public interface StoryRepository extends Neo4jRepository<Story, String> {
@@ -24,28 +23,20 @@ public interface StoryRepository extends Neo4jRepository<Story, String> {
     )
     Page<Story> findAllPaginated(Pageable pageable);
 
+    /**
+     * Gives an article its own one-article story (no-op if it already has one).
+     * Every article is its own story since clustering was removed; the Story
+     * node stays as the unit that events, chart markers and alerts key on.
+     */
     @Query("""
-            MATCH (story:Story)
-            WHERE story.lastUpdated >= $since
-            RETURN story
-            ORDER BY story.lastUpdated DESC
-            """)
-    List<Story> findActiveSince(Instant since);
-
-    @Query("""
-            MATCH (story:Story {id: $storyId})
-            MATCH (src:NewsSource)-[:PUBLISHED]->(a:Article {url: $articleUrl})
-            OPTIONAL MATCH (src)-[:PUBLISHED]->(existing:Article)-[:BELONGS_TO]->(story)
-              WHERE existing <> a
-            WITH story, a, count(existing) AS existingFromSource
-            MERGE (a)-[:BELONGS_TO]->(story)
-            ON CREATE SET
-              story.articleCount   = story.articleCount + 1,
-              story.lastUpdated    = $now,
-              story.sourceCount    = story.sourceCount + CASE WHEN existingFromSource = 0 THEN 1 ELSE 0 END
+            MATCH (a:Article {url: $articleUrl})
+            WHERE NOT (a)-[:BELONGS_TO]->(:Story)
+            CREATE (story:Story {id: randomUUID(), title: a.title, createdAt: $now, lastUpdated: $now,
+                                 articleCount: 1, sourceCount: 1, trendingScore: 0.0})
+            CREATE (a)-[:BELONGS_TO]->(story)
             RETURN story
             """)
-    Optional<Story> attachArticle(String storyId, String articleUrl, Instant now);
+    Optional<Story> createForArticle(String articleUrl, Instant now);
 
     @Query("""
             MATCH (:Article {url: $articleUrl})-[:BELONGS_TO]->(story:Story)

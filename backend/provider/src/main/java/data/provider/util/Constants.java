@@ -19,7 +19,6 @@ public final class Constants {
     public static final String COMPANY_DOES_NOT_EXIST_ERROR = "One or more companies do not exist: {}";
     public static final String ARTICLE_ENRICHED_LOG = "Enriched {}: {} company mention(s), sentiment {}";
     public static final String TOPIC_WITH_NAME_DOES_NOT_EXIST_ERROR = "Topic with the name = {} does not exist.";
-    public static final String SUBSCRIPTION_TO_STORY_DOES_NOT_EXIST_ERROR = "Subscription to story with id = {} does not exist.";
     public static final String SUBSCRIPTION_TO_TOPIC_DOES_NOT_EXIST_ERROR = "Subscription to topic with name = {} does not exist.";
 
     // logs
@@ -48,8 +47,6 @@ public final class Constants {
 
     // story paths
     public static final String STORIES_BASE_PATH = "/api/stories";
-    public static final String STORIES_ATTACH_PATH = "/{storyId}/attach";
-    public static final String STORIES_RECENT_PATH = "/recent";
     public static final String STORIES_BY_ARTICLE_PATH = "/by-article";
     public static final String STORIES_EXISTS_PATH = "/exists";
 
@@ -71,7 +68,6 @@ public final class Constants {
 
     // subscription paths
     public static final String SUBSCRIPTIONS_BASE_PATH = "/api/subscriptions";
-    public static final String SUBSCRIPTIONS_STORY_PATH = "/story/{storyId}";
     public static final String SUBSCRIPTIONS_TOPIC_PATH = "/topic/{topicName}";
 
     // roles (short form, for use with hasRole/hasAnyRole — Spring prepends "ROLE_")

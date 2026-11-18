@@ -38,7 +38,7 @@ public class OpenApiConfig {
             new Tag().name("Auth").description("Endpoints for user registration and authentication"),
             new Tag().name("Account").description("Endpoints for the currently authenticated user's own account"),
             new Tag().name("Notifications").description("Endpoints for the currently authenticated user's own notifications"),
-            new Tag().name("Subscriptions").description("Endpoints for the currently authenticated user's own topic and story subscriptions"),
+            new Tag().name("Subscriptions").description("Endpoints for the currently authenticated user's own topic and ticker subscriptions"),
             new Tag().name("Admin").description("Endpoints for administrators to manage users, roles, and account state")
     );
 

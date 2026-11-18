@@ -16,9 +16,11 @@ import java.util.Map;
  * Maintains events: (:Story)-[:AFFECTS {firstSeen, impactScore, articleCount, sentiment}]->(:Company).
  *
  * Events are derived data. They are recomputed for a story whenever one of
- * their inputs changes (an article is enriched, joins a story, or gets new
- * topics). Recomputing is idempotent and order-independent, which matters
- * because enrichment and clustering run in parallel.
+ * their inputs changes (an article is enriched or gets new topics).
+ * Recomputing is idempotent and order-independent, which matters because
+ * enrichment and classification run in parallel. Every article gets its own
+ * story when it is saved; stories from before clustering was removed can
+ * still hold several articles, and the aggregation below handles both.
  *
  * impactScore in [0, 1] =
  *     0.25 * breadth    (story sourceCount / 5, capped)
@@ -111,19 +113,14 @@ public class EventService {
     private final EventPublisher publisher;
 
     /*
-     * Lock ordering. Story attach, enrichment and topic writes all end up
-     * writing the story's AFFECTS events; without a common order they locked
+     * Lock ordering. Enrichment and topic writes both end up writing the
+     * story's AFFECTS events; without a common order they locked
      * article/story/company nodes in different sequences and deadlocked under
      * load. Every such write therefore takes the story's lock first (writes to
      * one story queue up), and companies/topics are written in sorted order.
      */
 
-    /** Take the write lock of a story (no-op if it does not exist). */
-    public void lockStory(final String storyId) {
-        neo4j.query("MATCH (s:Story {id: $id}) SET s.lastWriteAt = datetime()").bind(storyId).to("id").run();
-    }
-
-    /** Take the write lock of the story this article belongs to (no-op if not clustered). */
+    /** Take the write lock of the story this article belongs to (no-op if it has none). */
     public void lockStoryOfArticle(final String articleUrl) {
         neo4j.query("MATCH (:Article {url: $url})-[:BELONGS_TO]->(s:Story) SET s.lastWriteAt = datetime()")
                 .bind(articleUrl).to("url").run();
@@ -131,7 +128,7 @@ public class EventService {
 
     /**
      * Recompute all events of the story this article belongs to (no-op if it
-     * is not clustered yet) and publish them, plus removals, as event.upserted
+     * has none) and publish them, plus removals, as event.upserted
      * after commit.
      */
     public long refreshForArticle(final String articleUrl) {

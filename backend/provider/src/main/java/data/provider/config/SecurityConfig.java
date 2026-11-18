@@ -74,11 +74,6 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, Constants.NEWS_SOURCES_BASE_PATH + Constants.NEWS_SOURCE_BY_NAME_PATH)
                         .hasRole(Constants.ROLE_ADMIN)
 
-                        .requestMatchers(HttpMethod.POST, Constants.STORIES_BASE_PATH)
-                        .hasRole(Constants.ROLE_SYSTEM)
-                        .requestMatchers(HttpMethod.PATCH, Constants.STORIES_BASE_PATH + Constants.STORIES_ATTACH_PATH)
-                        .hasRole(Constants.ROLE_SYSTEM)
-
                         .requestMatchers(Constants.SUBSCRIPTIONS_BASE_PATH + "/**")
                         .hasAnyRole(Constants.ROLE_ADMIN, Constants.ROLE_SYSTEM)
 

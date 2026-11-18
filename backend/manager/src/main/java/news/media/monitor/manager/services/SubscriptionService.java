@@ -30,12 +30,10 @@ public class SubscriptionService {
 
     private static final String USER_NOT_FOUND            = "User not found: ";
     private static final String TOPIC_NOT_FOUND            = "Topic does not exist: ";
-    private static final String STORY_NOT_FOUND            = "Story does not exist: ";
     private static final String NEWS_PROVIDER_UNAVAILABLE  = "News provider service is unavailable";
     private static final String PROVIDER_INVALID_RESPONSE  = "Provider service did not confirm subscription with 200 OK";
     private static final String SORT_FIELD_CREATED_AT      = "createdAt";
 
-    private static final String PATH_SUBSCRIPTIONS_STORY = "/api/subscriptions/story/{targetId}";
     private static final String PATH_SUBSCRIPTIONS_TOPIC = "/api/subscriptions/topic/{targetId}";
 
     private static final String LOG_SUBSCRIBED   = "User {} subscribed to {} '{}'";
@@ -117,7 +115,7 @@ public class SubscriptionService {
      * Notifies the provider of a new subscription.
      * Validates that the provider responds with HTTP 200 OK.
      *
-     * @param type     Subscription type (TOPIC or STORY)
+     * @param type     Subscription type (TOPIC)
      * @param targetId Target resource ID
      * @throws InvalidProviderResponseException if provider does not return 200 OK
      * @throws ResourceNotFoundException if provider returns 400 (resource not found)
@@ -153,7 +151,7 @@ public class SubscriptionService {
      * Notifies the provider of subscription removal.
      * Validates that the provider responds with HTTP 200 OK.
      *
-     * @param type     Subscription type (TOPIC or STORY)
+     * @param type     Subscription type (TOPIC)
      * @param targetId Target resource ID
      * @throws InvalidProviderResponseException if provider does not return 200 OK
      * @throws ResourceNotFoundException if provider returns 400 (resource not found)
@@ -187,11 +185,11 @@ public class SubscriptionService {
     }
 
     private String pathFor(SubscriptionType type) {
-        return type == SubscriptionType.TOPIC ? PATH_SUBSCRIPTIONS_TOPIC : PATH_SUBSCRIPTIONS_STORY;
+        return PATH_SUBSCRIPTIONS_TOPIC;          // TICKER never reaches the provider
     }
 
     private String notFoundMessage(SubscriptionType type, String targetId) {
-        return (type == SubscriptionType.TOPIC ? TOPIC_NOT_FOUND : STORY_NOT_FOUND) + targetId;
+        return TOPIC_NOT_FOUND + targetId;
     }
 
     private Long resolveUserId(String email) {

@@ -54,6 +54,6 @@ def configure_logging(level: int = logging.INFO) -> None:
     root.handlers.clear()
     root.addHandler(handler)
 
-    # httpx (used internally by qdrant-client) logs every request at INFO —
-    # one line per Qdrant call, drowning out the clusterer's own log lines.
+    # httpx (used internally by huggingface_hub) logs every request at INFO,
+    # drowning out the workers' own log lines.
     logging.getLogger("httpx").setLevel(logging.WARNING)

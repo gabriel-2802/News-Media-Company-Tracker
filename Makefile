@@ -53,13 +53,13 @@ dev: env up migrate rabbitmq-setup ## Bootstrap infra only: create .env, start i
 	@echo "manager/provider/workers are not started — run them locally, or use 'make up-full'."
 
 # ── Infrastructure & Apps ──────────────────────────────────────────────────────
-# `up`/`dev` start infra only (neo4j, rabbitmq, postgres, redis) — the old
+# `up`/`dev` start infra only (neo4j, rabbitmq, postgres) — the old
 # manual-deploy workflow of running manager/provider/workers yourself against
 # that infra keeps working unchanged. `up-full` additionally builds and starts
 # manager, provider, and 3 replicas of each worker as containers.
 
 .PHONY: up
-up: ## Start infra only (neo4j, rabbitmq, postgres, redis)
+up: ## Start infra only (neo4j, rabbitmq, postgres)
 	$(COMPOSE) up -d
 
 .PHONY: up-full
@@ -87,7 +87,7 @@ status: ps
 # ── Local (non-Docker) workers ─────────────────────────────────────────────────
 # Delegates to backend/workers/Makefile, which must run from its own directory.
 
-.PHONY: setup-workers scrape-worker classify-worker cluster-worker enrich-worker
+.PHONY: setup-workers scrape-worker classify-worker enrich-worker
 setup-workers: ## One-time: build a venv per worker type
 	$(MAKE) -C backend/workers setup
 
@@ -96,9 +96,6 @@ scrape-worker: ## Run a scraper worker locally
 
 classify-worker: ## Run a classifier worker locally
 	$(MAKE) -C backend/workers classify-worker
-
-cluster-worker: ## Run a cluster worker locally
-	$(MAKE) -C backend/workers cluster-worker
 
 enrich-worker: ## Run an enricher worker locally (company linking + sentiment)
 	$(MAKE) -C backend/workers enrich-worker
@@ -115,7 +112,7 @@ test-java: ## Provider, analytics and manager tests (JDK 21)
 	cd backend/analytics && mvn -q test
 	cd backend/manager && SPRING_DATASOURCE_PASSWORD=$(POSTGRES_PASSWORD) DB_USERNAME=$(POSTGRES_USER) DB_NAME=$(POSTGRES_DB) mvn -q test
 
-test-workers: ## Worker unit tests (scraper fixtures, linker golden set, classifier smoke, clustering rules)
+test-workers: ## Worker unit tests (scraper fixtures and keepalive, linker golden set and sentiment rules, classifier smoke)
 	$(MAKE) -C backend/workers test
 
 validate-sources: ## Validate all candidate sources and rewrite data/source_validation/report.*
@@ -130,7 +127,7 @@ e2e: ## End-to-end check against running services (see backend/e2e/e2e_check.py)
 # ── Logs ───────────────────────────────────────────────────────────────────────
 
 .PHONY: logs
-logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|analytics|scraper-worker|classifier-worker|cluster-worker|enricher-worker]
+logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|analytics|scraper-worker|classifier-worker|enricher-worker]
 	$(COMPOSE) $(APPS) logs -f $(SERVICE)
 
 .PHONY: logs-manager
@@ -152,10 +149,6 @@ logs-scraper: ## Stream logs for all scraper-worker replicas
 .PHONY: logs-classifier
 logs-classifier: ## Stream logs for all classifier-worker replicas
 	$(COMPOSE) $(APPS) logs -f classifier-worker
-
-.PHONY: logs-cluster
-logs-cluster: ## Stream logs for all cluster-worker replicas
-	$(COMPOSE) $(APPS) logs -f cluster-worker
 
 .PHONY: logs-enricher
 logs-enricher: ## Stream logs for all enricher-worker replicas
@@ -265,27 +258,6 @@ rabbitmq-purge-scrape-jobs: ## Purge the scrape.jobs queue — DESTRUCTIVE
 	@$(call CONFIRM,all queued messages in scrape.jobs will be discarded.)
 	$(COMPOSE) exec rabbitmq rabbitmqctl purge_queue scrape.jobs -p $(RABBITMQ_VHOST)
 
-# ── Qdrant ─────────────────────────────────────────────────────────────────────
-# Qdrant is not a docker-compose service (it's Qdrant Cloud) — QDRANT_URL and
-# QDRANT_API_KEY come from .env, not from Makefile variables.
-
-.PHONY: _qdrant-purge-exec
-_qdrant-purge-exec:
-	@set -a && . .env && set +a && \
-	collection=$${CENTROID_COLLECTION:-story_centroids}; \
-	status=$$(curl -sS -o /dev/null -w "%{http_code}" -X DELETE \
-	  "$$QDRANT_URL/collections/$$collection" -H "api-key: $$QDRANT_API_KEY"); \
-	if [ "$$status" = "200" ]; then \
-	  echo "✓ Qdrant collection '$$collection' purged."; \
-	else \
-	  echo "✗ Qdrant purge failed (HTTP $$status)"; exit 1; \
-	fi
-
-.PHONY: qdrant-purge
-qdrant-purge: ## Delete the story_centroids Qdrant collection (recreated automatically on next cluster-worker start) — DESTRUCTIVE
-	@$(call CONFIRM,this deletes all story centroid vectors in Qdrant.)
-	@$(MAKE) _qdrant-purge-exec
-
 # ── Postgres ───────────────────────────────────────────────────────────────────
 
 .PHONY: _postgres-purge-exec
@@ -301,16 +273,8 @@ postgres-purge: ## Drop the users schema (all tables + migration history) — DE
 
 # ── Combined cleanup ───────────────────────────────────────────────────────────
 
-.PHONY: recluster
-recluster: ## Rebuild all stories: delete stories/events + Qdrant centroids, re-queue every article (needs provider + cluster-worker running) — DESTRUCTIVE for stories
-	@$(call CONFIRM,this deletes all stories and story-company events (articles, topics and mentions are kept) and re-clusters every article.)
-	$(COMPOSE) exec -T neo4j cypher-shell -u neo4j -p $(NEO4J_PASSWORD) "MATCH (s:Story) DETACH DELETE s;"
-	@$(MAKE) _qdrant-purge-exec
-	cd backend/workers && clusterer/venv/bin/python -m clusterer.tools.requeue
-
 .PHONY: purge-dbs
-purge-dbs: ## Wipe ALL data in both Neo4j and Qdrant — DESTRUCTIVE
-	@$(call CONFIRM,this deletes ALL data in Neo4j AND Qdrant. This cannot be undone.)
+purge-dbs: ## Wipe ALL graph data in Neo4j (same as neo4j-purge; Qdrant is gone) — DESTRUCTIVE
+	@$(call CONFIRM,this deletes ALL data in Neo4j. This cannot be undone.)
 	@$(MAKE) _neo4j-purge-exec
-	@$(MAKE) _qdrant-purge-exec
-	@echo "✓ Both databases purged. Run 'make migrate' to reapply Neo4j schema constraints if needed."
+	@echo "✓ Neo4j purged. Run 'make migrate' to reapply Neo4j schema constraints if needed."

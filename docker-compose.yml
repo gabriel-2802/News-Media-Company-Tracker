@@ -79,21 +79,6 @@ services:
       retries: 10
       start_period: 20s
 
-  redis:
-    image: redis:7-alpine
-    restart: unless-stopped
-    ports:
-      - "${REDIS_PORT:-6379}:6379"
-    command: ["redis-server", "--requirepass", "${REDIS_PASSWORD:-secret}"]
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ["CMD-SHELL", "redis-cli -a \"${REDIS_PASSWORD:-secret}\" ping 2>/dev/null | grep -q PONG"]
-      interval: 15s
-      timeout: 10s
-      retries: 10
-      start_period: 20s
-
   # ── Apps (only started with `--profile apps`, e.g. `make up-full`) ──
   # Kept out of the default `up` so the old manual-deploy workflow (run
   # these yourself, against the infra above) is unaffected.
@@ -236,32 +221,6 @@ services:
       provider:
         condition: service_healthy
 
-  cluster-worker:
-    build:
-      context: ./backend/workers
-      dockerfile: clusterer/Dockerfile
-      args:
-        EMBEDDING_MODEL_NAME: "${EMBEDDING_MODEL_NAME:-sentence-transformers/all-MiniLM-L6-v2}"
-    profiles: ["apps"]
-    restart: unless-stopped
-    deploy:
-      replicas: 3
-    env_file: .env
-    environment:
-      RABBITMQ_URL: "amqp://${RABBITMQ_USER:-admin}:${RABBITMQ_PASSWORD:-secret}@rabbitmq:5672/news_monitor"
-      PROVIDER_URL: http://provider:8080/news-provider
-      MANAGER_URL: http://manager:9000/manager
-      REDIS_URL: "redis://:${REDIS_PASSWORD:-secret}@redis:6379/0"
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
-      manager:
-        condition: service_healthy
-      provider:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-
   enricher-worker:
     build:
       context: ./backend/workers
@@ -291,4 +250,3 @@ volumes:
   neo4j_plugins:
   rabbitmq_data:
   postgres_data:
-  redis_data:

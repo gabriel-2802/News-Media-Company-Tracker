@@ -1,8 +1,10 @@
 """
 RabbitMQ-driven enrichment worker.
 
-Consumes `article.enrich` (a third fan-out of the scraper's `article.saved`
-event, next to `article.classify` and `article.cluster`). For each article:
+Consumes `article.enrich` (a fan-out of the scraper's `article.saved` event,
+next to `article.classify`). Every saved article already has its own story
+(the provider creates it), so enrichment can derive events at once. For each
+article:
 
   1. Fetch title + body from the Provider.
   2. Link company mentions against the company universe (enricher/linker.py).

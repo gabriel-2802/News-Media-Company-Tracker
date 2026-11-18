@@ -8,13 +8,13 @@ How data moves through the banking/fintech news backend, from a feed item to an 
 4. [Event consumers: alerts and market analytics](#4-event-consumers-alerts-and-market-analytics)
 5. [Investor read paths](#5-investor-read-paths)
 6. [Authentication](#6-authentication)
-7. [Topic and story notifications](#7-topic-and-story-notifications)
+7. [Topic notifications](#7-topic-notifications)
 
 ---
 
 ## 1. System overview
 
-Three Spring Boot services and four Python workers. Every service owns its datastore; nothing reads another service's database. Workers write only through the provider's API (the clusterer also owns Qdrant).
+Three Spring Boot services and three Python workers. Every service owns its datastore; nothing reads another service's database. Workers write only through the provider's API. There is no clustering step: every saved article is its own story (see [§2](#2-article-pipeline-feed-to-story)).
 
 ```mermaid
 flowchart TB
@@ -30,14 +30,11 @@ flowchart TB
         scraper[Scraper]
         classifier["Classifier<br/>FinBERT + rules"]
         enricher["Enricher<br/>companies + sentiment"]
-        clusterer["Clusterer<br/>embeddings"]
     end
 
     pg[("Postgres<br/>news_monitor.users")]
     neo[(Neo4j)]
     market[("Postgres<br/>market")]
-    qdrant[(Qdrant)]
-    redis[(Redis)]
     feeds[/27 RSS / Atom feeds/]
     twelve[/Twelve Data prices/]
 
@@ -56,26 +53,21 @@ flowchart TB
     rabbit -->|"⑤ manager.events"| manager
     analytics -->|"⑥ impact write-back"| provider
     analytics --> twelve
-
-    clusterer --- qdrant
-    clusterer -.- redis
 ```
 
-① the provider queues a scrape job per due source · ② the scraper saves articles and publishes `article.saved`, which fans out to the classifier, enricher and clusterer · ③ every worker reads and writes only through the provider · ④ the provider publishes every changed Story→Company event · ⑤ analytics and the manager consume it (charts, ticker alerts) · ⑥ analytics writes event-study results back. Service-to-service reads (manager → provider/analytics for the watchlist, analytics → provider for its event feed) are in [§5](#5-investor-read-paths) and [§4](#4-event-consumers-alerts-and-market-analytics).
+① the provider queues a scrape job per due source · ② the scraper saves articles and publishes `article.saved`, which fans out to the classifier and enricher (the provider gives each saved article its own story) · ③ every worker reads and writes only through the provider · ④ the provider publishes every changed Story→Company event · ⑤ analytics and the manager consume it (charts, ticker alerts) · ⑥ analytics writes event-study results back. Service-to-service reads (manager → provider/analytics for the watchlist, analytics → provider for its event feed) are in [§5](#5-investor-read-paths) and [§4](#4-event-consumers-alerts-and-market-analytics).
 
 | Store | Owner | Holds |
 | --- | --- | --- |
 | Neo4j | Provider | Sources, articles, topics, stories, companies, tickers, events (`AFFECTS`) — the system of record |
 | Postgres `news_monitor` (schema `users`) | Manager | Users, roles, subscriptions and watchlists, notifications, alert dedup |
 | Postgres `market` | Analytics | Event read model, daily prices, event studies, company names, job leases |
-| Qdrant | Clusterer | One centroid vector per story |
-| Redis | Clusterer | Global lock around the attach-or-create decision |
 
 ---
 
 ## 2. Article pipeline: feed to story
 
-A scrape job per source, then one `article.saved` message fanned out to three independent workers. They finish in any order; the provider merges their results.
+A scrape job per source; saving an article also creates its own one-article story, then one `article.saved` message fans out to two independent workers. They finish in any order; the provider merges their results.
 
 ```mermaid
 sequenceDiagram
@@ -87,8 +79,6 @@ sequenceDiagram
     participant P as Provider (Neo4j)
     participant CL as Classifier
     participant EN as Enricher
-    participant CU as Clusterer
-    participant QD as Qdrant
 
     S->>Q: scrape.jobs {name, retry_count} (every 5 min for sources whose interval elapsed, or trigger-scrape)
     Q->>SC: scrape job
@@ -97,7 +87,7 @@ sequenceDiagram
     loop each new entry (robots.txt allowed, not already stored)
         SC->>F: fetch page (static → browser UA → Playwright)
         SC->>SC: extract body (trafilatura, banner stripping)
-        SC->>P: POST /api/articles
+        SC->>P: POST /api/articles (also creates the article's own story)
         SC->>Q: article.saved {url, source_name}
     end
     Note over SC,Q: feed failure → failure count + re-queue (max 3 attempts)
@@ -112,33 +102,20 @@ sequenceDiagram
         EN->>P: GET /api/articles/by-url
         EN->>EN: link companies, FinBERT sentiment
         EN->>P: PATCH /api/articles/enrichment (sentiment + mentions)
-    and
-        Q->>CU: article.cluster
-        CU->>P: GET /api/articles/by-url
-        CU->>CU: embed (MiniLM, 384-dim)
-        CU->>QD: nearest story centroids within 3 days
-        alt a candidate passes decision.py (≥ 0.60, company guard, official-release rule)
-            CU->>P: PATCH /api/stories/{id}/attach
-            CU->>QD: update centroid (running average)
-        else no candidate
-            CU->>P: POST /api/stories
-            CU->>QD: seed centroid
-        end
     end
 ```
 
-Worker failure handling: a provider outage is retried 5 times with backoff (60–240 s), after which the message is requeued and the worker stops; any other error requeues the message and the worker carries on.
+Clustering was removed: on these specialised sources 92% of clustered stories held one article (see the README's [Stories section](../README.md#stories-one-per-article)). Worker failure handling: a provider outage is retried 5 times with backoff (60–240 s), after which the message is requeued and the worker stops; any other error requeues the message and the worker carries on.
 
 ---
 
 ## 3. Events: from articles to Story→Company events
 
-An **event** is `(:Story)-[:AFFECTS {firstSeen, impactScore, articleCount, sentiment}]->(:Company)`. The provider recomputes a story's events whenever any of the three workers writes, so the result does not depend on which worker finishes first.
+An **event** is `(:Story)-[:AFFECTS {firstSeen, impactScore, articleCount, sentiment}]->(:Company)`. The provider recomputes a story's events whenever the enricher or the classifier writes, so the result does not depend on which worker finishes first.
 
 ```mermaid
 flowchart TD
     enrich["PATCH /api/articles/enrichment<br/>(enricher)"] --> refresh
-    attach["PATCH /api/stories/{id}/attach<br/>POST /api/stories (clusterer)"] --> refresh
     topics["PATCH /api/articles/topics<br/>(classifier)"] --> refresh
 
     refresh["EventService: refresh the story's events<br/>one transaction, story lock first,<br/>retried on deadlock (Neo4jWrites)"]
@@ -263,9 +240,9 @@ Reads on the provider and analytics are public; writes need `ROLE_ADMIN` or `ROL
 
 ---
 
-## 7. Topic and story notifications
+## 7. Topic notifications
 
-The older, article-level notifications (subscriptions to a topic or a story) use a separate direct queue, not the topic exchange.
+The older, article-level notifications (subscriptions to a topic) use a separate direct queue, not the topic exchange. Story subscriptions were removed with clustering, since a story no longer gains articles.
 
 ```mermaid
 sequenceDiagram
@@ -274,12 +251,12 @@ sequenceDiagram
     participant M as Manager
     participant P as Provider
     participant Q as article.notifications
-    participant W as Classifier / Clusterer
+    participant W as Classifier
 
-    U->>M: POST /api/users/me/subscriptions {type: TOPIC|STORY, targetId}
-    M->>P: POST /api/subscriptions/{story|topic}/{id} (count +1, unknown target → 400, provider down → 502)
-    W->>P: PATCH /api/articles/topics or /api/stories/{id}/attach
-    opt the topic or story has a subscription
+    U->>M: POST /api/users/me/subscriptions {type: TOPIC, targetId}
+    M->>P: POST /api/subscriptions/topic/{name} (count +1, unknown target → 400, provider down → 502)
+    W->>P: PATCH /api/articles/topics
+    opt the topic has a subscription
         P->>Q: {name, articleUrl, type}
         Q->>M: ArticleNotificationListener
         M->>M: ARTICLE notification for every subscribed user

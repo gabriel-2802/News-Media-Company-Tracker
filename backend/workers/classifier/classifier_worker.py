@@ -19,10 +19,9 @@ Message format (JSON), published by worker.py:
         "source_name": "bbc"
     }
 
-This worker only classifies topic; it does not touch Story/embedding logic.
-Clustering runs as an independent consumer of the same scrape-worker
-fan-out, off its own `article.cluster` queue (see clusterer_worker.py and
-rabbitmq/setup.sh).
+This worker only classifies topics. Company linking and sentiment run as an
+independent consumer of the same scrape-worker fan-out, off its own
+`article.enrich` queue (see enricher/enricher_worker.py and rabbitmq/setup.sh).
 
 Run (from workers/, the parent of this file):
     make classify-worker

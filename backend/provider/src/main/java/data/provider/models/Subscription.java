@@ -19,8 +19,5 @@ public class Subscription {
     private int count;
 
     @Relationship(type = "SUBSCRIBES_TO", direction = Relationship.Direction.OUTGOING)
-    private Story story;
-
-    @Relationship(type = "SUBSCRIBES_TO", direction = Relationship.Direction.OUTGOING)
     private Topic topic;
 }

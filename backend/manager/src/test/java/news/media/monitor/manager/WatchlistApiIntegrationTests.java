@@ -131,6 +131,9 @@ class WatchlistApiIntegrationTests {
         mvc.perform(as(put("/api/users/me/watchlist/A  B"))).andExpect(status().isBadRequest());           // two spaces
         mvc.perform(as(put("/api/users/me/watchlist/ABCDEFGHIJKLMNOPQRSTU"))).andExpect(status().isBadRequest());  // 21 chars
         mvc.perform(json(put("/api/users/me/watchlist/JPM"), "{\"minImpact\":1.5}")).andExpect(status().isBadRequest());
+        // STORY subscriptions were removed with clustering: the type no longer parses.
+        mvc.perform(json(post("/api/users/me/subscriptions"), "{\"type\":\"STORY\",\"targetId\":\"any-story\"}"))
+                .andExpect(status().isBadRequest());
         mvc.perform(json(put("/api/users/me/watchlist/JPM"), "{\"topics\":[\"Bad Topic\"]}")).andExpect(status().isBadRequest());
         mvc.perform(json(put("/api/users/me/watchlist/JPM"), "{not json")).andExpect(status().isBadRequest());
         mvc.perform(as(get("/api/users/me/watchlist"))).andExpect(jsonPath("$.length()").value(0));
