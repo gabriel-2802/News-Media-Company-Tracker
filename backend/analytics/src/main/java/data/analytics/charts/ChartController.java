@@ -38,6 +38,14 @@ import java.util.concurrent.TimeUnit;
 @Tag(name = "Charts")                                      // description in OpenApiConfig
 public class ChartController {
 
+    private static final String SYMBOL_DOC = "Ticker of a listed company in the universe, e.g. JPM, GS, C, BAC, HSBA, "
+            + "or NDA FI (a space is part of some non-US symbols). Case-insensitive. Valid symbols: the provider's "
+            + "GET /api/companies (tickers) or this service's sector heatmap. Price data (bars, quotes, impact) covers "
+            + "US listings only; other listings still have events, sentiment and news volume.";
+    private static final String EXCHANGE_DOC = "ISO 10383 MIC of the listing. Needed only when the symbol trades on "
+            + "several exchanges: CBK (XETR Commerzbank, XNAS Commercial Bancgroup) and BBVA (XMAD, XNYS); otherwise 400.";
+    private static final String SYMBOLS_DOC = "1 to 50 comma-separated tickers, case-insensitive, e.g. JPM,GS,C.";
+
     private static final int MAX_SPAN_DAYS = 5 * 366;
     private static final CacheControl CACHE = CacheControl.maxAge(60, TimeUnit.SECONDS).cachePublic();
 
@@ -67,6 +75,10 @@ public class ChartController {
         }
     }
 
+    private static List<String> upper(final List<String> symbols) {
+        return symbols.stream().map(x -> x.trim().toUpperCase(Locale.ROOT)).toList();
+    }
+
     private static List<String> csv(final String s) {
         return s == null || s.isBlank() ? List.of() : List.of(s.split("\\s*,\\s*"));
     }
@@ -78,8 +90,8 @@ public class ChartController {
     @GetMapping("/companies/{symbol}/price")
     @Operation(summary = "Daily OHLCV of a listing", description = "Bars aggregated into at most maxPoints buckets when the range is longer.")
     public ResponseEntity<PriceSeries> price(
-            @PathVariable final String symbol,
-            @Parameter(description = "ISO 10383 MIC; needed only if the symbol trades on several exchanges.") @RequestParam(required = false) final String exchange,
+            @Parameter(description = SYMBOL_DOC, example = "JPM") @PathVariable final String symbol,
+            @Parameter(description = EXCHANGE_DOC, example = "XNYS") @RequestParam(required = false) final String exchange,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate to,
             @RequestParam(defaultValue = "2000") @Min(50) @Max(5000) final int maxPoints) {
@@ -90,8 +102,8 @@ public class ChartController {
     @GetMapping("/companies/{symbol}/events")
     @Operation(summary = "Event markers of a listing", description = "Ready for setMarkers(); placed on the first trading day on/after the event.")
     public ResponseEntity<MarkerSeries> events(
-            @PathVariable final String symbol,
-            @RequestParam(required = false) final String exchange,
+            @Parameter(description = SYMBOL_DOC, example = "JPM") @PathVariable final String symbol,
+            @Parameter(description = EXCHANGE_DOC, example = "XNYS") @RequestParam(required = false) final String exchange,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate to,
             @Parameter(description = "Comma-separated topic names; any match.") @RequestParam(required = false) final String topics,
@@ -103,8 +115,8 @@ public class ChartController {
     @GetMapping("/companies/{symbol}/overlay")
     @Operation(summary = "Price bars and event markers in one call", description = "The main investor chart.")
     public ResponseEntity<Overlay> overlay(
-            @PathVariable final String symbol,
-            @RequestParam(required = false) final String exchange,
+            @Parameter(description = SYMBOL_DOC, example = "JPM") @PathVariable final String symbol,
+            @Parameter(description = EXCHANGE_DOC, example = "XNYS") @RequestParam(required = false) final String exchange,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate to,
             @RequestParam(defaultValue = "2000") @Min(50) @Max(5000) final int maxPoints,
@@ -117,7 +129,7 @@ public class ChartController {
     @GetMapping("/companies/{symbol}/sentiment")
     @Operation(summary = "Company sentiment per day or week", description = "Article-weighted mean of the company's event sentiment.")
     public ResponseEntity<List<SentimentPoint>> sentiment(
-            @PathVariable final String symbol, @RequestParam(required = false) final String exchange,
+            @Parameter(description = SYMBOL_DOC, example = "JPM") @PathVariable final String symbol, @Parameter(description = EXCHANGE_DOC, example = "XNYS") @RequestParam(required = false) final String exchange,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate to,
             @RequestParam(defaultValue = "day") final String bucket) {
@@ -128,7 +140,7 @@ public class ChartController {
     @GetMapping("/companies/{symbol}/news-volume")
     @Operation(summary = "Events and articles about a company per day or week")
     public ResponseEntity<List<VolumePoint>> newsVolume(
-            @PathVariable final String symbol, @RequestParam(required = false) final String exchange,
+            @Parameter(description = SYMBOL_DOC, example = "JPM") @PathVariable final String symbol, @Parameter(description = EXCHANGE_DOC, example = "XNYS") @RequestParam(required = false) final String exchange,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate from,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) final LocalDate to,
             @RequestParam(defaultValue = "day") final String bucket) {
@@ -138,7 +150,11 @@ public class ChartController {
 
     @GetMapping("/events/{storyId}/{companyId}/impact")
     @Operation(summary = "Event study with the abnormal-return path over trading days [-5, +5]")
-    public ResponseEntity<EventImpact> impact(@PathVariable final String storyId, @PathVariable final String companyId) {
+    public ResponseEntity<EventImpact> impact(
+            @Parameter(description = "Story id of the event: the storyId field of a marker from /events or /overlay.")
+            @PathVariable final String storyId,
+            @Parameter(description = "Company id of the event: the companyId field of the same marker.")
+            @PathVariable final String companyId) {
         return ok(charts.impact(storyId, companyId));
     }
 
@@ -171,13 +187,15 @@ public class ChartController {
 
     @GetMapping("/quotes")
     @Operation(summary = "Latest close and change for several symbols", description = "Unknown or ambiguous symbols are left out.")
-    public ResponseEntity<List<Quote>> quotes(@RequestParam @Size(min = 1, max = 50) final List<String> symbols) {
-        return ok(charts.quotes(symbols));
+    public ResponseEntity<List<Quote>> quotes(
+            @Parameter(description = SYMBOLS_DOC, example = "JPM,GS,C") @RequestParam @Size(min = 1, max = 50) final List<String> symbols) {
+        return ok(charts.quotes(upper(symbols)));
     }
 
     @GetMapping("/latest-events")
     @Operation(summary = "Most recent event per symbol", description = "For watchlists; symbols without events are left out.")
-    public ResponseEntity<List<LatestEvent>> latestEvents(@RequestParam @Size(min = 1, max = 50) final List<String> symbols) {
-        return ok(charts.latestEvents(symbols));
+    public ResponseEntity<List<LatestEvent>> latestEvents(
+            @Parameter(description = SYMBOLS_DOC, example = "JPM,GS,C") @RequestParam @Size(min = 1, max = 50) final List<String> symbols) {
+        return ok(charts.latestEvents(upper(symbols)));
     }
 }

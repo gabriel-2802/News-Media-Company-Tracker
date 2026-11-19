@@ -199,6 +199,15 @@ class ChartApiIntegrationTests {
     }
 
     @Test
+    void symbolsAreCaseInsensitive() throws Exception {
+        String lower = body("/api/charts/companies/itbank/price?from=2026-06-01&to=2026-06-30&exchange=xtst");
+        String upper = body("/api/charts/companies/ITBANK/price?from=2026-06-01&to=2026-06-30");
+        assertThat(JsonPath.<String>read(lower, "$.listing.symbol")).isEqualTo("ITBANK");
+        assertThat(JsonPath.<List<Object>>read(lower, "$.bars")).hasSameSizeAs(JsonPath.<List<Object>>read(upper, "$.bars"));
+        assertThat(JsonPath.<List<Object>>read(body("/api/charts/quotes?symbols=itbank"), "$")).hasSize(1);
+    }
+
+    @Test
     void latestEventPerSymbol() throws Exception {
         String json = body("/api/charts/latest-events?symbols=itbank,NOSUCHSYMBOL");
         assertThat(JsonPath.<Integer>read(json, "$.length()")).isEqualTo(1);

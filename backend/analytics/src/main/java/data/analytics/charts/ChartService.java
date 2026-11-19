@@ -41,7 +41,10 @@ public class ChartService {
 
     // ---------------------------------------------------------------- listings
 
-    public Listing listing(final String symbol, final String exchange) {
+    public Listing listing(final String rawSymbol, final String rawExchange) {
+        // Tickers and MICs are stored upper-case; accept any case (as the manager's watchlist does).
+        final String symbol = rawSymbol.trim().toUpperCase(java.util.Locale.ROOT);
+        final String exchange = rawExchange == null || rawExchange.isBlank() ? null : rawExchange.trim().toUpperCase(java.util.Locale.ROOT);
         final List<Listing> found = jdbc.sql("""
                 SELECT symbol, exchange, max(currency) AS currency, max(name) AS name, max(company_id) AS company_id FROM (
                     SELECT symbol, exchange, currency, name, company_id FROM companies WHERE symbol = :s
