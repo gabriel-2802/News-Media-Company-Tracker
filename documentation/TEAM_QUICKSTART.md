@@ -6,11 +6,7 @@ Run the whole banking/fintech news monitor locally with one command. Full detail
 
 Needs Docker, JDK 21 (`brew install openjdk@21`), Maven and Python 3.11 (`brew install python@3.11`).
 
-```bash
-make env              # creates .env from env.example
-```
-
-In `.env`, set your own `NEO4J_PASSWORD`, `RABBITMQ_PASSWORD`, `POSTGRES_PASSWORD`, `MARKET_DB_PASSWORD` and `SYSTEM_CODE` (any value; services and workers share it), and put your contact email in `USER_AGENT` (keep the quotes). For prices, add a free [Twelve Data](https://twelvedata.com) key: `MARKET_DATA_PROVIDER=twelvedata`, `TWELVEDATA_API_KEY=...`.
+The repository includes `.env` with the team's development settings (database passwords, `SYSTEM_CODE`, the Twelve Data key for prices), so a fresh clone runs as is. Two things to change for yourself: your contact email in `USER_AGENT` (keep the quotes; sources and the SEC see it), and, if you fetch prices often, your own free [Twelve Data](https://twelvedata.com) key, since the free plan's 800 credits a day are shared by everyone using one key. Without a `.env`, `make env` creates one from `env.example`.
 
 ```bash
 mkdir -p backend/keys      # JWT key pair, used by all services
@@ -54,7 +50,7 @@ Protected endpoints: log in with `POST /manager/api/auth/login`, then click **Au
 | Postgres `news_monitor` (port 5433) | `POSTGRES_USER` (default `postgres`) | `POSTGRES_PASSWORD` |
 | Postgres `market` | `analytics` | `MARKET_DB_PASSWORD` |
 
-New users register with `POST /manager/api/auth/register`. Passing `adminCode` = `devcode123` (default) makes the account an admin. Both admin defaults are for local use only: set `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD` and `APP_ADMIN_REGISTER_CODE` in `.env` anywhere shared. Never commit `.env`.
+New users register with `POST /manager/api/auth/register`. Passing `adminCode` = `devcode123` (default) makes the account an admin. Both admin defaults are for local use only: set `APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD` and `APP_ADMIN_REGISTER_CODE` for any shared or deployed environment, and keep those real values out of the repository's `.env`, which is committed.
 
 ## 5. Initial data
 

@@ -729,7 +729,7 @@ If provider's public key (`JWT_PUBLIC_KEY_PATH`) doesn't match manager's private
 ### One-Time Setup
 
 ```bash
-make env   # copies env.example → .env (skipped if .env already exists)
+make env   # only without a .env: the repository ships one with the team's development settings
 ```
 
 Generate the JWT signing keypair. manager signs tokens with the private key, provider and analytics only ever hold the public key (see [Authentication & Authorization Model](#authentication--authorization-model)):
@@ -795,7 +795,7 @@ Both workflows share the same infra containers and `.env`. `make up-full`'s serv
 | --- | --- | --- |
 | `admin@example.com` | `Admin123!` | `ROLE_ADMIN` |
 
-These are development defaults. For any shared or deployed environment set your own in `.env` (`APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD`, `APP_ADMIN_NAME`) and never commit them; `.env` is gitignored. Regular users register themselves through `POST /api/auth/register` (no seeded accounts).
+These are development defaults. For any shared or deployed environment set your own in `.env` (`APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD`, `APP_ADMIN_NAME`) and keep those real values out of the repository: `.env` is committed with the team's development settings. Regular users register themselves through `POST /api/auth/register` (no seeded accounts).
 
 Log in and get a token:
 

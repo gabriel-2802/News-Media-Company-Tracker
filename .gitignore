@@ -5,7 +5,6 @@
 *.iml
 
 # Secrets — never commit
-.env
 *.pem
 *.key
 
