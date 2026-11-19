@@ -84,6 +84,24 @@ ps: ## Show running containers and their health status
 .PHONY: status
 status: ps
 
+# ── Local (non-Docker) services ────────────────────────────────────────────────
+# The Spring services do not read .env themselves; these targets pass it in
+# (this Makefile includes and exports it) and pick JDK 21 on macOS (Lombok
+# fails on 25). Start the manager first: the workers and analytics log in to it.
+# Run each in its own terminal; Ctrl-C stops it.
+JAVA21 = JAVA_HOME="$$(/usr/libexec/java_home -v 21 2>/dev/null || echo "$$JAVA_HOME")"
+
+.PHONY: run-manager run-provider run-analytics
+run-manager: ## Run the manager locally on :9000 (needs `make up`)
+	cd backend/manager && $(JAVA21) SPRING_DATASOURCE_PASSWORD="$$POSTGRES_PASSWORD" \
+	  DB_USERNAME="$$POSTGRES_USER" DB_NAME="$$POSTGRES_DB" mvn -q spring-boot:run
+
+run-provider: ## Run the provider locally on :8080 (needs `make up`)
+	cd backend/provider && $(JAVA21) mvn -q spring-boot:run
+
+run-analytics: ## Run the analytics service locally on :8090 (needs `make up` and the provider)
+	cd backend/analytics && $(JAVA21) mvn -q spring-boot:run
+
 # ── Local (non-Docker) workers ─────────────────────────────────────────────────
 # Delegates to backend/workers/Makefile, which must run from its own directory.
 

@@ -750,16 +750,18 @@ Both files are gitignored (`backend/keys/.gitignore`) — generate your own per 
 make dev   # env + up (infra only) + migrate + rabbitmq-setup
 ```
 
-This starts only neo4j/rabbitmq/postgres as containers. Run each app yourself in its own terminal, from its own directory (all read the root `.env`):
+This starts only neo4j/rabbitmq/postgres as containers. One time, build the worker venvs (`make setup-workers`) and train the classifier model (see [Classifier Worker](#classifier-worker)). Then run each app in its own terminal, from the repository root, in this order (workers and analytics log in to the manager at startup, analytics reads the provider); Ctrl-C stops one:
 
 ```bash
-cd backend/manager   && mvn spring-boot:run   # http://localhost:9000/manager
-cd backend/provider  && mvn spring-boot:run   # http://localhost:8080/news-provider
-cd backend/analytics && mvn spring-boot:run   # http://localhost:8090/analytics
-
-cd backend/workers && make setup              # one-time: builds a venv per worker type
-cd backend/workers && make scrape-worker      # also: classify-worker, enrich-worker
+make run-manager      # http://localhost:9000/manager
+make run-provider     # http://localhost:8080/news-provider
+make run-analytics    # http://localhost:8090/analytics
+make classify-worker
+make enrich-worker
+make scrape-worker
 ```
+
+The `run-*` targets pass the root `.env` to the Spring services (they do not read it themselves; a plain `mvn spring-boot:run` silently falls back to built-in defaults) and pick JDK 21 on macOS. With everything up, `make e2e` checks the whole pipeline (about 3 minutes); `make down` stops the containers.
 
 **B. Fully containerized** — manager, provider, analytics, and several replicas of each worker (3 per worker type, 2 enrichers) also run as containers (all named `news-mm-*`). The worker replicas load ML models each, so give Docker well over 5 GB of memory (the 4.8 GB default VM is not enough for the full stack):
 
@@ -794,6 +796,8 @@ Run `make help` for the full, always-current list. The ones you'll reach for mos
 | Target                                    | What it does                                                                                                                     |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `make dev`                              | Bootstrap infra:`.env`, infra containers, migrations, RabbitMQ setup                                                           |
+| `make run-manager` / `run-provider` / `run-analytics` | Run a Spring service locally with the root `.env` and JDK 21 (one terminal each; manager first) |
+| `make scrape-worker` / `classify-worker` / `enrich-worker` | Run a worker locally (after `make setup-workers`) |
 | `make up` / `make up-full`            | Start infra only / infra + manager + provider + analytics + all workers                                                          |
 | `make down`                             | Stop everything that's running                                                                                                   |
 | `make ps`                               | Show container status                                                                                                            |
