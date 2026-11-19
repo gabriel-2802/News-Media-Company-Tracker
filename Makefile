@@ -18,6 +18,20 @@ RABBITMQ_PASSWORD ?= secret
 RABBITMQ_VHOST    ?= news_monitor
 POSTGRES_USER     ?= postgres
 POSTGRES_DB       ?= news_monitor
+APP_ADMIN_EMAIL   ?= admin@example.com
+APP_ADMIN_PASSWORD ?= Admin123!
+
+MANAGER_URL   := http://localhost:9000/manager
+PROVIDER_URL  := http://localhost:8080/news-provider
+ANALYTICS_URL := http://localhost:8090/analytics
+
+# Admin JWT from the manager, for the data-loading targets below. Used as
+# `tok=$$($(ADMIN_LOGIN))` and then "Bearer $$tok": macOS's /bin/sh (bash 3.2)
+# mangles quotes nested inside a double-quoted "$(...)".
+ADMIN_LOGIN = curl -sf -X POST $(MANAGER_URL)/api/auth/login -H 'Content-Type: application/json' \
+  -d "{\"email\":\"$$APP_ADMIN_EMAIL\",\"password\":\"$$APP_ADMIN_PASSWORD\"}" \
+  | python3 -c 'import json,sys; print(json.load(sys.stdin)["token"])'
+LOGIN_FAILED = { echo "✗ admin login failed: is the manager running (make status)?"; exit 1; }
 
 # Shared confirmation prompt for destructive targets. Called as
 # `@$(call CONFIRM,message)` — the leading @ (at the call site, not in here)
@@ -50,20 +64,19 @@ dev: env up migrate rabbitmq-setup ## Bootstrap infra only: create .env, start i
 	@echo "Neo4j    → http://localhost:7474  (neo4j / $(NEO4J_PASSWORD))"
 	@echo "RabbitMQ → http://localhost:15672 ($(RABBITMQ_USER) / $(RABBITMQ_PASSWORD))"
 	@echo ""
-	@echo "manager/provider/workers are not started — run them locally, or use 'make up-full'."
+	@echo "Services and workers are not started: use 'make run' (or the run-*/…-worker targets)."
 
-# ── Infrastructure & Apps ──────────────────────────────────────────────────────
-# `up`/`dev` start infra only (neo4j, rabbitmq, postgres) — the old
-# manual-deploy workflow of running manager/provider/workers yourself against
-# that infra keeps working unchanged. `up-full` additionally builds and starts
-# manager, provider, and 3 replicas of each worker as containers.
+# ── Infrastructure & containers ────────────────────────────────────────────────
+# `up`/`dev` start infra only (neo4j, rabbitmq, postgres). `up-full` also builds
+# and starts manager, provider, analytics and the workers (3 scrapers,
+# 3 classifiers, 2 enrichers) as containers; it needs well over 5 GB for Docker.
 
 .PHONY: up
 up: ## Start infra only (neo4j, rabbitmq, postgres)
 	$(COMPOSE) up -d
 
 .PHONY: up-full
-up-full: ## Build and start EVERYTHING as containers: infra + manager + provider + 3x each worker
+up-full: ## Build and start EVERYTHING as containers (infra, 3 services, workers; >5 GB Docker memory)
 	$(COMPOSE) $(APPS) up -d --build
 
 .PHONY: down
@@ -71,7 +84,7 @@ down: ## Stop all services (infra + apps, if running)
 	$(COMPOSE) $(APPS) down
 
 .PHONY: restart
-restart: down up ## Restart infra services
+restart: down up ## Recreate the infra containers (data kept)
 
 .PHONY: pull
 pull: ## Pull the latest base images
@@ -96,6 +109,35 @@ stop: ## Stop everything `make run` started, then the infra containers (data kep
 
 status: ## One line per component: infra, services, workers
 	@scripts/local-stack.sh status
+
+.PHONY: urls
+urls: ## Print every UI / Swagger URL and the default local logins
+	@echo "Swagger  manager   → $(MANAGER_URL)/swagger-ui.html"
+	@echo "Swagger  provider  → $(PROVIDER_URL)/swagger-ui.html"
+	@echo "Swagger  analytics → $(ANALYTICS_URL)/swagger-ui.html"
+	@echo "App admin          → $$APP_ADMIN_EMAIL / $$APP_ADMIN_PASSWORD   (POST $(MANAGER_URL)/api/auth/login)"
+	@echo "Neo4j Browser      → http://localhost:7474   (neo4j / $$NEO4J_PASSWORD)"
+	@echo "RabbitMQ           → http://localhost:15672  ($$RABBITMQ_USER / $$RABBITMQ_PASSWORD, vhost $(RABBITMQ_VHOST))"
+	@echo "Postgres           → localhost:$${POSTGRES_PORT:-5433}  ($$POSTGRES_USER / $$POSTGRES_PASSWORD, db $$POSTGRES_DB)"
+
+# ── Data loading (needs `make run`) ────────────────────────────────────────────
+# Companies, tickers, topics and sources are seeded by the Neo4j migrations on
+# first start; these fill in news and market data on demand instead of waiting
+# for the schedulers (scrape every 5 min per due source, prices after US close).
+
+.PHONY: scrape-now prices-now studies-now
+scrape-now: ## Queue a scrape of every news source now (as the seeded admin)
+	@tok=$$($(ADMIN_LOGIN)) || $(LOGIN_FAILED); \
+	n=$$(curl -sf -X POST -H "Authorization: Bearer $$tok" $(PROVIDER_URL)/api/articles/trigger-scrape) \
+	  && echo "✓ $$n scrape jobs queued; articles appear within minutes (make status, .run/logs/scraper.log)"
+
+prices-now: ## Fetch daily prices now (needs TWELVEDATA_API_KEY; uses API credits)
+	@tok=$$($(ADMIN_LOGIN)) || $(LOGIN_FAILED); \
+	curl -sf -X POST -H "Authorization: Bearer $$tok" $(ANALYTICS_URL)/api/admin/prices/ingest && echo
+
+studies-now: ## Run pending event studies now (normally every 30 min)
+	@tok=$$($(ADMIN_LOGIN)) || $(LOGIN_FAILED); \
+	curl -sf -X POST -H "Authorization: Bearer $$tok" $(ANALYTICS_URL)/api/admin/impact/run && echo
 
 # ── Local (non-Docker) services ────────────────────────────────────────────────
 # The Spring services do not read .env themselves; these targets pass it in
@@ -143,7 +185,7 @@ test: test-java test-workers ## Run every test suite (needs `make up`)
 test-java: ## Provider, analytics and manager tests (JDK 21)
 	cd backend/provider && mvn -q clean test
 	cd backend/analytics && mvn -q clean test
-	cd backend/manager && SPRING_DATASOURCE_PASSWORD=$(POSTGRES_PASSWORD) DB_USERNAME=$(POSTGRES_USER) DB_NAME=$(POSTGRES_DB) mvn -q clean test
+	cd backend/manager && SPRING_DATASOURCE_PASSWORD="$$POSTGRES_PASSWORD" DB_USERNAME="$$POSTGRES_USER" DB_NAME="$$POSTGRES_DB" mvn -q clean test
 
 test-workers: ## Worker unit tests (scraper fixtures and keepalive, linker golden set and sentiment rules, classifier smoke)
 	$(MAKE) -C backend/workers test
@@ -157,7 +199,9 @@ check-sources: ## Health check of seeded sources: exit 1 when more than 20 % are
 e2e: ## End-to-end check against running services (see backend/e2e/e2e_check.py)
 	backend/workers/scraper/venv/bin/python backend/e2e/e2e_check.py
 
-# ── Logs ───────────────────────────────────────────────────────────────────────
+# ── Logs (containerized stack, `make up-full`) ────────────────────────────────
+# For `make run`, the logs are files: .run/logs/<manager|provider|analytics|
+# classifier|enricher|scraper>.log (e.g. tail -f .run/logs/scraper.log).
 
 .PHONY: logs
 logs: ## Stream logs. Usage: make logs [SERVICE=neo4j|rabbitmq|manager|provider|analytics|scraper-worker|classifier-worker|enricher-worker]
@@ -191,7 +235,7 @@ logs-enricher: ## Stream logs for all enricher-worker replicas
 
 .PHONY: clean
 clean: ## Stop services and DELETE all volumes — DESTRUCTIVE
-	@$(call CONFIRM,this removes all persisted Neo4j and RabbitMQ data.)
+	@$(call CONFIRM,this removes ALL persisted data: Neo4j, Postgres (users and market) and RabbitMQ.)
 	$(COMPOSE) $(APPS) down -v --remove-orphans
 
 .PHONY: clean-images
@@ -199,9 +243,9 @@ clean-images: clean ## Remove volumes and prune dangling images
 	docker image prune -f
 
 # ── Neo4j ──────────────────────────────────────────────────────────────────────
-# Migrations now also run automatically when the neo4j container starts (see
-# backend/neo4j/entrypoint-wrapper.sh) — `make migrate` is for picking up a
-# newly-added migration file without restarting the container.
+# Migrations run automatically when the neo4j container starts (see
+# backend/neo4j/entrypoint-wrapper.sh); `make migrate` picks up a newly added
+# migration file without a restart.
 
 .PHONY: neo4j-shell
 neo4j-shell: ## Open an interactive Cypher Shell session
@@ -251,9 +295,9 @@ neo4j-purge: ## Delete ALL data in Neo4j — nodes, relationships, migration his
 	@echo "✓ Neo4j purged. Run 'make migrate' to reapply schema constraints if needed."
 
 # ── RabbitMQ ───────────────────────────────────────────────────────────────────
-# Topology setup now also runs automatically when the rabbitmq container
-# starts (see backend/rabbitmq/entrypoint-wrapper.sh) — `make rabbitmq-setup` is for
-# re-running it by hand (e.g. after editing backend/rabbitmq/setup.sh) without a restart.
+# Topology setup runs automatically when the rabbitmq container starts (see
+# backend/rabbitmq/entrypoint-wrapper.sh); `make rabbitmq-setup` re-runs it,
+# e.g. after editing backend/rabbitmq/setup.sh.
 
 .PHONY: rabbitmq-setup
 rabbitmq-setup: ## Re-run topology setup (idempotent — safe to repeat)
@@ -303,11 +347,3 @@ postgres-purge: ## Drop the users schema (all tables + migration history) — DE
 	@$(call CONFIRM,this deletes ALL data in Postgres (users, roles, migration history).)
 	@$(MAKE) _postgres-purge-exec
 	@echo "✓ Postgres purged. Restart the manager service to reapply schema migrations."
-
-# ── Combined cleanup ───────────────────────────────────────────────────────────
-
-.PHONY: purge-dbs
-purge-dbs: ## Wipe ALL graph data in Neo4j (same as neo4j-purge; Qdrant is gone) — DESTRUCTIVE
-	@$(call CONFIRM,this deletes ALL data in Neo4j. This cannot be undone.)
-	@$(MAKE) _neo4j-purge-exec
-	@echo "✓ Neo4j purged. Run 'make migrate' to reapply Neo4j schema constraints if needed."
