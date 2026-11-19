@@ -1,8 +1,8 @@
 # News Monitor : Complete System Architecture
 
-**News Monitor** is a distributed backend that ingests, classifies and links **banking and fintech news** to companies, turns it into stories and company events, and serves them with market data, chart APIs and ticker alerts to an investor-facing app. It started as a generic news monitor and was transformed in phases (see [`documentation/FINTECH_TRANSFORMATION_PLAN.md`](documentation/FINTECH_TRANSFORMATION_PLAN.md) for the plan and its progress log; all phases are complete). The system has three Spring Boot services (a user-facing **manager**, a data **provider**, and a market **analytics** service) and three Python workers (scraper, classifier, enricher), connected by HTTP and RabbitMQ, each service owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
+**News Monitor** is a distributed backend that ingests, classifies and links **banking and fintech news** to companies, turns it into stories and company events, and serves them with market data, chart APIs and ticker alerts to an investor-facing app. It started as a generic news monitor and was transformed in phases (the phases are summarised under [Architecture Evolution](#architecture-evolution)). The system has three Spring Boot services (a user-facing **manager**, a data **provider**, and a market **analytics** service) and three Python workers (scraper, classifier, enricher), connected by HTTP and RabbitMQ, each service owning its own datastore. This document is the complete, single source of truth for understanding the entire system.
 
-**Flow diagrams** (pipeline, events, alerts, read paths, auth): [`SYSTEM_FLOW.md`](documentation/SYSTEM_FLOW.md). **API reference:** [`PROVIDER_API.md`](documentation/PROVIDER_API.md), [`MANAGER_API.md`](documentation/MANAGER_API.md), [`CHARTS_API.md`](documentation/CHARTS_API.md).
+**New here?** [`TEAM_QUICKSTART.md`](documentation/TEAM_QUICKSTART.md): setup, `make run`, Swagger pages, logins and initial data on one page. **Flow diagrams** (pipeline, events, alerts, read paths, auth): [`SYSTEM_FLOW.md`](documentation/SYSTEM_FLOW.md). **API reference:** [`PROVIDER_API.md`](documentation/PROVIDER_API.md), [`MANAGER_API.md`](documentation/MANAGER_API.md), [`CHARTS_API.md`](documentation/CHARTS_API.md).
 
 ```mermaid
 flowchart LR
@@ -69,7 +69,7 @@ Vectors and structured data have different access patterns. Embedding 384-dim ve
 
 ### Phase 4: Banking / Fintech Investor Backend (Current)
 
-The generic monitor was turned into an investor backend ([plan and progress log](documentation/FINTECH_TRANSFORMATION_PLAN.md)):
+The generic monitor was turned into an investor backend:
 
 - **Sources:** 27 validated US/UK/EU banking feeds (trade press, financial news, regulators, central banks); political-orientation data removed.
 - **Classifier:** 13 multi-label banking topics, FinBERT fine-tuned on public data only, plus a rule layer.
@@ -814,6 +814,8 @@ Run `make help` for the full, always-current list. The ones you'll reach for mos
 | Target                                    | What it does                                                                                                                     |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `make run` / `make stop` / `make status` | Start / stop / inspect the entire system locally (infra + services + workers; logs in `.run/logs/`) |
+| `make urls`                             | Print every Swagger / UI URL and the logins from your `.env` |
+| `make scrape-now` / `prices-now` / `studies-now` | Load data now instead of waiting for the schedulers: scrape all sources, fetch prices (Twelve Data credits), run event studies |
 | `make dev`                              | Bootstrap infra:`.env`, infra containers, migrations, RabbitMQ setup                                                           |
 | `make run-manager` / `run-provider` / `run-analytics` | Run a Spring service locally with the root `.env` and JDK 21 (one terminal each; manager first) |
 | `make scrape-worker` / `classify-worker` / `enrich-worker` | Run a worker locally (after `make setup-workers`) |
@@ -826,7 +828,7 @@ Run `make help` for the full, always-current list. The ones you'll reach for mos
 | `make rabbitmq-setup`                   | Re-run RabbitMQ topology setup (idempotent)                                                                                      |
 | `make neo4j-shell` / `rabbitmq-shell` | Open an interactive shell into that container                                                                                    |
 | `make clean`                            | Stop everything and delete all volumes —**destructive**                                                                   |
-| `make *-purge`                          | Wipe a specific datastore's data (`neo4j-purge`, `postgres-purge`, `purge-dbs` = Neo4j) — **destructive** |
+| `make *-purge`                          | Wipe a specific datastore's data (`neo4j-purge`, `postgres-purge`) — **destructive** |
 
 Neo4j migrations and RabbitMQ topology setup both run automatically the moment their container starts (see `backend/neo4j/entrypoint-wrapper.sh` and `backend/rabbitmq/entrypoint-wrapper.sh`) — the `make migrate`/`make rabbitmq-setup` targets above are for re-running them by hand (e.g. a new migration file appeared) without restarting the container.
 

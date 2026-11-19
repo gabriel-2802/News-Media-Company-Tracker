@@ -1,7 +1,7 @@
 """
 Banking topic taxonomy and the mappings from public datasets onto it.
 
-Public data only (decision recorded in documentation/FINTECH_TRANSFORMATION_PLAN.md):
+Public data only (a project decision: no scraped or licensed training text):
   * zeroshot/twitter-financial-news-topic (TFNT): ~21k finance headlines/tweets,
     20 single-label classes. Integer labels; names below are from the dataset
     card and were checked against sample texts.
