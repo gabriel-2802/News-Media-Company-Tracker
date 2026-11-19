@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 @Validated
 @RequiredArgsConstructor
 @RequestMapping("/api/charts")
-@Tag(name = "Charts", description = "Price, event-marker, sentiment and market-impact series for charts.")
+@Tag(name = "Charts")                                      // description in OpenApiConfig
 public class ChartController {
 
     private static final int MAX_SPAN_DAYS = 5 * 366;
