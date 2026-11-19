@@ -789,7 +789,15 @@ Both workflows share the same infra containers and `.env`. `make up-full`'s serv
 | Provider | `http://localhost:8080/news-provider` | `/actuator/health` | `/swagger-ui.html` |
 | Analytics | `http://localhost:8090/analytics` | `/actuator/health` | `/swagger-ui.html` |
 
-Seeded admin login (from `AdminSeeder` — override via `APP_ADMIN_*` in `.env`):
+**Default login (local development).** The manager seeds one admin account at startup (`AdminSeeder`, defaults in `backend/manager/src/main/resources/application.yaml`):
+
+| Username (email) | Password | Role |
+| --- | --- | --- |
+| `admin@example.com` | `Admin123!` | `ROLE_ADMIN` |
+
+These are development defaults. For any shared or deployed environment set your own in `.env` (`APP_ADMIN_EMAIL`, `APP_ADMIN_PASSWORD`, `APP_ADMIN_NAME`) and never commit them; `.env` is gitignored. Regular users register themselves through `POST /api/auth/register` (no seeded accounts).
+
+Log in and get a token:
 
 ```bash
 curl -X POST http://localhost:9000/manager/api/auth/login \
