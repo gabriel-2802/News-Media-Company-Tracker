@@ -10,13 +10,16 @@
 #   stop    stops the services and workers, then the infra containers
 #   status  one line per component
 #
-# Logs: .run/logs/<name>.log   Process groups: .run/<name>.pid
+# Logs: .run/logs/<name>.log. Process-group ids live outside the repo (in
+# $TMPDIR): the project may sit in an iCloud-synced folder, where sync can hide
+# or resurrect small files, and a missing pid file made stop skip a process.
+# stop also sweeps our ports and worker processes in case a pid file is lost.
 set -uo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-RUN="$ROOT/.run"
-LOGS="$RUN/logs"
-mkdir -p "$LOGS"
+LOGS="$ROOT/.run/logs"
+RUN="/tmp/news-monitor-run-$(printf '%s' "$ROOT" | shasum | cut -c1-10)"   # fixed path: same for every shell
+mkdir -p "$LOGS" "$RUN"
 
 SERVICES=(manager provider analytics)
 WORKERS=(classifier enricher scraper)
@@ -154,13 +157,39 @@ stop_one() {
     kill -KILL -- "-$p" 2>/dev/null || true
     ok "$name stopped"
   fi
-  rm -f "$RUN/$name.pid"
+  rm -f "${RUN:?}/$name.pid"
+}
+
+kill_group_of() {   # TERM, then KILL, the whole process group of a pid
+  local pg; pg="$(ps -o pgid= -p "$1" 2>/dev/null | tr -d ' ')"; [[ -n "$pg" ]] || return 0
+  kill -TERM -- "-$pg" 2>/dev/null || kill -TERM "$1" 2>/dev/null
+  local i; for i in $(seq 1 20); do kill -0 "$1" 2>/dev/null || return 0; sleep 1; done
+  kill -KILL -- "-$pg" 2>/dev/null || kill -KILL "$1" 2>/dev/null || true
+}
+
+# Anything of ours still running without a pid file (started by hand, or a
+# pid file lost): service listeners on our ports and this project's workers.
+stop_strays() {
+  local port p n
+  for port in 9000 8080 8090; do
+    for p in $(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null); do
+      kill_group_of "$p"; ok "stopped leftover listener on :$port"
+    done
+  done
+  for n in classifier enricher scraper; do
+    # match the module, not the interpreter: macOS reports the resolved framework Python path
+    for p in $(pgrep -f -- "-m $(module_of "$n" | sed 's/\./\\./g')( |\$)" 2>/dev/null); do
+      kill_group_of "$p"; ok "stopped leftover $n worker"
+    done
+  done
+  pkill -f playwright_fetch_worker 2>/dev/null || true
 }
 
 stop() {
   say "Workers and services"
   local n
   for n in scraper enricher classifier analytics provider manager; do stop_one "$n"; done
+  stop_strays
   say "Infra containers"
   (cd "$ROOT" && docker compose stop >/dev/null 2>&1) && ok "stopped (data kept in Docker volumes)"
 }
