@@ -744,7 +744,17 @@ Both files are gitignored (`backend/keys/.gitignore`) — generate your own per 
 
 ### Two Ways to Run It
 
-**A. Manual dev (infra in Docker, apps run yourself)** — the default:
+**Quickest: one command.** After the one-time setup (`.env`, keys, `make setup-workers`, classifier model):
+
+```bash
+make run      # infra, then manager + provider, analytics, and the three workers, each waiting for the previous step
+make status   # one line per component
+make stop     # stops everything make run started, then the infra containers (data kept)
+```
+
+`make run` starts the services and workers as local background processes (logs in `.run/logs/`), checks prerequisites first, waits for each health check and for each worker to consume its queue, and is safe to re-run (running parts are left alone). About a minute from cold; the first ever start compiles the services and takes longer. `make e2e` then checks the whole pipeline.
+
+**A. Manual dev (infra in Docker, apps run yourself)** — the same pieces, one terminal each:
 
 ```bash
 make dev   # env + up (infra only) + migrate + rabbitmq-setup
@@ -795,6 +805,7 @@ Run `make help` for the full, always-current list. The ones you'll reach for mos
 
 | Target                                    | What it does                                                                                                                     |
 | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `make run` / `make stop` / `make status` | Start / stop / inspect the entire system locally (infra + services + workers; logs in `.run/logs/`) |
 | `make dev`                              | Bootstrap infra:`.env`, infra containers, migrations, RabbitMQ setup                                                           |
 | `make run-manager` / `run-provider` / `run-analytics` | Run a Spring service locally with the root `.env` and JDK 21 (one terminal each; manager first) |
 | `make scrape-worker` / `classify-worker` / `enrich-worker` | Run a worker locally (after `make setup-workers`) |

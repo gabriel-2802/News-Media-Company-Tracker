@@ -81,8 +81,21 @@ pull: ## Pull the latest base images
 ps: ## Show running containers and their health status
 	$(COMPOSE) $(APPS) ps
 
-.PHONY: status
-status: ps
+
+# ── Whole system, one command ──────────────────────────────────────────────────
+# Infra in Docker plus the three services and three workers as local background
+# processes, started in order with health checks (scripts/local-stack.sh).
+# Logs in .run/logs/. Needs `make setup-workers` and the classifier model once.
+
+.PHONY: run stop status
+run: ## Start the ENTIRE system locally (infra, services, workers) in the background
+	@scripts/local-stack.sh start
+
+stop: ## Stop everything `make run` started, then the infra containers (data kept)
+	@scripts/local-stack.sh stop
+
+status: ## One line per component: infra, services, workers
+	@scripts/local-stack.sh status
 
 # ── Local (non-Docker) services ────────────────────────────────────────────────
 # The Spring services do not read .env themselves; these targets pass it in

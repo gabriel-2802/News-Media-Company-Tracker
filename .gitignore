@@ -26,3 +26,6 @@ backend/workers/classifier/cls_model_output/
 backend/workers/classifier/training/.cache/
 backend/workers/classifier/training/data/
 backend/workers/classifier/training/runs/
+
+# Local run state (make run): logs and process ids
+.run/
